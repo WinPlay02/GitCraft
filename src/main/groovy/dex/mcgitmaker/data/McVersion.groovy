@@ -2,6 +2,7 @@ package dex.mcgitmaker.data
 
 import dex.mcgitmaker.GitCraft
 import dex.mcgitmaker.Util
+import dex.mcgitmaker.loom.BundleMetadata
 import dex.mcgitmaker.loom.Decompiler
 import dex.mcgitmaker.loom.Remapper
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
@@ -17,9 +18,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 
 class McVersion {
     String version // MC version string from launcher
@@ -88,66 +86,26 @@ class McVersion {
     void makeMergedJar() {
         println 'Merging jars... ' + version
         def client = artifacts.clientJar.fetchArtifact()
-        try (def jarMerger = new JarMerger(client, serverJarToMerge(), mergedJarPath().toFile())) {
+        def server2merge = artifacts.serverJar.fetchArtifact()
+
+        def sbm = BundleMetadata.fromJar(server2merge.toPath())
+        if (sbm != null) {
+            def minecraftExtractedServerJar = GitCraft.MC_VERSION_STORE
+                    .resolve(version).resolve('extracted-server.jar')
+
+            if (sbm.versions.size() != 1) {
+                throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(serverBundleMetadata.versions().size()));
+            }
+
+            sbm.versions.first().unpackEntry(server2merge.toPath(), minecraftExtractedServerJar)
+            server2merge = minecraftExtractedServerJar.toFile()
+        }
+
+        try (def jarMerger = new JarMerger(client, server2merge, mergedJarPath().toFile())) {
             jarMerger.enableSyntheticParamsOffset()
             jarMerger.merge()
         }
 
         mergedJar = mergedJarPath().toString()
-    }
-
-    // From Fabric Loom
-    // Extracts the jar from the bundle used in 2138a+
-    private File serverJarToMerge() {
-        def minecraftExtractedServerJar = GitCraft.MC_VERSION_STORE
-                .resolve(version).resolve('extracted-server.jar').toFile()
-        def server = artifacts.serverJar.fetchArtifact()
-        try (ZipFile zipFile = new ZipFile(server)) {
-            ZipEntry versionsListEntry = zipFile.getEntry("META-INF/versions.list");
-
-            if (versionsListEntry == null) {
-                // Legacy pre 21w38a jar
-                return server
-            }
-
-            String versionsList
-
-            try (InputStream is = zipFile.getInputStream(versionsListEntry)) {
-                versionsList = new String(is.readAllBytes(), StandardCharsets.UTF_8)
-            }
-
-            String jarPath = null
-            String[] versions = versionsList.split("\n")
-
-            if (versions.length != 1) {
-                throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(versions.length))
-            }
-
-            for (String version : versions) {
-                if (version.isBlank()) continue
-
-                String[] split = version.split("\t")
-
-                if (split.length != 3) continue
-
-                final String hash = split[0]
-                final String id = split[1]
-                final String path = split[2]
-
-                // Take the first (only) version we find.
-                jarPath = path
-                break
-            }
-
-            Objects.requireNonNull(jarPath, "Could not find minecraft server jar for " + version)
-            ZipEntry serverJarEntry = zipFile.getEntry("META-INF/versions/" + jarPath)
-            Objects.requireNonNull(serverJarEntry, "Could not find server jar in boostrap@ " + jarPath)
-
-            try (InputStream is = zipFile.getInputStream(serverJarEntry)) {
-                Files.copy(is, minecraftExtractedServerJar.toPath(), StandardCopyOption.REPLACE_EXISTING)
-            }
-
-            return minecraftExtractedServerJar
-        }
     }
 }

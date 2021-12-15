@@ -60,9 +60,7 @@ class McMetadata {
 
         def libs = new HashSet<Artifact>()
 
-        //todo do we need natives?
-        // natives:[linux:natives-linux, osx:natives-osx, windows:natives-windows]
-        //downloads.classifiers.fromnativesMap
+        // Ignores natives, not needed as we don't have a runtime
         meta.libraries.each { d ->
             if (d.downloads.artifact != null)
                 libs.add(new Artifact(name: Artifact.nameFromUrl(d.downloads.artifact.url), url: d.downloads.artifact.url, containingPath: LIBRARY_STORE))
