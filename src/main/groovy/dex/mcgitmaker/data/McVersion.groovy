@@ -2,6 +2,7 @@ package dex.mcgitmaker.data
 
 import dex.mcgitmaker.GitCraft
 import dex.mcgitmaker.Util
+import dex.mcgitmaker.loom.Decompiler
 import dex.mcgitmaker.loom.Remapper
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.MappingFormat
@@ -30,6 +31,16 @@ class McVersion {
     Collection<Artifact> libraries // The libraries for this version
     String mainClass
     String mergedJar // merged client and server
+
+    File decompiledMc() {
+        def p = Decompiler.decompiledPath(this)
+        def f = p.toFile()
+        if (!f.exists()) {
+            Decompiler.decompile(this)
+        }
+
+        return f
+    }
 
     File remappedJar() {
         return Remapper.doRemap(this).toFile()

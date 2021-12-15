@@ -9,11 +9,13 @@ import java.nio.file.Path
 import java.util.regex.Pattern
 
 class Remapper {
+    // From Fabric-loom
     private static final Pattern MC_LV_PATTERN = Pattern.compile('\\$\\$\\d+')
 
     static Path doRemap(McVersion mcVersion) {
         def output = GitCraft.REMAPPED.resolve(mcVersion.version + '.jar')
 
+        // Based on what Fabric-loom does
         if (!output.toFile().exists()) {
             def remapper = TinyRemapper.newRemapper()
                     .renameInvalidLocals(true)
