@@ -1,0 +1,5 @@
+/artifact-store/
+/minecaft-repo/
+/.gradle/
+/.idea/
+/build/

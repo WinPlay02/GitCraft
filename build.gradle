@@ -1,0 +1,51 @@
+plugins {
+    id 'groovy'
+}
+
+group 'dex.mcgitmaker'
+version '0.1.0-SNAPSHOT'
+
+repositories {
+    maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
+    }
+    maven {
+        name = 'Cotton'
+        url = 'https://server.bbkr.space/artifactory/libs-release/'
+    }
+    maven {
+        url = "https://maven.quiltmc.org/repository/release"
+    }
+    mavenCentral()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release = 8
+}
+
+dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:3.0.9'
+    implementation "net.fabricmc:fabric-loader:0.+"
+    implementation "org.ow2.asm:asm:${project.asm_version}"
+    implementation "org.ow2.asm:asm-analysis:${project.asm_version}"
+    implementation "org.ow2.asm:asm-commons:${project.asm_version}"
+    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
+    implementation "org.ow2.asm:asm-util:${project.asm_version}"
+
+    implementation('net.fabricmc:stitch:0.6.1') {
+        exclude module: 'enigma'
+    }
+
+    // tinyfile management
+    implementation('net.fabricmc:tiny-remapper:0.7.0')
+    implementation 'net.fabricmc:access-widener:2.1.0'
+    implementation 'net.fabricmc:mapping-io:0.2.1'
+
+    implementation('net.fabricmc:lorenz-tiny:4.0.2') {
+        transitive = false
+    }
+
+    implementation 'org.quiltmc:quiltflower:1.+'
+}
