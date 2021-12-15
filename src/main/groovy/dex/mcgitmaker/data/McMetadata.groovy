@@ -32,10 +32,13 @@ class McMetadata {
     }
 
     private static LinkedHashMap<String, McVersion> getInitialMetadata() {
+        println 'Creating metadata...'
+        println 'Reading metadata from Mojang...'
         def mcVersions = new JsonSlurper().parse(new URL(MC_META_URL))
         def data = new LinkedHashMap<String, McVersion>()
         def read = new LinkedHashMap<String, McVersion>()
 
+        println 'Attempting to read metadata from file...'
         if (METADATA_STORE.toFile().exists()) read = new JsonSlurper().parseText(METADATA_STORE.toFile().text) as LinkedHashMap<String, McVersion>
 
         read.each {s, v ->
@@ -43,12 +46,16 @@ class McMetadata {
         }
 
         mcVersions.versions.each { v ->
-            if (!data.containsKey(v.id))
+            if (!data.containsKey(v.id)) {
+                println 'Creating data for: ' + v.id
                 data.put(v.id, createVersionData(v.url))
+            }
         }
 
+        println 'Saving updated metadata...'
         Util.saveMetadata(data)
 
+        println 'Removing versions from metadata that have no mappings...'
         data.removeAll { !it.value.hasMappings }
 
         return data

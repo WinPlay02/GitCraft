@@ -62,7 +62,9 @@ class Decompiler {
                 .excludeFieldsByName('containingPath')
                 .build()
 
-        def c = mcVersion.libraries.collect()
+        def c = mcVersion.libraries.collect().sort {
+            it.name.split('-').first()
+        }
         c.push(new Artifact(url: '', name: 'Java ' + mcVersion.javaVersion, containingPath: ''))
 
         def x = p.toFile()

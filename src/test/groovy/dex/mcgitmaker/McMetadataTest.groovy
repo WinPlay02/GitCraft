@@ -12,7 +12,9 @@ class McMetadataTest {
         //x.merged() // has to be called or it endlessly tries to merge them
 
         //Decompiler.decompile(v)
-        x.decompileAllVersions(false)
+        //x.decompileAllVersions(false)
+        //x.updateRepo()
+        v.decompiledMc()
 
         //keyset is in ascending order, good
     }

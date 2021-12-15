@@ -31,8 +31,40 @@ class GitCraft {
 
     GitCraft() {
         this.mcMetadata = new McMetadata()
-        Util.saveMetadata(mcMetadata.metadata)
         versions = Util.orderVersionMap(mcMetadata.metadata)
+    }
+
+    static void main(String[] args) {
+        def gitCraft = new GitCraft()
+        gitCraft.updateRepo()
+
+        println 'Repo can be found at: ' + REPO.toString()
+    }
+
+    // Removes files that are unlikely to be needed again that are large
+    private def cleanupFiles() {
+        MC_VERSION_STORE.deleteDir()
+        DECOMPILED_WORKINGS.deleteDir()
+        REMAPPED.deleteDir()
+    }
+
+    def test() {
+        def r = new RepoManager()
+
+        r.commitDecompiled(versions.values().first())
+        r.commitDecompiled(versions.values().last())
+
+        r.finish()
+    }
+
+    def updateRepo() {
+        def r = new RepoManager()
+
+        versions.each {sv, mcv ->
+            r.commitDecompiled(mcv)
+        }
+
+        r.finish()
     }
 
     /**
