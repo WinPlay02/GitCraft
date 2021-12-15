@@ -41,8 +41,10 @@ class Util {
         def ORDERED_MAP = new TreeMap<SemanticVersion, McVersion>()
         println 'Sorting on semver MC versions...'
         metadata.values().each {it ->
-            addLoaderVersion(it)
-            ORDERED_MAP.put(SemanticVersion.parse(it.loaderVersion), it)
+            if (it.hasMappings) {
+                addLoaderVersion(it)
+                ORDERED_MAP.put(SemanticVersion.parse(it.loaderVersion), it)
+            }
         }
 
         return ORDERED_MAP

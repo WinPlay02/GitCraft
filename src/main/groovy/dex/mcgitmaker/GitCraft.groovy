@@ -32,6 +32,8 @@ class GitCraft {
     GitCraft() {
         this.mcMetadata = new McMetadata()
         versions = Util.orderVersionMap(mcMetadata.metadata)
+        println 'Saving updated metadata...'
+        Util.saveMetadata(mcMetadata.metadata)
     }
 
     static void main(String[] args) {

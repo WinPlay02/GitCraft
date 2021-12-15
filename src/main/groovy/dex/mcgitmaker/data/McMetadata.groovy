@@ -52,12 +52,6 @@ class McMetadata {
             }
         }
 
-        println 'Saving updated metadata...'
-        Util.saveMetadata(data)
-
-        println 'Removing versions from metadata that have no mappings...'
-        data.removeAll { !it.value.hasMappings }
-
         return data
     }
 
