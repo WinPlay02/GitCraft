@@ -63,7 +63,8 @@ class Decompiler {
                 .build()
 
         def c = mcVersion.libraries.collect().sort {
-            it.name.split('-').first()
+            def names = it.name.split('-').dropRight(1)
+            names.join("")
         }
         c.push(new Artifact(url: '', name: 'Java ' + mcVersion.javaVersion, containingPath: ''))
 
