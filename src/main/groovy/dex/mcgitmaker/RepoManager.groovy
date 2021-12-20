@@ -51,7 +51,7 @@ class RepoManager {
 
         // Make commit
         git.add().addFilepattern(".").call()
-        git.commit().setAll(true).setMessage(msg).call()
+        git.commit().setAll(true).setMessage(msg).setAuthor("Mojang", "gitcraft@decompiled.mc").call()
 
         println 'Commited ' + mcVersion.version + ' to the repository!'
     }
