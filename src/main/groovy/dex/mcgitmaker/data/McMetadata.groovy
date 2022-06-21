@@ -9,7 +9,7 @@ import java.nio.file.Path
 import static dex.mcgitmaker.GitCraft.*
 
 class McMetadata {
-    static final def MC_META_URL = 'https://launchermeta.mojang.com/mc/game/version_manifest_v2.json'
+    static final def MC_META_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
     public final LinkedHashMap<String, McVersion> metadata
 
     McMetadata() {
