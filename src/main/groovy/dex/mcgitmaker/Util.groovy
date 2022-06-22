@@ -1,11 +1,13 @@
 package dex.mcgitmaker
 
+import dex.mcgitmaker.data.Artifact
 import dex.mcgitmaker.data.McVersion
 import groovy.json.JsonGenerator
 import net.fabricmc.loader.api.SemanticVersion
 import net.fabricmc.loader.impl.game.minecraft.McVersionLookup
 
 import java.nio.file.Path
+import java.nio.file.Paths
 
 class Util {
     static enum MappingsNamespace {
@@ -31,7 +33,7 @@ class Util {
     static def addLoaderVersion(McVersion mcVersion) {
         if (mcVersion.loaderVersion == null) {
             println 'Creating new semver version...'
-            def x = McVersionLookup.getVersion(mcVersion.artifacts.clientJar.fetchArtifact().toPath(), new String[]{mcVersion.mainClass}, null)
+            def x = McVersionLookup.getVersion(List.of(mcVersion.artifacts.clientJar.fetchArtifact().toPath()), mcVersion.mainClass, null)
             mcVersion.loaderVersion = x.normalized
             println 'Semver made for: ' + x.raw + ' as ' + x.normalized
         }
@@ -48,5 +50,47 @@ class Util {
         }
 
         return ORDERED_MAP
+    }
+
+    //todo make work
+    static def updateMcVersionPath(McVersion mcVersion) {
+        def root = GitCraft.MAIN_ARTIFACT_STORE.parent
+
+        if (mcVersion.mergedJar != null) {
+            def p = Paths.get(mcVersion.mergedJar)
+            def po = p.toString()
+            for (int i in 1..p.getNameCount()-1) {
+                if (p.getName(i).toString() == 'artifact-store') {
+                    p = p.subpath(i, p.getNameCount())
+                }
+            }
+
+            mcVersion.mergedJar = root.resolve(p)
+
+            println 'Remapped ' + po + ' to ' + mcVersion.mergedJar
+        }
+
+        mcVersion.libraries.each {updateArtifactPath(it as Artifact)}
+        updateArtifactPath(mcVersion.artifacts.clientMappings)
+        updateArtifactPath(mcVersion.artifacts.clientJar)
+        updateArtifactPath(mcVersion.artifacts.serverJar)
+        updateArtifactPath(mcVersion.artifacts.serverMappings)
+    }
+
+    static def updateArtifactPath(Artifact artifact) {
+        def root = GitCraft.MAIN_ARTIFACT_STORE.parent
+        if (artifact.containingPath != null) {
+            def p = artifact.containingPath
+            def po = p.toString()
+            for (int i in 1..p.getNameCount()-1) {
+                if (p.getName(i).toString() == 'artifact-store') {
+                    p = p.subpath(i, p.getNameCount())
+                }
+            }
+
+            artifact.containingPath = root.resolve(p)
+
+            println 'Remapped ' + po + ' to ' + artifact.containingPath
+        }
     }
 }

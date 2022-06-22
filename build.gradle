@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'dex.mcgitmaker'
-version '0.1.0-SNAPSHOT'
+version '0.1.1-SNAPSHOT'
 
 repositories {
     maven {
@@ -31,7 +31,7 @@ application {
 }
 
 dependencies {
-    implementation 'org.codehaus.groovy:groovy-all:3.0.9'
+    implementation 'org.codehaus.groovy:groovy-all:3.0.11'
 
     // Loader and its deps
     implementation "net.fabricmc:fabric-loader:0.+"
@@ -41,21 +41,21 @@ dependencies {
     implementation "org.ow2.asm:asm-tree:${project.asm_version}"
     implementation "org.ow2.asm:asm-util:${project.asm_version}"
 
-    implementation('net.fabricmc:stitch:0.6.1') {
+    implementation('net.fabricmc:stitch:0.+') {
         exclude module: 'enigma'
     }
 
     // tinyfile management
-    implementation('net.fabricmc:tiny-remapper:0.7.0')
-    implementation 'net.fabricmc:access-widener:2.1.0'
-    implementation 'net.fabricmc:mapping-io:0.2.1'
+    implementation('net.fabricmc:tiny-remapper:0.+')
+    implementation 'net.fabricmc:access-widener:2.+'
+    implementation 'net.fabricmc:mapping-io:0.+'
 
-    implementation('net.fabricmc:lorenz-tiny:4.0.2') {
+    implementation('net.fabricmc:lorenz-tiny:4.+') {
         transitive = false
     }
 
     // https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.0.0.202111291000-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.2.0.202206071550-r'
 
     // Decompiler, could be replaced with another fernflower fork
     implementation 'org.quiltmc:quiltflower:1.+'
