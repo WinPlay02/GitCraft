@@ -27,7 +27,7 @@ class Decompiler {
         println 'Decompiler log output is suppressed!'
         Map<String, Object> options = new HashMap<>()
 
-        options.put(IFernflowerPreferences.INDENT_STRING, " ".repeat(4)); // space supremacy!
+        options.put(IFernflowerPreferences.INDENT_STRING, "\t");
         options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
         options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
         options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
@@ -37,7 +37,7 @@ class Decompiler {
 
         // Experimental QF preferences
         options.put(IFernflowerPreferences.PATTERN_MATCHING, "1");
-        options.put(IFernflowerPreferences.EXPERIMENTAL_TRY_LOOP_FIX, "1");
+        options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
         //options.putAll(ReflectionUtil.<Map<String, String>>maybeGetFieldOrRecordComponent(metaData, "options").orElse(Map.of()));
 
         Fernflower ff = new Fernflower(Zips::getBytes, new DirectoryResultSaver(decompiledPath(mcVersion).toFile()), options, new PrintStreamLogger(/*System.out*/NULL_IS))

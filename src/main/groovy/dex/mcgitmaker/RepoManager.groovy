@@ -4,6 +4,7 @@ import dex.mcgitmaker.data.McVersion
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
@@ -12,6 +13,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.stream.Stream
+
+import dex.mcgitmaker.loom.FileSystemUtil
 
 class RepoManager {
     Git git
@@ -47,11 +50,19 @@ class RepoManager {
 
         // Copy decompiled MC to repo directory
         println 'Moving files to repo...'
-        copyLargeDir(mcVersion.decompiledMc().toPath(), GitCraft.REPO.resolve('minecraft'))
+        copyLargeDir(mcVersion.decompiledMc().toPath(), GitCraft.REPO.resolve('minecraft').resolve('src'))
+        
+        // Copy assets & data (it makes sense to track them, atleast the data)
+        try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.mergedJarPath())) {
+            copyLargeDir(fs.get().getPath("assets"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('assets'))
+            copyLargeDir(fs.get().getPath("data"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('data'))
+        }
 
         // Make commit
         git.add().addFilepattern(".").call()
-        git.commit().setAll(true).setMessage(msg).setAuthor("Mojang", "gitcraft@decompiled.mc").call()
+        java.util.Date version_date = new java.util.Date(java.time.OffsetDateTime.parse(mcVersion.time).toInstant().toEpochMilli())
+        PersonIdent author = new PersonIdent("Mojang", "gitcraft@decompiled.mc", version_date, TimeZone.getTimeZone("UTC"))
+        git.commit().setAll(true).setMessage(msg).setAuthor(author).call()
 
         println 'Commited ' + mcVersion.version + ' to the repository!'
     }
@@ -67,8 +78,7 @@ class RepoManager {
             }
 
             try (Stream<Path> paths = Files.list(source)) {
-                paths.forEach(p -> copyLargeDir(p, target.resolve(source.relativize(p)))
-                )
+                paths.forEach(p -> copyLargeDir(p, target.resolve(source.relativize(p).toString())))
             }
 
         } else {

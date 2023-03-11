@@ -11,11 +11,15 @@ class GitCraft {
     public static final def MAIN_ARTIFACT_STORE = Paths.get(new File('.').canonicalPath).resolve('artifact-store')
     public static final def DECOMPILED_WORKINGS = MAIN_ARTIFACT_STORE.resolve('decompiled')
     public static final def MAPPINGS = MAIN_ARTIFACT_STORE.resolve('mappings')
-    public static final def REPO = MAIN_ARTIFACT_STORE.parent.resolve('minecaft-repo')
+    public static final def REPO = MAIN_ARTIFACT_STORE.parent.resolve('minecraft-repo')
     public static final def MC_VERSION_STORE = MAIN_ARTIFACT_STORE.resolve('mc-versions')
     public static final def LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve('libraries')
     public static final def METADATA_STORE = MAIN_ARTIFACT_STORE.resolve('metadata.json')
     public static final def REMAPPED = MAIN_ARTIFACT_STORE.resolve('remapped-mc')
+    
+    public static final def REMOTE_CACHE = Paths.get(new File('.').canonicalPath).resolve('remote-cache')
+    public static final def META_CACHE = REMOTE_CACHE.resolve('meta-cache')
+    
     McMetadata mcMetadata
     TreeMap<SemanticVersion, McVersion> versions
 
@@ -27,6 +31,9 @@ class GitCraft {
         MC_VERSION_STORE.toFile().mkdirs()
         LIBRARY_STORE.toFile().mkdirs()
         REMAPPED.toFile().mkdirs()
+        
+        REMOTE_CACHE.toFile().mkdirs()
+        META_CACHE.toFile().mkdirs()
     }
 
     GitCraft() {

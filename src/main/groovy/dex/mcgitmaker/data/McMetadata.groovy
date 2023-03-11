@@ -47,16 +47,37 @@ class McMetadata {
 
         mcVersions.versions.each { v ->
             if (!data.containsKey(v.id)) {
-                println 'Creating data for: ' + v.id
-                data.put(v.id, createVersionData(v.url))
+                data.put(v.id, createVersionData(v.id, v.url))
             }
         }
 
         return data
     }
 
-    private static McVersion createVersionData(String metaURL) {
-        def meta = new JsonSlurper().parse(new URL(metaURL))
+    private static McVersion createVersionData(String metaID, String metaURL) {
+        def meta = null
+        
+        if (META_CACHE.resolve(metaID + ".json").toFile().exists()) {
+            println 'Reading data locally for: ' + metaID
+            meta = new JsonSlurper().parseText(META_CACHE.resolve(metaID + ".json").toFile().text)
+        } else {
+            println 'Creating data for: ' + metaID
+            while (meta == null) {
+                try { 
+                    meta = new JsonSlurper().parse(new URL(metaURL))
+                } catch(Exception e1) {
+                    println 'Failed to fetch URL ' + metaURL
+                    sleep(500)
+                    println 'Retrying... '
+                }
+            }
+            // Write Cached Metadata
+            def x_cache = META_CACHE.resolve(metaID + ".json").toFile()
+            x_cache.createNewFile()
+            x_cache.write(JsonOutput.toJson(meta))
+        }
+        
+        
 
         def libs = new HashSet<Artifact>()
 
@@ -78,7 +99,7 @@ class McMetadata {
 
         return new McVersion(version: meta.id, javaVersion: javaVersion,
                 mainClass: meta.mainClass, snapshot: meta.type == 'snapshot', artifacts: artifacts,
-                hasMappings: artifacts.hasMappings, libraries: libs)
+                hasMappings: artifacts.hasMappings, libraries: libs, time: meta.time)
     }
 
     private static McArtifacts getMcArtifacts(def meta) {

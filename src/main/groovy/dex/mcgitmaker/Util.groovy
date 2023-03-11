@@ -33,7 +33,20 @@ class Util {
     static def addLoaderVersion(McVersion mcVersion) {
         if (mcVersion.loaderVersion == null) {
             println 'Creating new semver version...'
-            def x = McVersionLookup.getVersion(List.of(mcVersion.artifacts.clientJar.fetchArtifact().toPath()), mcVersion.mainClass, null)
+            def x = null
+            def x_path = null
+            while (x == null) {
+                try {
+                    x_path = mcVersion.artifacts.clientJar.fetchArtifact().toPath()
+                    x = McVersionLookup.getVersion(List.of(x_path), mcVersion.mainClass, null)
+                } catch (Exception e) {
+                    println 'Semver creation failed. Retrying... ' + e.toString()
+                    if (x_path != null) {
+                        x_path.toFile().delete()
+                    }
+                    sleep(250)
+                }
+            }
             mcVersion.loaderVersion = x.normalized
             println 'Semver made for: ' + x.raw + ' as ' + x.normalized
         }

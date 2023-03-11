@@ -29,6 +29,8 @@ class McVersion {
     Collection<Artifact> libraries // The libraries for this version
     String mainClass
     String mergedJar // merged client and server
+    
+    String time
 
     File decompiledMc() {
         def p = Decompiler.decompiledPath(this)
