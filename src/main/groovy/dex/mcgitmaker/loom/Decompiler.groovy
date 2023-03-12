@@ -14,6 +14,8 @@ import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences
 import java.nio.file.Files
 import java.nio.file.Path
 
+import dex.mcgitmaker.loom.FileSystemUtil
+
 class Decompiler {
     private static final def NULL_IS = new PrintStream(OutputStream.nullOutputStream())
 
@@ -40,20 +42,31 @@ class Decompiler {
         options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
         //options.putAll(ReflectionUtil.<Map<String, String>>maybeGetFieldOrRecordComponent(metaData, "options").orElse(Map.of()));
 
-        Fernflower ff = new Fernflower(Zips::getBytes, new DirectoryResultSaver(decompiledPath(mcVersion).toFile()), options, new PrintStreamLogger(/*System.out*/NULL_IS))
+        Fernflower ff = new Fernflower(Zips::getBytes, new DirectoryResultSaver(decompiledPath(mcVersion).toFile()), options, new PrintStreamLogger(NULL_IS)) // System.out
+        
+        java.util.List<FileSystemUtil.Delegate> openFileSystems = new java.util.ArrayList<>()
 
         println 'Adding libraries...'
         for (Artifact library : mcVersion.libraries) {
-            ff.addLibrary(library.fetchArtifact())
+            def lib_file = library.fetchArtifact()
+            openFileSystems.add(FileSystemUtil.getJarFileSystem(lib_file, false))
+            ff.addLibrary(lib_file)
         }
 
-        ff.addSource(mcVersion.remappedJar())
+        def mc_file = mcVersion.remappedJar()
+        openFileSystems.add(FileSystemUtil.getJarFileSystem(mc_file, false))
+        ff.addSource(mc_file)
 
         println 'Decompiling...'
         ff.decompileContext()
 
         println 'Writing dependencies file...'
         writeLibraries(mcVersion)
+        
+        println 'Closing temporary FileSystems delayed...'
+        for (FileSystemUtil.Delegate fs : openFileSystems) {
+            fs.close()
+        }
     }
 
     private static void writeLibraries(McVersion mcVersion) {
@@ -80,7 +93,7 @@ class Decompiler {
                 return Files.readAllBytes(Path.of(outerPath));
             }
 
-            try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(outerPath), false)) {
+            try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(new File(outerPath), false)) {
                 return Files.readAllBytes(fs.get().getPath(innerPath));
             }
         }
