@@ -56,3 +56,8 @@ dependencies {
     // Decompiler, could be replaced with another fernflower fork
     implementation 'org.quiltmc:quiltflower:1.+'
 }
+
+// if not working: run ./gradlew run --refresh-dependencies
+configurations.all {
+    resolutionStrategy.cacheDynamicVersionsFor 15, 'minutes'
+}
