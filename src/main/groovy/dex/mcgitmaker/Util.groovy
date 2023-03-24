@@ -29,7 +29,7 @@ class Util {
         x.createNewFile()
         x.write(generator.toJson(data))
     }
-    
+
     static def addLoaderVersion(McVersion mcVersion) {
         if (mcVersion.loaderVersion == null) {
             println 'Creating new semver version...'
