@@ -2,12 +2,18 @@ package dex.mcgitmaker
 
 import dex.mcgitmaker.data.Artifact
 import dex.mcgitmaker.data.McVersion
+import dex.mcgitmaker.data.outlet.McFabric
+import dex.mcgitmaker.data.outlet.McOutletMeta
 import groovy.json.JsonGenerator
+import groovy.json.JsonParserType
+import groovy.json.JsonSlurper
 import net.fabricmc.loader.api.SemanticVersion
 import net.fabricmc.loader.impl.game.minecraft.McVersionLookup
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class Util {
     static enum MappingsNamespace {
@@ -32,10 +38,24 @@ class Util {
 
     static def addLoaderVersion(McVersion mcVersion) {
         if (mcVersion.loaderVersion == null) {
+            // Attempt lookup in Outlet database as newer MC versions require a loader update
+            def v = Outlet.INSTANCE.outletDatabase.versions.find {
+                it.id == mcVersion.version
+            }
+            if (v != null) {
+                println 'Successfully looked up new semver version...'
+                mcVersion.loaderVersion = v.normalized
+                return
+            }
+
             println 'Creating new semver version...'
-            def x = McVersionLookup.getVersion(List.of(mcVersion.artifacts.clientJar.fetchArtifact().toPath()), mcVersion.mainClass, null)
+            def x = McVersionLookup.getVersion(
+                List.of(mcVersion.artifacts.clientJar.fetchArtifact().toPath()), mcVersion.mainClass, null
+            )
             mcVersion.loaderVersion = x.normalized
             println 'Semver made for: ' + x.raw + ' as ' + x.normalized
+            println 'If generated semver is incorrect, it will break the order of the generated repo. ' +
+                'Consider updating Fabric Loader.'
         }
     }
 
@@ -91,6 +111,16 @@ class Util {
             artifact.containingPath = root.resolve(p)
 
             println 'Remapped ' + po + ' to ' + artifact.containingPath
+        }
+    }
+
+    enum Outlet {
+        INSTANCE();
+
+        public McOutletMeta outletDatabase = new McOutletMeta(lastChanged: Date.from(ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneId.systemDefault()).toInstant()), versions: [])
+        private final def OUTLET_DATABASE = 'https://raw.githubusercontent.com/dexman545/outlet-database/master/mc2fabric.json'
+        Outlet() {
+            outletDatabase = new JsonSlurper(type: JsonParserType.INDEX_OVERLAY).parse(new URL(OUTLET_DATABASE)) as McOutletMeta
         }
     }
 }

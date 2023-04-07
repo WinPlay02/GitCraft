@@ -25,6 +25,9 @@ class RepoManager {
     }
 
     void commitDecompiled(McVersion mcVersion) {
+        //todo detect april fools versions and make each their own branch based on semver
+        // match to avoid polluting main history
+        // add april fools clasification to outlet-database?
         def msg = mcVersion.version + '\n\nSemVer: ' + mcVersion.loaderVersion
 
         if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
