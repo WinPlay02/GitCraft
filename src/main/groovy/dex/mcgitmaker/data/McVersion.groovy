@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.regex.Pattern
 
 class McVersion {
     String version // MC version string from launcher
@@ -32,8 +31,6 @@ class McVersion {
     String mergedJar // merged client and server
     
     String time
-    
-    static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]$)|(^\d.\d+(.\d+)?(-(pre|rc)\d$))/
 
     File decompiledMc() {
         def p = Decompiler.decompiledPath(this)
@@ -43,10 +40,6 @@ class McVersion {
         }
 
         return f
-    }
-
-    boolean isNonLinearSnapshot() {
-        return this.snapshot && !(this.version ==~ McVersion.LINEAR_SNAPSHOT_REGEX)
     }
 
     File remappedJar() {

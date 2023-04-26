@@ -13,12 +13,14 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.stream.Stream
+import java.util.regex.Pattern
 
 import dex.mcgitmaker.loom.FileSystemUtil
 
 class RepoManager {
     Git git
     static String MAINLINE_LINEAR_BRANCH = "master"
+    static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]$)|(^\d.\d+(.\d+)?(-(pre|rc)\d$))/
 
     RepoManager() {
         this.git = setupRepo()
@@ -27,13 +29,17 @@ class RepoManager {
     def finish() {
         git.close()
     }
+    
+    boolean isVersionNonLinearSnapshot(McVersion mcVersion) {
+        return mcVersion.snapshot && !(mcVersion.version ==~ RepoManager.LINEAR_SNAPSHOT_REGEX)
+    }
 
     void commitDecompiled(McVersion mcVersion) {
         def msg = mcVersion.version + '\n\nSemVer: ' + mcVersion.loaderVersion
 
         if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
-            def target_branch = mcVersion.isNonLinearSnapshot() ? mcVersion.version : MAINLINE_LINEAR_BRANCH
-			println 'Target Branch is ' + target_branch + (mcVersion.isNonLinearSnapshot() ? " (non-linear)" : "")
+            def target_branch = this.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.version : MAINLINE_LINEAR_BRANCH
+            println 'Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "")
             if (git.getRepository().getBranch() != target_branch) {
                 def target_ref = git.getRepository().getRefDatabase().findRef(target_branch)
                 if (target_ref == null) {
