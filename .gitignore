@@ -1,6 +1,36 @@
-/artifact-store/
-/minecaft-repo/
-/.gradle/
-/.idea/
-/build/
-/remote-cache/
+# GitCraft
+artifact-store/
+minecaft-repo/
+remote-cache/
+
+# Gradle
+.gradle/
+build/
+bin/
+out/
+classes/
+
+# IntelliJ Idea
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.eclipse/
+*.launch
+
+# VS Code
+.vscode/
+
+# Fleet
+.fleet/
+
+# MacOS
+*.DS_Store
+
+# Java
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr

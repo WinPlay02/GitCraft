@@ -35,6 +35,7 @@ class RepoManager {
     }
 
     void commitDecompiled(McVersion mcVersion) {
+        // add april fools clasification to outlet-database?
         def msg = mcVersion.version + '\n\nSemVer: ' + mcVersion.loaderVersion
 
         def target_branch = MAINLINE_LINEAR_BRANCH
