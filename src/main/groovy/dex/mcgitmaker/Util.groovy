@@ -14,6 +14,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.stream.Collectors
 
 class Util {
     static enum MappingsNamespace {
@@ -39,6 +40,9 @@ class Util {
     static String fixupSemver(String proposedSemVer) {
         if (proposedSemVer == "1.19-22.w.13.oneBlockAtATime") {
             return "1.19-alpha.22.13.oneblockatatime"
+        }
+        if (proposedSemVer == "1.16.2-Combat.Test.8") { // outlet is wrong here, fabric gets it correct
+            return "1.16.3-combat.8"
         }
         if (proposedSemVer.contains("-Experimental")) {
             return proposedSemVer.replace("-Experimental", "-alpha.00.00.Experimental")
@@ -84,13 +88,28 @@ class Util {
         def ORDERED_MAP = new TreeMap<SemanticVersion, McVersion>()
         println 'Sorting on semver MC versions...'
         metadata.values().each {it ->
-            if (it.hasMappings) {
+            if (it.hasMappings && !RepoManager.isVersionNonLinearSnapshot(it)) {
                 addLoaderVersion(it)
                 ORDERED_MAP.put(SemanticVersion.parse(it.loaderVersion), it)
             }
         }
 
         return ORDERED_MAP
+    }
+
+    static List<McVersion> nonLinearVersionList(LinkedHashMap<String, McVersion> metadata) {
+        def NONLINEAR_MAP = new TreeMap<SemanticVersion, McVersion>()
+        println 'Putting non-linear MC versions into other list...'
+        metadata.values().each {it ->
+            if (it.hasMappings && RepoManager.isVersionNonLinearSnapshot(it)) {
+                addLoaderVersion(it)
+                NONLINEAR_MAP.put(SemanticVersion.parse(it.loaderVersion), it)
+            }
+        }
+        println 'The following versions are considered non-linear: ' + NONLINEAR_MAP.stream().map { it ->
+            it.version
+        }.collect(Collectors.joining(", "))
+        return NONLINEAR_MAP
     }
 
     //todo make work

@@ -24,6 +24,7 @@ class GitCraft {
     
     McMetadata mcMetadata
     TreeMap<SemanticVersion, McVersion> versions
+    TreeMap<SemanticVersion, McVersion> nonLinearVersions
 
     static {
         MAIN_ARTIFACT_STORE.toFile().mkdirs()
@@ -41,6 +42,7 @@ class GitCraft {
     GitCraft() {
         this.mcMetadata = new McMetadata()
         versions = Util.orderVersionMap(mcMetadata.metadata)
+        nonLinearVersions = Util.nonLinearVersionList(mcMetadata.metadata)
         println 'Saving updated metadata...'
         Util.saveMetadata(mcMetadata.metadata)
     }
@@ -72,6 +74,11 @@ class GitCraft {
         def r = new RepoManager()
 
         versions.each {sv, mcv ->
+            r.commitDecompiled(mcv)
+        }
+
+        // Only commit non-linear versions after linear versions to find correct branching point
+        nonLinearVersions.each {sv, mcv ->
             r.commitDecompiled(mcv)
         }
 
