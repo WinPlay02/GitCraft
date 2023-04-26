@@ -53,6 +53,9 @@ class McMetadata {
         }
         
         for (File extra_version : SOURCE_EXTRA_VERSIONS.toFile().listFiles()) {
+            if (extra_version.getName().equals(".gitkeep")) { // silently ignore gitkeep
+                continue
+            }
             if (!extra_version.toPath().toString().endsWith('.json')) {
                 println 'Skipped extra version \'' + extra_version.toPath().toString() + '\' as it is not a .json file'
                 continue
