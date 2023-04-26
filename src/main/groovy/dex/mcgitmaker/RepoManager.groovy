@@ -37,9 +37,9 @@ class RepoManager {
     void commitDecompiled(McVersion mcVersion) {
         def msg = mcVersion.version + '\n\nSemVer: ' + mcVersion.loaderVersion
 
+        def target_branch
         if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
-            def target_branch = this.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.version : MAINLINE_LINEAR_BRANCH
-            println 'Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "")
+            target_branch = this.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.version : MAINLINE_LINEAR_BRANCH
             if (git.getRepository().getBranch() != target_branch) {
                 def target_ref = git.getRepository().getRefDatabase().findRef(target_branch)
                 if (target_ref == null) {
@@ -80,7 +80,7 @@ class RepoManager {
         PersonIdent author = new PersonIdent("Mojang", "gitcraft@decompiled.mc", version_date, TimeZone.getTimeZone("UTC"))
         git.commit().setAll(true).setMessage(msg).setAuthor(author).call()
 
-        println 'Commited ' + mcVersion.version + ' to the repository!'
+        println 'Commited ' + mcVersion.version + ' to the repository! (Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "")
     }
 
     def setupRepo() {
