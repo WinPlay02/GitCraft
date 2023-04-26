@@ -55,7 +55,7 @@ class Util {
                 }
             }
             mcVersion.loaderVersion = fixupSemver(x.normalized)
-            println 'Semver made for: ' + x.raw + ' as ' + x.normalized
+            println 'Semver made for: ' + x.raw + ' as ' + mcVersion.loaderVersion
         }
     }
 
