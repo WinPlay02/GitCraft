@@ -33,7 +33,7 @@ class McVersion {
     
     String time
     
-    static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]\$)|(^\d.\d+(.\d+)?(-(pre|rc)\d\$))/
+    static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]$)|(^\d.\d+(.\d+)?(-(pre|rc)\d$))/
 
     File decompiledMc() {
         def p = Decompiler.decompiledPath(this)
