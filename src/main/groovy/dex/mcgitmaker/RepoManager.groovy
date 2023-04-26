@@ -18,6 +18,7 @@ import dex.mcgitmaker.loom.FileSystemUtil
 
 class RepoManager {
     Git git
+    static String MAINLINE_LINEAR_BRANCH = "master"
 
     RepoManager() {
         this.git = setupRepo()
@@ -31,6 +32,14 @@ class RepoManager {
         def msg = mcVersion.version + '\n\nSemVer: ' + mcVersion.loaderVersion
 
         if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
+            def target_branch = mcVersion.isNonLinearSnapshot() ? mcVersion.version : MAINLINE_LINEAR_BRANCH
+            if (git.getRepository().getBranch() != target_branch) {
+                def target_ref = git.getRepository().getRefDatabase().findRef(target_branch)
+                if (target_ref == null) {
+                    git.branchCreate().setName(target_branch).call()
+                }
+                git.checkout().setName(target_branch).call()
+            }
             if (git.log().setRevFilter(new CommitMsgFilter(msg)).call().size() > 0) return
         }
 

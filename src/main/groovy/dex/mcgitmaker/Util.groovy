@@ -30,6 +30,13 @@ class Util {
         x.write(generator.toJson(data))
     }
     
+    static String fixupSemver(String proposedSemVer) {
+        if (proposedSemVer == "1.19-22.w.13.oneBlockAtATime") {
+            return "1.19-alpha.22.13.oneblockatatime"
+        }
+        return proposedSemVer
+    }
+    
     static def addLoaderVersion(McVersion mcVersion) {
         if (mcVersion.loaderVersion == null) {
             println 'Creating new semver version...'
@@ -47,7 +54,7 @@ class Util {
                     sleep(250)
                 }
             }
-            mcVersion.loaderVersion = x.normalized
+            mcVersion.loaderVersion = fixupSemver(x.normalized)
             println 'Semver made for: ' + x.raw + ' as ' + x.normalized
         }
     }
