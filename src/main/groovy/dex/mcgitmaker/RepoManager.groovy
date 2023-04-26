@@ -20,7 +20,7 @@ import dex.mcgitmaker.loom.FileSystemUtil
 class RepoManager {
     Git git
     static String MAINLINE_LINEAR_BRANCH = "master"
-    static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]$)|(^\d.\d+(.\d+)?(-(pre|rc)\d$))/
+    static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]$)|(^\d.\d+(.\d+)?(-(pre|rc)\d|\_[a-z\_\-]+snapshot-\d+)$)/
 
     RepoManager() {
         this.git = setupRepo()

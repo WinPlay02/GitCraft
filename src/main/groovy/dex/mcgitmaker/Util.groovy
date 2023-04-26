@@ -40,6 +40,9 @@ class Util {
         if (proposedSemVer == "1.19-22.w.13.oneBlockAtATime") {
             return "1.19-alpha.22.13.oneblockatatime"
         }
+        if (proposedSemVer.contains("-Experimental")) {
+            return proposedSemVer.replace("-Experimental", "-alpha.00.00.Experimental")
+        }
         return proposedSemVer
     }
     

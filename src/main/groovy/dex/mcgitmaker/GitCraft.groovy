@@ -19,6 +19,8 @@ class GitCraft {
     
     public static final def REMOTE_CACHE = Paths.get(new File('.').canonicalPath).resolve('remote-cache')
     public static final def META_CACHE = REMOTE_CACHE.resolve('meta-cache')
+
+    public static final def SOURCE_EXTRA_VERSIONS = Paths.get(new File('.').canonicalPath).resolve('extra-versions')
     
     McMetadata mcMetadata
     TreeMap<SemanticVersion, McVersion> versions

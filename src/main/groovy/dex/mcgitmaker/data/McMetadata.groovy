@@ -51,8 +51,28 @@ class McMetadata {
                 data.put(v.id, createVersionData(v.id, v.url))
             }
         }
+        
+        for (File extra_version : SOURCE_EXTRA_VERSIONS.toFile().listFiles()) {
+            if (!extra_version.toPath().toString().endsWith('.json')) {
+                println 'Skipped extra version \'' + extra_version.toPath().toString() + '\' as it is not a .json file'
+                continue
+            }
+            def extra_version_object = createVersionDataFromExtra(extra_version.toPath(), data);
+            if(extra_version_object != null) {
+                data.put(extra_version_object.version, extra_version_object)
+                println 'Applied extra version \'' + extra_version_object.version + '\''
+            }
+        }
 
         return data
+    }
+
+    private static McVersion createVersionDataFromExtra(Path pExtraFile, LinkedHashMap<String, McVersion> dataVersions) {
+        def meta = new JsonSlurper().parseText(pExtraFile.toFile().text)
+        if (dataVersions.containsKey(meta.id)) {
+            return null;
+        }
+        return createVersionData(meta)
     }
 
     private static McVersion createVersionData(String metaID, String metaURL) {
@@ -77,9 +97,10 @@ class McMetadata {
             x_cache.createNewFile()
             x_cache.write(JsonOutput.toJson(meta))
         }
+        return createVersionData(meta)
+    }
         
-        
-
+    private static McVersion createVersionData(def meta) {
         def libs = new HashSet<Artifact>()
 
         // Ignores natives, not needed as we don't have a runtime
@@ -99,7 +120,7 @@ class McMetadata {
         }
 
         return new McVersion(version: meta.id, javaVersion: javaVersion,
-                mainClass: meta.mainClass, snapshot: meta.type == 'snapshot', artifacts: artifacts,
+                mainClass: meta.mainClass, snapshot: meta.type == 'snapshot' || meta.type == 'pending', artifacts: artifacts,
                 hasMappings: artifacts.hasMappings, libraries: libs, time: meta.time)
     }
 
