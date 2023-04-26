@@ -42,7 +42,8 @@ class McMetadata {
         if (METADATA_STORE.toFile().exists()) read = new JsonSlurper().parseText(METADATA_STORE.toFile().text) as LinkedHashMap<String, McVersion>
 
         read.each {s, v ->
-            data.put(s, v as McVersion)
+            def version = v as McVersion
+            data.put(s, version)
         }
 
         mcVersions.versions.each { v ->

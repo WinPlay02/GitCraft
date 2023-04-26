@@ -37,17 +37,21 @@ class RepoManager {
     void commitDecompiled(McVersion mcVersion) {
         def msg = mcVersion.version + '\n\nSemVer: ' + mcVersion.loaderVersion
 
-        def target_branch
+        def target_branch = MAINLINE_LINEAR_BRANCH
         if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
             target_branch = this.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.version : MAINLINE_LINEAR_BRANCH
             if (git.getRepository().getBranch() != target_branch) {
                 def target_ref = git.getRepository().getRefDatabase().findRef(target_branch)
                 if (target_ref == null) {
                     git.branchCreate().setName(target_branch).call()
+                } else {
+                    def tip_commit = target_ref.getObjectId()
+                    if (git.log().add(tip_commit).setRevFilter(new CommitMsgFilter(msg)).call().size() > 0) return
                 }
                 git.checkout().setName(target_branch).call()
+            } else {
+                if (git.log().setRevFilter(new CommitMsgFilter(msg)).call().size() > 0) return
             }
-            if (git.log().setRevFilter(new CommitMsgFilter(msg)).call().size() > 0) return
         }
 
         // Run from latest version
@@ -80,7 +84,7 @@ class RepoManager {
         PersonIdent author = new PersonIdent("Mojang", "gitcraft@decompiled.mc", version_date, TimeZone.getTimeZone("UTC"))
         git.commit().setAll(true).setMessage(msg).setAuthor(author).call()
 
-        println 'Commited ' + mcVersion.version + ' to the repository! (Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "")
+        println 'Commited ' + mcVersion.version + ' to the repository! (Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "") + ")"
     }
 
     def setupRepo() {
