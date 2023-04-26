@@ -50,8 +50,8 @@ class Util {
                 it.id == mcVersion.version
             }
             if (v != null) {
-                println 'Successfully looked up new semver version...'
                 mcVersion.loaderVersion = fixupSemver(v.normalized)
+                println 'Successfully looked up new semver version for: ' + mcVersion.version + ' as ' + mcVersion.loaderVersion
                 return
             }
 
@@ -71,7 +71,8 @@ class Util {
                 }
             }
             mcVersion.loaderVersion = fixupSemver(x.normalized)
-            println 'Semver made for: ' + x.raw + ' as ' + mcVersion.loaderVersion            println 'If generated semver is incorrect, it will break the order of the generated repo. ' +
+            println 'Semver made for: ' + x.raw + ' as ' + mcVersion.loaderVersion
+            println 'If generated semver is incorrect, it will break the order of the generated repo. ' +
                 'Consider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)'
         }
     }
