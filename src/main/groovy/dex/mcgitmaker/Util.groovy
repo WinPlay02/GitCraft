@@ -97,7 +97,7 @@ class Util {
         return ORDERED_MAP
     }
 
-    static List<McVersion> nonLinearVersionList(LinkedHashMap<String, McVersion> metadata) {
+    static TreeMap<SemanticVersion, McVersion> nonLinearVersionList(LinkedHashMap<String, McVersion> metadata) {
         def NONLINEAR_MAP = new TreeMap<SemanticVersion, McVersion>()
         println 'Putting non-linear MC versions into other list...'
         metadata.values().each {it ->
@@ -106,7 +106,7 @@ class Util {
                 NONLINEAR_MAP.put(SemanticVersion.parse(it.loaderVersion), it)
             }
         }
-        println 'The following versions are considered non-linear: ' + NONLINEAR_MAP.stream().map { it ->
+        println 'The following versions are considered non-linear: ' + NONLINEAR_MAP.values().stream().map { it ->
             it.version
         }.collect(Collectors.joining(", "))
         return NONLINEAR_MAP
