@@ -166,7 +166,7 @@ class Util {
 
     static LinkedHashMap<File, String> cached_hashes = new LinkedHashMap<File, String>()
     
-    static def calculateSHA1ChecksumInternal(file) {
+    static def calculateSHA1ChecksumInternal(File file) {
         if (cached_hashes.containsKey(file)) {
             return cached_hashes.get(file)
         }
@@ -227,13 +227,13 @@ class Util {
                         return true
                     }
                 } else {
-                    if (GitCraft.CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING && !useRemote) {
+                    if (GitCraft.CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING || useRemote) {
                         println "${fileVerbParticipleCap} ${outputFileKind} ${outputFileId} is valid (checksums match)"
                     }
                     return true
                 }
             } else {
-                if (GitCraft.CONFIG_VERIFY_CHECKSUMS && GitCraft.CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED && !useRemote) {
+                if (GitCraft.CONFIG_VERIFY_CHECKSUMS && (GitCraft.CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED || useRemote)) {
                     println "Validity cannot be determined for ${fileVerbParticiple} ${outputFileKind} ${outputFileId} (no checksum checked)"
                 }
                 return true
@@ -243,7 +243,7 @@ class Util {
     }
 
     static def downloadToFileWithChecksumIfNotExists(String url, Path output, String sha1sum, String outputFileKind, String outputFileId) {
-        def targetFile = output.toFile()
+        File targetFile = output.toFile()
         if (checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, false)) {
             return
         }

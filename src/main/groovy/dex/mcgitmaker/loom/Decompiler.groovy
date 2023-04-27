@@ -13,8 +13,11 @@ import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.charset.StandardCharsets
+import java.nio.file.StandardOpenOption
 
 import dex.mcgitmaker.loom.FileSystemUtil
+import dex.mcgitmaker.NIODirectoryResultSaver
 
 class Decompiler {
     private static final def NULL_IS = new PrintStream(OutputStream.nullOutputStream())
@@ -49,8 +52,9 @@ class Decompiler {
         if (!resultFsIt.hasNext()) {
             throw new RuntimeException("Zip FileSystem does not have any root directories")
         }
+        def targetJarRootPath = resultFsIt.next()
 
-        Fernflower ff = new Fernflower(Zips::getBytes, new DirectoryResultSaver(resultFsIt.next().toFile()), options, new PrintStreamLogger(NULL_IS)) // System.out
+        Fernflower ff = new Fernflower(Zips::getBytes, new NIODirectoryResultSaver(targetJarRootPath), options, new PrintStreamLogger(NULL_IS)) // System.out
 
         println 'Adding libraries...'
         for (Artifact library : mcVersion.libraries) {
@@ -67,7 +71,7 @@ class Decompiler {
         ff.decompileContext()
 
         println 'Writing dependencies file...'
-        writeLibraries(mcVersion)
+        writeLibraries(targetJarRootPath, mcVersion)
         
         println 'Closing temporary FileSystems delayed...'
         for (FileSystemUtil.Delegate fs : openFileSystems) {
@@ -75,8 +79,8 @@ class Decompiler {
         }
     }
 
-    private static void writeLibraries(McVersion mcVersion) {
-        def p = GitCraft.DECOMPILED_WORKINGS.resolve(mcVersion.version).resolve('dependencies.json')
+    private static void writeLibraries(Path parentDirectory, McVersion mcVersion) {
+        def p = parentDirectory.resolve('dependencies.json')
         def generator = new JsonGenerator.Options()
                 .excludeFieldsByName('containingPath')
                 .build()
@@ -87,9 +91,7 @@ class Decompiler {
         }
         c.push(new Artifact(url: '', name: 'Java ' + mcVersion.javaVersion, containingPath: ''))
 
-        def x = p.toFile()
-        x.createNewFile()
-        x.write(JsonOutput.prettyPrint(generator.toJson(c)))
+        Files.writeString(p, JsonOutput.prettyPrint(generator.toJson(c)), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
     }
 
     // Adapted from loom-quiltflower by Juuxel

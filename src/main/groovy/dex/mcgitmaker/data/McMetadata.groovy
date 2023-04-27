@@ -50,7 +50,7 @@ class McMetadata {
 
         mcVersions.versions.each { v ->
             if (!data.containsKey(v.id)) {
-                data.put(v.id, createVersionData(v.id, v.url, v.sha1))
+                data.put(v.id, createVersionDataFromLauncherMeta(v.id, v.url, v.sha1))
             }
         }
         
@@ -80,7 +80,7 @@ class McMetadata {
         return createVersionData(meta, pExtraFile, null)
     }
 
-    private static McVersion createVersionData(String metaID, String metaURL, String metaSha1) {
+    private static McVersion createVersionDataFromLauncherMeta(String metaID, String metaURL, String metaSha1) {
         def metaFile = META_CACHE.resolve(metaID + ".json").toFile()
         Util.downloadToFileWithChecksumIfNotExists(metaURL, metaFile.toPath(), metaSha1, "version meta", metaID)
         def meta = new JsonSlurper().parseText(metaFile.text)
