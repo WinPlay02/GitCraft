@@ -5,6 +5,8 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 import java.nio.file.Path
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 import static dex.mcgitmaker.GitCraft.*
 
@@ -75,14 +77,14 @@ class McMetadata {
         if (dataVersions.containsKey(meta.id)) {
             return null;
         }
-        return createVersionData(meta)
+        return createVersionData(meta, pExtraFile, null)
     }
 
     private static McVersion createVersionData(String metaID, String metaURL, String metaSha1) {
         def metaFile = META_CACHE.resolve(metaID + ".json").toFile()
         if (metaFile.exists()) {
-            def actualSha1 = Util.calculateSHA1Checksum(metaFile)
             if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
+                def actualSha1 = Util.calculateSHA1Checksum(metaFile)
                 if (!actualSha1.equalsIgnoreCase(metaSha1)) {
                     println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
                 } else {
@@ -91,14 +93,16 @@ class McMetadata {
                     }
                 }
             } else {
-                println 'Reading version meta locally for: ' + metaID + " (no checksum checked)"
+                if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED) {
+                    println 'Reading version meta locally for: ' + metaID + " (no checksum checked)"
+                }
             }
         } else {
             println 'Creating data for: ' + metaID
             Util.downloadToFile(metaURL, metaFile.toPath())
             // Checksum
-            def actualSha1 = Util.calculateSHA1Checksum(metaFile)
             if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
+                def actualSha1 = Util.calculateSHA1Checksum(metaFile)
                 if (!actualSha1.equalsIgnoreCase(metaSha1)) {
                     println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
                 } else {
@@ -109,10 +113,10 @@ class McMetadata {
             }
         }
         def meta = new JsonSlurper().parseText(metaFile.text)
-        return createVersionData(meta)
+        return createVersionData(meta, metaFile.toPath(), metaSha1)
     }
         
-    private static McVersion createVersionData(def meta) {
+    private static McVersion createVersionData(def meta, Path sourcePath, String metaSha1) {
         def libs = new HashSet<Artifact>()
 
         // Ignores natives, not needed as we don't have a runtime
@@ -128,9 +132,23 @@ class McMetadata {
 
         if (artifacts.hasMappings) {
             getMcArtifactRootPath(meta.id).toFile().mkdirs()
-            def x = getMcArtifactRootPath(meta.id).resolve('version.json').toFile()
-            x.createNewFile()
-            x.write(JsonOutput.toJson(meta))
+            Files.copy(sourcePath, getMcArtifactRootPath(meta.id).resolve('version.json'), StandardCopyOption.REPLACE_EXISTING)
+            if (CONFIG_VERIFY_CHECKSUMS) {
+                if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
+                    def actualSha1 = Util.calculateSHA1Checksum(getMcArtifactRootPath(meta.id).resolve('version.json').toFile())
+                    if (!actualSha1.equalsIgnoreCase(metaSha1)) {
+                        println 'Checksum of stored version meta ' + meta.id + " is " + actualSha1 + ", expected " + metaSha1
+                    } else {
+                        if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
+                            println 'Reading version meta locally for: ' + meta.id + " (checksums match)"
+                        }
+                    }
+                }  
+            } else {
+                if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED) {
+                    println 'Stored version meta: ' + meta.id + " (no checksum checked)"
+                }
+            }
         }
 
         return new McVersion(version: meta.id, javaVersion: javaVersion,
