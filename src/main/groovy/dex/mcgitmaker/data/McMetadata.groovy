@@ -112,6 +112,8 @@ class McMetadata {
                 libs.add(new Artifact(name: Artifact.nameFromUrl(d.downloads.artifact.url), url: d.downloads.artifact.url, containingPath: LIBRARY_STORE))
         }
 
+        fetchAssets(meta)
+
         def javaVersion = meta.javaVersion != null ? meta.javaVersion.majorVersion ?: 8 : 8
         def artifacts = getMcArtifacts(meta)
 
@@ -124,7 +126,54 @@ class McMetadata {
 
         return new McVersion(version: meta.id, javaVersion: javaVersion,
                 mainClass: meta.mainClass, snapshot: meta.type == 'snapshot' || meta.type == 'pending', artifacts: artifacts,
-                hasMappings: artifacts.hasMappings, libraries: libs, time: meta.time)
+                hasMappings: artifacts.hasMappings, libraries: libs, time: meta.time, assets_index: meta.assets)
+    }
+
+    private static def fetchAssetsIndex(String assetsId, String url) {
+        def assetsIndex
+        if (ASSETS_INDEX.resolve(assetsId + ".json").toFile().exists()) {
+            println 'Reading assets index locally for: ' + assetsId
+            assetsIndex = new JsonSlurper().parseText(ASSETS_INDEX.resolve(assetsId + ".json").toFile().text)
+        } else {
+            if(url != null) {
+                println 'Downloading assets index for ' + assetsId + " from: " + url
+                while (assetsIndex == null) {
+                    try { 
+                        assetsIndex = new JsonSlurper().parse(new URL(url))
+                    } catch(Exception e1) {
+                        println 'Failed to fetch URL ' + url
+                        sleep(500)
+                        println 'Retrying... '
+                    }
+                }
+                // Write Cached Metadata
+                def x_cache = ASSETS_INDEX.resolve(assetsId + ".json").toFile()
+                x_cache.createNewFile()
+                x_cache.write(JsonOutput.toJson(assetsIndex))
+            } else {
+                println 'Assets-Index ' + assetsId + ' is expected to be already downloaded but it is missing'
+                throw new RuntimeException("Assets-Index missing: " + assetsId)
+            }
+        }
+        return assetsIndex
+    }
+
+    private static def fetchAssets(def meta) {
+        def assetsIndex = fetchAssetsIndex(meta.assets, meta.assetIndex.url)
+        assetsIndex.objects.each{file_name, info -> 
+            new Artifact(name: info.hash, url: "https://resources.download.minecraft.net/" + info.hash.substring(0, 2) + "/" + info.hash, containingPath: ASSETS_OBJECTS).fetchArtifact()
+        }
+    }
+
+    public static def copyExternalAssetsToRepo(McVersion version) {
+        def assetsIndex = fetchAssetsIndex(version.assets_index, null)
+        def targetRoot = REPO.resolve('minecraft').resolve('resources').resolve('assets')
+        assetsIndex.objects.each{file_name, info -> 
+            def sourcePath = ASSETS_OBJECTS.resolve(info.hash)
+            def targetPath = targetRoot.resolve(file_name)
+            targetPath.parent.toFile().mkdirs()
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+        }
     }
 
     private static McArtifacts getMcArtifacts(def meta) {

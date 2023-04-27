@@ -16,11 +16,16 @@ class GitCraft {
     public static final def LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve('libraries')
     public static final def METADATA_STORE = MAIN_ARTIFACT_STORE.resolve('metadata.json')
     public static final def REMAPPED = MAIN_ARTIFACT_STORE.resolve('remapped-mc')
+    public static final def ASSETS_INDEX = MAIN_ARTIFACT_STORE.resolve('assets-index')
+    public static final def ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve('assets-objects')
     
     public static final def REMOTE_CACHE = Paths.get(new File('.').canonicalPath).resolve('remote-cache')
     public static final def META_CACHE = REMOTE_CACHE.resolve('meta-cache')
 
     public static final def SOURCE_EXTRA_VERSIONS = Paths.get(new File('.').canonicalPath).resolve('extra-versions')
+
+    public static final boolean CONFIG_LOAD_ASSETS = true
+    public static final boolean CONFIG_LOAD_ASSETS_EXTERN = true
     
     McMetadata mcMetadata
     TreeMap<SemanticVersion, McVersion> versions
@@ -34,9 +39,13 @@ class GitCraft {
         MC_VERSION_STORE.toFile().mkdirs()
         LIBRARY_STORE.toFile().mkdirs()
         REMAPPED.toFile().mkdirs()
+        ASSETS_INDEX.toFile().mkdirs()
+        ASSETS_OBJECTS.toFile().mkdirs()
         
         REMOTE_CACHE.toFile().mkdirs()
         META_CACHE.toFile().mkdirs()
+
+        SOURCE_EXTRA_VERSIONS.toFile().mkdirs()
     }
 
     GitCraft() {

@@ -31,6 +31,7 @@ class McVersion {
     String mergedJar // merged client and server
     
     String time
+    String assets_index
 
     File decompiledMc() {
         def p = Decompiler.decompiledPath(this)

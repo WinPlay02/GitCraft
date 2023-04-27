@@ -138,8 +138,14 @@ class RepoManager {
         
         // Copy assets & data (it makes sense to track them, atleast the data)
         try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.mergedJarPath())) {
-            copyLargeDir(fs.get().getPath("assets"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('assets'))
+            if (CONFIG_LOAD_ASSETS) {
+                copyLargeDir(fs.get().getPath("assets"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('assets'))
+            }
             copyLargeDir(fs.get().getPath("data"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('data'))
+        }
+
+        if (CONFIG_LOAD_ASSETS && CONFIG_LOAD_ASSETS_EXTERN) {
+            McMetadata.copyExternalAssetsToRepo(mcVersion)
         }
 
         // Make commit
