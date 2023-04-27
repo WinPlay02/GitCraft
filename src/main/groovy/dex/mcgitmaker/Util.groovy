@@ -45,7 +45,7 @@ class Util {
             return "1.16.3-combat.8"
         }
         if (proposedSemVer.contains("-Experimental")) {
-            return proposedSemVer.replace("-Experimental", "-alpha.00.00.Experimental")
+            return proposedSemVer.replace("-Experimental", "-alpha.0.0.Experimental")
         }
         return proposedSemVer
     }
