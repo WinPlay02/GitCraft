@@ -211,6 +211,55 @@ class Util {
         }
     }
 
+    static boolean checksumCheckFileIsValidAndExists(File targetFile, String sha1sum, String outputFileKind, String outputFileId, boolean useRemote) {
+        String fileVerbParticiple = useRemote ? "downloaded" : "read"
+        String fileVerbParticipleCap = useRemote ? "Downloaded" : "Read"
+        if (targetFile.exists()) {
+            if (sha1sum != null && GitCraft.CONFIG_VERIFY_CHECKSUMS) {
+                def actualSha1 = calculateSHA1Checksum(targetFile)
+                if (!actualSha1.equalsIgnoreCase(sha1sum)) {
+                    if (GitCraft.CONFIG_CHECKSUM_REMOVE_INVALID_FILES) {
+                        println "Checksum of ${fileVerbParticiple} ${outputFileKind} ${outputFileId} is ${actualSha1}, expected ${sha1sum}. The mismatching file will now be removed (checksums mismatch)"
+                        targetFile.delete()
+                        return false
+                    } else {
+                        println "Checksum of ${fileVerbParticiple} ${outputFileKind} ${outputFileId} is ${actualSha1}, expected ${sha1sum} (checksums mismatch)"
+                        return true
+                    }
+                } else {
+                    if (GitCraft.CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING && !useRemote) {
+                        println "${fileVerbParticipleCap} ${outputFileKind} ${outputFileId} is valid (checksums match)"
+                    }
+                    return true
+                }
+            } else {
+                if (GitCraft.CONFIG_VERIFY_CHECKSUMS && GitCraft.CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED && !useRemote) {
+                    println "Validity cannot be determined for ${fileVerbParticiple} ${outputFileKind} ${outputFileId} (no checksum checked)"
+                }
+                return true
+            }
+        }
+        return false
+    }
+
+    static def downloadToFileWithChecksumIfNotExists(String url, Path output, String sha1sum, String outputFileKind, String outputFileId) {
+        def targetFile = output.toFile()
+        if (checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, false)) {
+            return
+        }
+        do {
+            try { 
+                println "Fetching ${outputFileKind} ${outputFileId} from: ${url}"
+                def open_stream = new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream()
+                Files.copy(open_stream, output, StandardCopyOption.REPLACE_EXISTING)
+                open_stream.close()
+            } catch(Exception e1) {
+                println "Failed to fetch URL (retrying in ${GitCraft.CONFIG_FAILED_FETCH_RETRY_INTERVAL}ms): ${url}"
+                sleep(GitCraft.CONFIG_FAILED_FETCH_RETRY_INTERVAL)
+            }
+        } while(!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true))
+    }
+
     enum Outlet {
         INSTANCE();
 

@@ -22,37 +22,7 @@ class Artifact {
     }
 
     void ensureArtifactPresence(Path p) {
-        def f = p.toFile()
-        if (f.exists() && this.sha1sum != null && CONFIG_VERIFY_CHECKSUMS) {
-            def actualSha1 = Util.calculateSHA1Checksum(f)
-            if (!actualSha1.equalsIgnoreCase(sha1sum)) {
-                println 'Checksum of artifact ' + name + " is " + actualSha1 + ", expected " + sha1sum
-            } else {
-                if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
-                    println 'Reading artifact locally for: ' + name + " (checksums match)"
-                }
-            }
-        }
-        if (!f.exists()) {
-            p.parent.toFile().mkdirs()
-            println 'Missing artifact: ' + name + ' At: ' + containingPath
-            println 'Attempting to download...'
-            println 'Downloading ' + url + '...'
-
-            // p.withOutputStream { it << new URL(url).newInputStream() }
-            // p.withOutputStream { it <<  }
-            Util.downloadToFile(url, p)
-            def actualSha1 = Util.calculateSHA1Checksum(f)
-            if (this.sha1sum != null && CONFIG_VERIFY_CHECKSUMS) {
-                if (!actualSha1.equalsIgnoreCase(sha1sum)) {
-                    println 'Checksum of artifact ' + name + " is " + actualSha1 + ", expected " + sha1sum
-                } else {
-                    println 'Reading artifact locally for: ' + name + " (checksums match)"
-                }
-            } else {
-                println 'Finished! (no checksum checked)'
-            }
-        }
+        Util.downloadToFileWithChecksumIfNotExists(url, p, sha1sum, "artifact", name)
     }
 
     Path getContainingPath() {

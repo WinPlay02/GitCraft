@@ -82,36 +82,7 @@ class McMetadata {
 
     private static McVersion createVersionData(String metaID, String metaURL, String metaSha1) {
         def metaFile = META_CACHE.resolve(metaID + ".json").toFile()
-        if (metaFile.exists()) {
-            if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
-                def actualSha1 = Util.calculateSHA1Checksum(metaFile)
-                if (!actualSha1.equalsIgnoreCase(metaSha1)) {
-                    println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
-                } else {
-                    if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
-                        println 'Reading version meta locally for: ' + metaID + " (checksums match)"
-                    }
-                }
-            } else {
-                if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED) {
-                    println 'Reading version meta locally for: ' + metaID + " (no checksum checked)"
-                }
-            }
-        } else {
-            println 'Creating data for: ' + metaID
-            Util.downloadToFile(metaURL, metaFile.toPath())
-            // Checksum
-            if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
-                def actualSha1 = Util.calculateSHA1Checksum(metaFile)
-                if (!actualSha1.equalsIgnoreCase(metaSha1)) {
-                    println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
-                } else {
-                    println 'Version meta data download finished: ' + metaID + " (checksums match)"
-                }
-            } else {
-                println 'Version meta data download finished: ' + metaID + " (no checksum checked)"
-            }
-        }
+        Util.downloadToFileWithChecksumIfNotExists(metaURL, metaFile.toPath(), metaSha1, "version meta", metaID)
         def meta = new JsonSlurper().parseText(metaFile.text)
         return createVersionData(meta, metaFile.toPath(), metaSha1)
     }
@@ -132,22 +103,10 @@ class McMetadata {
 
         if (artifacts.hasMappings) {
             getMcArtifactRootPath(meta.id).toFile().mkdirs()
-            Files.copy(sourcePath, getMcArtifactRootPath(meta.id).resolve('version.json'), StandardCopyOption.REPLACE_EXISTING)
-            if (CONFIG_VERIFY_CHECKSUMS) {
-                if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
-                    def actualSha1 = Util.calculateSHA1Checksum(getMcArtifactRootPath(meta.id).resolve('version.json').toFile())
-                    if (!actualSha1.equalsIgnoreCase(metaSha1)) {
-                        println 'Checksum of stored version meta ' + meta.id + " is " + actualSha1 + ", expected " + metaSha1
-                    } else {
-                        if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
-                            println 'Reading version meta locally for: ' + meta.id + " (checksums match)"
-                        }
-                    }
-                }  
-            } else {
-                if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED) {
-                    println 'Stored version meta: ' + meta.id + " (no checksum checked)"
-                }
+            def targetPath = getMcArtifactRootPath(meta.id).resolve('version.json')
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            if (!Util.checksumCheckFileIsValidAndExists(targetPath.toFile(), metaSha1, "stored version meta", meta.id, false)) {
+                throw new RuntimeException("A valid stored version meta for ${meta.id} does not exist")
             }
         }
 
@@ -157,42 +116,15 @@ class McMetadata {
     }
 
     private static def fetchAssetsIndex(String assetsId, String url, String sha1Hash) {
-        def assetsIndex
         def targetFile = ASSETS_INDEX.resolve(assetsId + ".json").toFile()
-        if (targetFile.exists()) {
-            def actualSha1 = Util.calculateSHA1Checksum(targetFile)
-            if (sha1Hash != null && CONFIG_VERIFY_CHECKSUMS) {
-                if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
-                    println 'Checksum of assets index ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
-                } else {
-                    if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
-                        println 'Reading assets index locally for: ' + assetsId + " (checksums match)"
-                    }
-                }
-            } else {
-                println 'Reading assets index locally for: ' + assetsId + " (no checksum checked)"
-            }
-        } else {
-            if(url != null) {
-                println 'Downloading assets index for ' + assetsId + " from: " + url
-                Util.downloadToFile(url, targetFile.toPath())
-                // Checksum
-                def actualSha1 = Util.calculateSHA1Checksum(targetFile)
-                if (sha1Hash != null && CONFIG_VERIFY_CHECKSUMS) {
-                    if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
-                        println 'Checksum of downloaded assets index ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
-                    } else {
-                        println 'assets index download finished: ' + assetsId + " (checksums match)"
-                    }
-                } else {
-                    println 'assets index download finished: ' + assetsId + " (no checksum checked)"
-                }
-            } else {
-                println 'Assets-Index ' + assetsId + ' is expected to be already downloaded but it is missing'
-                throw new RuntimeException("Assets-Index missing: " + assetsId)
-            }
+
+        if (!Util.checksumCheckFileIsValidAndExists(targetFile, sha1Hash, "assets index", assetsId, false) && url == null) {
+            throw new RuntimeException("assets index ${assetsId} is expected to be already downloaded but it is missing")
         }
-        assetsIndex = new JsonSlurper().parseText(targetFile.text)
+
+        Util.downloadToFileWithChecksumIfNotExists(url, targetFile.toPath(), sha1Hash, "assets index", assetsId)
+
+        def assetsIndex = new JsonSlurper().parseText(targetFile.text)
         return assetsIndex
     }
 
