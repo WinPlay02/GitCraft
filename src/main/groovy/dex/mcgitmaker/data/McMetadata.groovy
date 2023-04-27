@@ -87,7 +87,9 @@ class McMetadata {
                 if (!actualSha1.equalsIgnoreCase(metaSha1)) {
                     println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
                 } else {
-                    println 'Reading version meta locally for: ' + metaID + " (checksums match)"
+                    if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
+                        println 'Reading version meta locally for: ' + metaID + " (checksums match)"
+                    }
                 }
             } else {
                 println 'Reading version meta locally for: ' + metaID + " (no checksum checked)"
@@ -158,7 +160,9 @@ class McMetadata {
                 if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
                     println 'Checksum of ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
                 } else {
-                    println 'Reading assets index locally for: ' + assetsId + " (checksums match)"
+                    if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
+                        println 'Reading assets index locally for: ' + assetsId + " (checksums match)"
+                    }
                 }
             } else {
                 println 'Reading assets index locally for: ' + assetsId + " (no checksum checked)"

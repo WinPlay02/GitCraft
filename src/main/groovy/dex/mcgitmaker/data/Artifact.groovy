@@ -28,7 +28,9 @@ class Artifact {
             if (!actualSha1.equalsIgnoreCase(sha1sum)) {
                 println 'Checksum of artifact ' + name + " is " + actualSha1 + ", expected " + sha1sum
             } else {
-                println 'Reading artifact locally for: ' + name + " (checksums match)"
+                if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
+                    println 'Reading artifact locally for: ' + name + " (checksums match)"
+                }
             }
         }
         if (!f.exists()) {
