@@ -5,10 +5,14 @@ import java.nio.file.Paths
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
+import static dex.mcgitmaker.GitCraft.*
+import dex.mcgitmaker.Util
+
 class Artifact {
     String url // Download URL
     String name // File name
     String containingPath
+    String sha1sum = null
 
     File fetchArtifact() {
         def path = getContainingPath().resolve(name)
@@ -19,6 +23,14 @@ class Artifact {
 
     void ensureArtifactPresence(Path p) {
         def f = p.toFile()
+        if (f.exists() && this.sha1sum != null && CONFIG_VERIFY_CHECKSUMS) {
+            def actualSha1 = Util.calculateSHA1Checksum(f)
+            if (!actualSha1.equalsIgnoreCase(sha1sum)) {
+                println 'Checksum of artifact ' + name + " is " + actualSha1 + ", expected " + sha1sum
+            } else {
+                println 'Reading artifact locally for: ' + name + " (checksums match)"
+            }
+        }
         if (!f.exists()) {
             p.parent.toFile().mkdirs()
             println 'Missing artifact: ' + name + ' At: ' + containingPath
@@ -30,7 +42,16 @@ class Artifact {
             def open_stream = new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream()
             Files.copy(open_stream, p, StandardCopyOption.REPLACE_EXISTING)
             open_stream.close()
-            println 'Finished!'
+            def actualSha1 = Util.calculateSHA1Checksum(f)
+            if (this.sha1sum != null && CONFIG_VERIFY_CHECKSUMS) {
+                if (!actualSha1.equalsIgnoreCase(sha1sum)) {
+                    println 'Checksum of artifact ' + name + " is " + actualSha1 + ", expected " + sha1sum
+                } else {
+                    println 'Reading artifact locally for: ' + name + " (checksums match)"
+                }
+            } else {
+                println 'Finished! (no checksum checked)'
+            }
         }
     }
 

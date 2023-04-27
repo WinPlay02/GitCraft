@@ -48,7 +48,7 @@ class McMetadata {
 
         mcVersions.versions.each { v ->
             if (!data.containsKey(v.id)) {
-                data.put(v.id, createVersionData(v.id, v.url))
+                data.put(v.id, createVersionData(v.id, v.url, v.sha1))
             }
         }
         
@@ -78,12 +78,21 @@ class McMetadata {
         return createVersionData(meta)
     }
 
-    private static McVersion createVersionData(String metaID, String metaURL) {
+    private static McVersion createVersionData(String metaID, String metaURL, String metaSha1) {
         def meta = null
-        
-        if (META_CACHE.resolve(metaID + ".json").toFile().exists()) {
-            println 'Reading data locally for: ' + metaID
-            meta = new JsonSlurper().parseText(META_CACHE.resolve(metaID + ".json").toFile().text)
+        def metaFile = META_CACHE.resolve(metaID + ".json").toFile()
+        if (metaFile.exists()) {
+            def actualSha1 = Util.calculateSHA1Checksum(metaFile)
+            if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
+                if (!actualSha1.equalsIgnoreCase(metaSha1)) {
+                    println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
+                } else {
+                    println 'Reading version meta locally for: ' + metaID + " (checksums match)"
+                }
+            } else {
+                println 'Reading version meta locally for: ' + metaID + " (no checksum checked)"
+            }
+            meta = new JsonSlurper().parseText(metaFile.text)
         } else {
             println 'Creating data for: ' + metaID
             while (meta == null) {
@@ -96,9 +105,20 @@ class McMetadata {
                 }
             }
             // Write Cached Metadata
-            def x_cache = META_CACHE.resolve(metaID + ".json").toFile()
+            def x_cache = metaFile
             x_cache.createNewFile()
             x_cache.write(JsonOutput.toJson(meta))
+            // Checksum
+            def actualSha1 = Util.calculateSHA1Checksum(metaFile)
+            if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
+                if (!actualSha1.equalsIgnoreCase(metaSha1)) {
+                    println 'Checksum of version meta ' + metaID + " is " + actualSha1 + ", expected " + metaSha1
+                } else {
+                    println 'Version meta data download finished: ' + metaID + " (checksums match)"
+                }
+            } else {
+                println 'Version meta data download finished: ' + metaID + " (no checksum checked)"
+            }
         }
         return createVersionData(meta)
     }
@@ -109,7 +129,7 @@ class McMetadata {
         // Ignores natives, not needed as we don't have a runtime
         meta.libraries.each { d ->
             if (d.downloads.artifact != null)
-                libs.add(new Artifact(name: Artifact.nameFromUrl(d.downloads.artifact.url), url: d.downloads.artifact.url, containingPath: LIBRARY_STORE))
+                libs.add(new Artifact(name: Artifact.nameFromUrl(d.downloads.artifact.url), url: d.downloads.artifact.url, containingPath: LIBRARY_STORE, sha1sum: d.downloads.artifact.sha1))
         }
 
         fetchAssets(meta)
@@ -129,11 +149,21 @@ class McMetadata {
                 hasMappings: artifacts.hasMappings, libraries: libs, time: meta.time, assets_index: meta.assets)
     }
 
-    private static def fetchAssetsIndex(String assetsId, String url) {
+    private static def fetchAssetsIndex(String assetsId, String url, String sha1Hash) {
         def assetsIndex
-        if (ASSETS_INDEX.resolve(assetsId + ".json").toFile().exists()) {
-            println 'Reading assets index locally for: ' + assetsId
-            assetsIndex = new JsonSlurper().parseText(ASSETS_INDEX.resolve(assetsId + ".json").toFile().text)
+        def targetFile = ASSETS_INDEX.resolve(assetsId + ".json").toFile()
+        if (targetFile.exists()) {
+            def actualSha1 = Util.calculateSHA1Checksum(targetFile)
+            if (sha1Hash != null && CONFIG_VERIFY_CHECKSUMS) {
+                if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
+                    println 'Checksum of ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
+                } else {
+                    println 'Reading assets index locally for: ' + assetsId + " (checksums match)"
+                }
+            } else {
+                println 'Reading assets index locally for: ' + assetsId + " (no checksum checked)"
+            }
+            assetsIndex = new JsonSlurper().parseText(targetFile.text)
         } else {
             if(url != null) {
                 println 'Downloading assets index for ' + assetsId + " from: " + url
@@ -147,9 +177,20 @@ class McMetadata {
                     }
                 }
                 // Write Cached Metadata
-                def x_cache = ASSETS_INDEX.resolve(assetsId + ".json").toFile()
+                def x_cache = targetFile
                 x_cache.createNewFile()
                 x_cache.write(JsonOutput.toJson(assetsIndex))
+                // Checksum
+                def actualSha1 = Util.calculateSHA1Checksum(targetFile)
+                if (sha1Hash != null && CONFIG_VERIFY_CHECKSUMS) {
+                    if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
+                        println 'Checksum of downloaded ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
+                    } else {
+                        println 'assets index download finished: ' + assetsId + " (checksums match)"
+                    }
+                } else {
+                    println 'assets index download finished: ' + assetsId + " (no checksum checked)"
+                }
             } else {
                 println 'Assets-Index ' + assetsId + ' is expected to be already downloaded but it is missing'
                 throw new RuntimeException("Assets-Index missing: " + assetsId)
@@ -159,14 +200,14 @@ class McMetadata {
     }
 
     private static def fetchAssets(def meta) {
-        def assetsIndex = fetchAssetsIndex(meta.assets, meta.assetIndex.url)
+        def assetsIndex = fetchAssetsIndex(meta.assets, meta.assetIndex.url, meta.assetIndex.sha1)
         assetsIndex.objects.each{file_name, info -> 
-            new Artifact(name: info.hash, url: "https://resources.download.minecraft.net/" + info.hash.substring(0, 2) + "/" + info.hash, containingPath: ASSETS_OBJECTS).fetchArtifact()
+            new Artifact(name: info.hash, url: "https://resources.download.minecraft.net/" + info.hash.substring(0, 2) + "/" + info.hash, containingPath: ASSETS_OBJECTS, sha1sum: info.hash).fetchArtifact()
         }
     }
 
     public static def copyExternalAssetsToRepo(McVersion version) {
-        def assetsIndex = fetchAssetsIndex(version.assets_index, null)
+        def assetsIndex = fetchAssetsIndex(version.assets_index, null, null)
         def targetRoot = REPO.resolve('minecraft').resolve('resources').resolve('assets')
         assetsIndex.objects.each{file_name, info -> 
             def sourcePath = ASSETS_OBJECTS.resolve(info.hash)
@@ -179,15 +220,17 @@ class McMetadata {
     private static McArtifacts getMcArtifacts(def meta) {
         Tuple2<Path, String> client = getMcArtifactData(meta.id, meta.downloads.client.url)
         def cmUrl = meta.downloads.client_mappings != null ? meta.downloads.client_mappings.url : ''
+        def cmSha1 = meta.downloads.client_mappings != null ? meta.downloads.client_mappings.sha1 : null
         def smUrl = meta.downloads.server_mappings != null ? meta.downloads.server_mappings.url : ''
+        def smSha1 = meta.downloads.server_mappings != null ? meta.downloads.server_mappings.sha1 : null
         Tuple2<Path, String> client_mapping = getMcArtifactData(meta.id, cmUrl)
         Tuple2<Path, String> server = getMcArtifactData(meta.id, meta.downloads.server != null ? meta.downloads.server.url : '')
         Tuple2<Path, String> server_mapping = getMcArtifactData(meta.id, smUrl)
 
-        def clientArtifact = new Artifact(containingPath: client.getV1(), url: meta.downloads.client.url, name: client.getV2())
-        def clientMappingArtifact = new Artifact(containingPath: client_mapping.getV1(), url: cmUrl, name: client_mapping.getV2())
-        def serverArtifact = new Artifact(containingPath: server.getV1(), url: meta.downloads.server != null ? meta.downloads.server.url : '', name: server.getV2())
-        def serverMappingArtifact = new Artifact(containingPath: server_mapping.getV1(), url: smUrl, name: server_mapping.getV2())
+        def clientArtifact = new Artifact(containingPath: client.getV1(), url: meta.downloads.client.url, name: client.getV2(), sha1sum: meta.downloads.client.sha1)
+        def clientMappingArtifact = new Artifact(containingPath: client_mapping.getV1(), url: cmUrl, name: client_mapping.getV2(), sha1sum: cmSha1)
+        def serverArtifact = new Artifact(containingPath: server.getV1(), url: meta.downloads.server != null ? meta.downloads.server.url : '', name: server.getV2(), sha1sum: meta.downloads.server != null ? meta.downloads.server.sha1 : '')
+        def serverMappingArtifact = new Artifact(containingPath: server_mapping.getV1(), url: smUrl, name: server_mapping.getV2(), sha1sum: smSha1)
 
         boolean hasMappings = smUrl != '' && smUrl != ''
         return new McArtifacts(hasMappings: hasMappings, clientJar: clientArtifact, clientMappings: clientMappingArtifact, serverJar: serverArtifact, serverMappings: serverMappingArtifact)

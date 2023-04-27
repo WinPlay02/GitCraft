@@ -26,6 +26,7 @@ class GitCraft {
 
     public static final boolean CONFIG_LOAD_ASSETS = true
     public static final boolean CONFIG_LOAD_ASSETS_EXTERN = true
+    public static final boolean CONFIG_VERIFY_CHECKSUMS = true
     
     McMetadata mcMetadata
     TreeMap<SemanticVersion, McVersion> versions

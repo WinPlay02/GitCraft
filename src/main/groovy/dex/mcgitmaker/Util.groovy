@@ -15,6 +15,7 @@ import java.nio.file.Paths
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.stream.Collectors
+import java.security.MessageDigest
 
 class Util {
     static enum MappingsNamespace {
@@ -152,6 +153,39 @@ class Util {
 
             println 'Remapped ' + po + ' to ' + artifact.containingPath
         }
+    }
+
+    static def calculateSHA1Checksum(file) {
+        if (GitCraft.CONFIG_VERIFY_CHECKSUMS) {
+            return calculateSHA1ChecksumInternal(file)
+        }
+        return null
+    }
+    
+    static def calculateSHA1ChecksumInternal(file) {
+        def digest = MessageDigest.getInstance("SHA1")
+        def inputstream = file.newInputStream()
+        def buffer = new byte[16384]
+        def len
+
+        while ((len=inputstream.read(buffer)) > 0) {
+            digest.update(buffer, 0, len)
+        }
+        def sha1sum = digest.digest()
+
+        def hexsum = ""
+        for (byte b : sha1sum) {
+            hexsum += toHex(b)
+        }
+        return hexsum
+    }
+
+    private static hexChr(int b) {
+        return Integer.toHexString(b & 0xF)
+    }
+
+    private static toHex(int b) {
+        return hexChr((b & 0xF0) >> 4) + hexChr(b & 0x0F)
     }
 
     enum Outlet {
