@@ -200,14 +200,14 @@ class McMetadata {
     }
 
     private static def fetchAssets(def meta) {
-        def assetsIndex = fetchAssetsIndex(meta.assets, meta.assetIndex.url, meta.assetIndex.sha1)
+        def assetsIndex = fetchAssetsIndex(meta.id + "_" + meta.assets, meta.assetIndex.url, meta.assetIndex.sha1)
         assetsIndex.objects.each{file_name, info -> 
             new Artifact(name: info.hash, url: "https://resources.download.minecraft.net/" + info.hash.substring(0, 2) + "/" + info.hash, containingPath: ASSETS_OBJECTS, sha1sum: info.hash).fetchArtifact()
         }
     }
 
     public static def copyExternalAssetsToRepo(McVersion version) {
-        def assetsIndex = fetchAssetsIndex(version.assets_index, null, null)
+        def assetsIndex = fetchAssetsIndex(version.version + "_" + version.assets_index, null, null)
         def targetRoot = REPO.resolve('minecraft').resolve('resources').resolve('assets')
         assetsIndex.objects.each{file_name, info -> 
             def sourcePath = ASSETS_OBJECTS.resolve(info.hash)

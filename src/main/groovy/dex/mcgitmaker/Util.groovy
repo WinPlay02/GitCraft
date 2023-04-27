@@ -161,8 +161,13 @@ class Util {
         }
         return null
     }
+
+    static LinkedHashMap<File, String> cached_hashes = new LinkedHashMap<File, String>()
     
     static def calculateSHA1ChecksumInternal(file) {
+        if (cached_hashes.containsKey(file)) {
+            return cached_hashes.get(file)
+        }
         def digest = MessageDigest.getInstance("SHA1")
         def inputstream = file.newInputStream()
         def buffer = new byte[16384]
@@ -177,6 +182,7 @@ class Util {
         for (byte b : sha1sum) {
             hexsum += toHex(b)
         }
+        cached_hashes.put(file, hexsum)
         return hexsum
     }
 
