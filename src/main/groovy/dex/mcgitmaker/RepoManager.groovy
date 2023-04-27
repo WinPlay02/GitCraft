@@ -16,6 +16,8 @@ import java.util.stream.Stream
 import java.util.regex.Pattern
 
 import dex.mcgitmaker.loom.FileSystemUtil
+import static dex.mcgitmaker.GitCraft.*
+import dex.mcgitmaker.data.McMetadata
 
 class RepoManager {
     Git git

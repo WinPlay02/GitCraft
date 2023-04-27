@@ -205,7 +205,7 @@ class McMetadata {
 
     public static def copyExternalAssetsToRepo(McVersion version) {
         def assetsIndex = fetchAssetsIndex(version.version + "_" + version.assets_index, null, null)
-        def targetRoot = REPO.resolve('minecraft').resolve('resources').resolve('assets')
+        def targetRoot = REPO.resolve('minecraft').resolve('external-resources').resolve('assets')
         assetsIndex.objects.each{file_name, info -> 
             def sourcePath = ASSETS_OBJECTS.resolve(info.hash)
             def targetPath = targetRoot.resolve(file_name)
