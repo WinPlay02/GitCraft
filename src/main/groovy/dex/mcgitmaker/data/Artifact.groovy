@@ -41,9 +41,7 @@ class Artifact {
 
             // p.withOutputStream { it << new URL(url).newInputStream() }
             // p.withOutputStream { it <<  }
-            def open_stream = new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream()
-            Files.copy(open_stream, p, StandardCopyOption.REPLACE_EXISTING)
-            open_stream.close()
+            Util.downloadToFile(url, p)
             def actualSha1 = Util.calculateSHA1Checksum(f)
             if (this.sha1sum != null && CONFIG_VERIFY_CHECKSUMS) {
                 if (!actualSha1.equalsIgnoreCase(sha1sum)) {

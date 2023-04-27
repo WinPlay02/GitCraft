@@ -12,6 +12,8 @@ import net.fabricmc.loader.impl.game.minecraft.McVersionLookup
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.stream.Collectors
@@ -192,6 +194,21 @@ class Util {
 
     private static toHex(int b) {
         return hexChr((b & 0xF0) >> 4) + hexChr(b & 0x0F)
+    }
+
+    static def downloadToFile(String url, Path output) {
+        while(true) {
+            try { 
+                def open_stream = new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream()
+                Files.copy(open_stream, output, StandardCopyOption.REPLACE_EXISTING)
+                open_stream.close()
+                return
+            } catch(Exception e1) {
+                println 'Failed to fetch URL: ' + url
+                sleep(500)
+                println 'Retrying... '
+            }
+        }
     }
 
     enum Outlet {

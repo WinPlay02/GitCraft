@@ -79,7 +79,6 @@ class McMetadata {
     }
 
     private static McVersion createVersionData(String metaID, String metaURL, String metaSha1) {
-        def meta = null
         def metaFile = META_CACHE.resolve(metaID + ".json").toFile()
         if (metaFile.exists()) {
             def actualSha1 = Util.calculateSHA1Checksum(metaFile)
@@ -94,22 +93,9 @@ class McMetadata {
             } else {
                 println 'Reading version meta locally for: ' + metaID + " (no checksum checked)"
             }
-            meta = new JsonSlurper().parseText(metaFile.text)
         } else {
             println 'Creating data for: ' + metaID
-            while (meta == null) {
-                try { 
-                    meta = new JsonSlurper().parse(new URL(metaURL))
-                } catch(Exception e1) {
-                    println 'Failed to fetch URL ' + metaURL
-                    sleep(500)
-                    println 'Retrying... '
-                }
-            }
-            // Write Cached Metadata
-            def x_cache = metaFile
-            x_cache.createNewFile()
-            x_cache.write(JsonOutput.toJson(meta))
+            Util.downloadToFile(metaURL, metaFile.toPath())
             // Checksum
             def actualSha1 = Util.calculateSHA1Checksum(metaFile)
             if (metaSha1 != null && CONFIG_VERIFY_CHECKSUMS) {
@@ -122,6 +108,7 @@ class McMetadata {
                 println 'Version meta data download finished: ' + metaID + " (no checksum checked)"
             }
         }
+        def meta = new JsonSlurper().parseText(metaFile.text)
         return createVersionData(meta)
     }
         
@@ -158,7 +145,7 @@ class McMetadata {
             def actualSha1 = Util.calculateSHA1Checksum(targetFile)
             if (sha1Hash != null && CONFIG_VERIFY_CHECKSUMS) {
                 if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
-                    println 'Checksum of ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
+                    println 'Checksum of assets index ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
                 } else {
                     if (CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING) {
                         println 'Reading assets index locally for: ' + assetsId + " (checksums match)"
@@ -167,28 +154,15 @@ class McMetadata {
             } else {
                 println 'Reading assets index locally for: ' + assetsId + " (no checksum checked)"
             }
-            assetsIndex = new JsonSlurper().parseText(targetFile.text)
         } else {
             if(url != null) {
                 println 'Downloading assets index for ' + assetsId + " from: " + url
-                while (assetsIndex == null) {
-                    try { 
-                        assetsIndex = new JsonSlurper().parse(new URL(url))
-                    } catch(Exception e1) {
-                        println 'Failed to fetch URL ' + url
-                        sleep(500)
-                        println 'Retrying... '
-                    }
-                }
-                // Write Cached Metadata
-                def x_cache = targetFile
-                x_cache.createNewFile()
-                x_cache.write(JsonOutput.toJson(assetsIndex))
+                Util.downloadToFile(url, targetFile.toPath())
                 // Checksum
                 def actualSha1 = Util.calculateSHA1Checksum(targetFile)
                 if (sha1Hash != null && CONFIG_VERIFY_CHECKSUMS) {
                     if (!actualSha1.equalsIgnoreCase(sha1Hash)) {
-                        println 'Checksum of downloaded ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
+                        println 'Checksum of downloaded assets index ' + assetsId + ".json is " + actualSha1 + ", expected " + sha1Hash
                     } else {
                         println 'assets index download finished: ' + assetsId + " (checksums match)"
                     }
@@ -200,6 +174,7 @@ class McMetadata {
                 throw new RuntimeException("Assets-Index missing: " + assetsId)
             }
         }
+        assetsIndex = new JsonSlurper().parseText(targetFile.text)
         return assetsIndex
     }
 
