@@ -250,7 +250,7 @@ class Util {
         do {
             try { 
                 println "Fetching ${outputFileKind} ${outputFileId} from: ${url}"
-                def open_stream = new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream()
+                InputStream open_stream = new BufferedInputStream(new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream())
                 Files.copy(open_stream, output, StandardCopyOption.REPLACE_EXISTING)
                 open_stream.close()
             } catch(Exception e1) {

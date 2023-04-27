@@ -136,7 +136,9 @@ class RepoManager {
 
         // Copy decompiled MC to repo directory
         println 'Moving files to repo...'
-        copyLargeDir(mcVersion.decompiledMc().toPath(), GitCraft.REPO.resolve('minecraft').resolve('src'))
+        try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.decompiledMc().toPath())) {
+            copyLargeDir(fs.get().getPath("."), GitCraft.REPO.resolve('minecraft').resolve('src'))
+        }
         
         // Copy assets & data (it makes sense to track them, atleast the data)
         try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.mergedJarPath())) {

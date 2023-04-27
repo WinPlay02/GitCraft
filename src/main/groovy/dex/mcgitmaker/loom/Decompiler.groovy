@@ -20,7 +20,7 @@ class Decompiler {
     private static final def NULL_IS = new PrintStream(OutputStream.nullOutputStream())
 
     static Path decompiledPath(McVersion mcVersion) {
-        return GitCraft.DECOMPILED_WORKINGS.resolve(mcVersion.version)
+        return GitCraft.DECOMPILED_WORKINGS.resolve(mcVersion.version + ".jar")
     }
 
     // Adapted from loom-quiltflower by Juuxel
@@ -42,9 +42,15 @@ class Decompiler {
         options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
         //options.putAll(ReflectionUtil.<Map<String, String>>maybeGetFieldOrRecordComponent(metaData, "options").orElse(Map.of()));
 
-        Fernflower ff = new Fernflower(Zips::getBytes, new DirectoryResultSaver(decompiledPath(mcVersion).toFile()), options, new PrintStreamLogger(NULL_IS)) // System.out
-        
         java.util.List<FileSystemUtil.Delegate> openFileSystems = new java.util.ArrayList<>()
+        FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath(mcVersion), true)
+        openFileSystems.add(decompiledJar)
+        def resultFsIt = decompiledJar.get().getRootDirectories().iterator()
+        if (!resultFsIt.hasNext()) {
+            throw new RuntimeException("Zip FileSystem does not have any root directories")
+        }
+
+        Fernflower ff = new Fernflower(Zips::getBytes, new DirectoryResultSaver(resultFsIt.next().toFile()), options, new PrintStreamLogger(NULL_IS)) // System.out
 
         println 'Adding libraries...'
         for (Artifact library : mcVersion.libraries) {
