@@ -156,7 +156,7 @@ class RepoManager {
         git.add().addFilepattern(".").call()
         java.util.Date version_date = new java.util.Date(java.time.OffsetDateTime.parse(mcVersion.time).toInstant().toEpochMilli())
         PersonIdent author = new PersonIdent("Mojang", "gitcraft@decompiled.mc", version_date, TimeZone.getTimeZone("UTC"))
-        git.commit().setAll(true).setMessage(msg).setAuthor(author).call()
+        git.commit().setAll(true).setMessage(msg).setAuthor(author).setCommitter(author).call()
 
         println 'Commited ' + mcVersion.version + ' to the repository! (Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "") + ")"
     }
