@@ -8,7 +8,7 @@ import dex.mcgitmaker.loom.Remapper
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.MappingFormat
 import net.fabricmc.mappingio.format.ProGuardReader
-import net.fabricmc.mappingio.format.Tiny2Writer
+import net.fabricmc.mappingio.MappingWriter
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 import net.fabricmc.stitch.merge.JarMerger
 import net.fabricmc.tinyremapper.IMappingProvider
@@ -78,7 +78,7 @@ class McVersion {
                 ProGuardReader.read(serverBufferedReader as Reader, Util.MappingsNamespace.MOJMAP.toString(), Util.MappingsNamespace.OFFICIAL.toString(), nsSwitch)
             }
 
-            def w = Tiny2Writer.create(mappingsFile, MappingFormat.TINY_2)
+            def w = MappingWriter.create(mappingsFile, MappingFormat.TINY_2)
             mappingTree.accept(w)
             w.close()
         }
