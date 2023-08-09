@@ -14,6 +14,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.stream.Collectors
@@ -250,11 +251,16 @@ class Util {
         do {
             try { 
                 println "Fetching ${outputFileKind} ${outputFileId} from: ${url}"
-                InputStream open_stream = new BufferedInputStream(new URL(url).openConnection(java.net.Proxy.NO_PROXY).getInputStream())
-                Files.copy(open_stream, output, StandardCopyOption.REPLACE_EXISTING)
+                def url_connection = new URL(url).openConnection(java.net.Proxy.NO_PROXY)
+                url_connection.setUseCaches(false)
+                InputStream open_stream = new BufferedInputStream(url_connection.getInputStream())
+                OutputStream file_output = Files.newOutputStream(output, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
+                open_stream.transferTo(file_output)
                 open_stream.close()
+                file_output.flush()
+                file_output.close()
             } catch(Exception e1) {
-                println "Failed to fetch URL (retrying in ${GitCraft.CONFIG_FAILED_FETCH_RETRY_INTERVAL}ms): ${url}"
+                println "Failed to fetch URL (retrying in ${GitCraft.CONFIG_FAILED_FETCH_RETRY_INTERVAL}ms): ${url} (${e1})"
                 sleep(GitCraft.CONFIG_FAILED_FETCH_RETRY_INTERVAL)
             }
         } while(!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true))
