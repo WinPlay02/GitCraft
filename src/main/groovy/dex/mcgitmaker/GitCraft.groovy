@@ -35,6 +35,7 @@ class GitCraft {
     public static boolean CONFIG_NO_REPO = false
     public static boolean CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING = false
     public static boolean CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED = false
+    public static boolean CONFIG_REFRESH_DECOMPILATION = false
     public static int CONFIG_FAILED_FETCH_RETRY_INTERVAL = 500
 
     McMetadata mcMetadata
@@ -76,6 +77,7 @@ class GitCraft {
         cli_args._(longOpt:'no-external-assets', 'Disables assets versioning for assets not included inside "minecraft".jar (e.g. other languages). Has no effect if --no-assets is specified')
         cli_args._(longOpt:'skip-nonlinear', 'Skips non-linear (e.g. April Fools, Combat Snapshots, ...) versions')
         cli_args._(longOpt:'no-repo', 'Prevents the creation/modification of a repository for versioning, only decompiles the provided (or all) version(s)')
+        cli_args._(longOpt:'refresh', 'Refreshs the decompilation by deleting old decompiled artifacts and restarting. This will not be useful, if the decompiler has not been updated. The repository has to be deleted manually.')
         cli_args.h(longOpt:'help', 'Displays this help screen')
         def cli_args_parsed = cli_args.parse(args)
         CONFIG_LOAD_ASSETS = !cli_args_parsed.hasOption('no-assets')
@@ -84,6 +86,7 @@ class GitCraft {
         CONFIG_SKIP_NON_LINEAR = cli_args_parsed.hasOption('skip-nonlinear')
         CONFIG_NO_REPO = cli_args_parsed.hasOption('no-repo')
         CONFIG_LOAD_INTEGRATED_DATAPACK = !cli_args_parsed.hasOption('no-datapack')
+        CONFIG_REFRESH_DECOMPILATION = cli_args_parsed.hasOption('refresh')
         
         if (cli_args_parsed.hasOption('help')) {
             println(cli_args.usage())
@@ -95,6 +98,7 @@ class GitCraft {
         println("Checksum verification is ${CONFIG_VERIFY_CHECKSUMS ? "enabled" : "disabled"}")
         println("Non-Linear version are ${CONFIG_SKIP_NON_LINEAR || cli_args_parsed.hasOption('only-version') || cli_args_parsed.hasOption('min-version') ? "skipped" : "included"}")
         println("Repository creation and versioning is ${CONFIG_NO_REPO ? "skipped" : "enabled"}")
+        println("All / specified version(s) will be ${CONFIG_REFRESH_DECOMPILATION ? "deleted and decompiled again" : "reused if exists"}")
         
         def gitCraft = new GitCraft()
         
@@ -133,6 +137,13 @@ class GitCraft {
         r.finish()
     }
 
+    def refreshDeleteDecompiledJar(McVersion mcVersion) {
+        if (mcVersion.removeDecompiled()) {
+            println("${mcVersion.version}.jar has been deleted")
+            decompileNoRepository(mcVersion)
+        }
+    }
+
     def decompileNoRepository(McVersion mcVersion) {
         mcVersion.decompiledMc()
         if (CONFIG_LOAD_ASSETS && CONFIG_LOAD_ASSETS_EXTERN) {
@@ -168,6 +179,9 @@ class GitCraft {
             if (!decompile_starting_this_version) {
                 continue;
             }
+            if (CONFIG_REFRESH_DECOMPILATION) {
+                refreshDeleteDecompiledJar(value)
+            }
             if (!CONFIG_NO_REPO) {
                 r.commitDecompiled(value)
             } else {
@@ -185,6 +199,9 @@ class GitCraft {
             println("${version_name} is invalid")
             System.exit(1)
         }
+        if (CONFIG_REFRESH_DECOMPILATION) {
+            refreshDeleteDecompiledJar(mc_version)
+        }
         if (!CONFIG_NO_REPO) {
             def r = new RepoManager(MAIN_ARTIFACT_STORE.parent.resolve('minecraft-repo-' + version_name))
             r.commitDecompiled(mc_version)
@@ -201,6 +218,9 @@ class GitCraft {
         }
 
         versions.each {sv, mcv ->
+            if (CONFIG_REFRESH_DECOMPILATION) {
+                refreshDeleteDecompiledJar(mcv)
+            }
             if (!CONFIG_NO_REPO) {
                 r.commitDecompiled(mcv)
             } else {
@@ -211,6 +231,9 @@ class GitCraft {
         // Only commit non-linear versions after linear versions to find correct branching point
         if (!CONFIG_SKIP_NON_LINEAR) {
             nonLinearVersions.each {sv, mcv ->
+                if (CONFIG_REFRESH_DECOMPILATION) {
+                    refreshDeleteDecompiledJar(mcv)
+                }
                 if (!CONFIG_NO_REPO) {
                     r.commitDecompiled(mcv)
                 } else {

@@ -32,7 +32,7 @@ Usage: gradlew run --args="[Options]"
 Options:
   -h, --help                 Displays this help screen
       --min-version=<version>
-                             Specify the min version to decompile. Each
+                             Specify the min. version to decompile. Each
                                following (mainline) version will be decompiled
                                afterwards. The repository will be stored in
                                minecraft-repo-min-<version>. The normal
@@ -44,8 +44,9 @@ Options:
       --no-external-assets   Disables assets versioning for assets not included
                                inside "minecraft".jar (e.g. other languages).
                                Has no effect if --no-assets is specified
-      --no-repo              Does not create a repository for versioning, only
-                               decompiles the provided (or all) version(s)
+      --no-repo              Prevents the creation/modification of a repository
+                               for versioning, only decompiles the provided (or
+                               all) version(s)
       --no-verify            Disables checksum verification
       --only-version=<version>
                              Specify the only version to decompile. The
@@ -54,9 +55,14 @@ Options:
                                (minecraft-repo) will not be touched.
                                --only-version will take precedence over
                                --min-version. Implies --skip-nonlinear
+      --refresh              Refreshs the decompilation by deleting old
+                               decompiled artifacts and restarting. This will
+                               not be useful, if the decompiler has not been
+                               updated. The repository has to be deleted
+                               manually.
       --skip-nonlinear       Skips non-linear (e.g. April Fools, Combat
                                Snapshots, ...) versions
 If you want to decompile versions which are not part of the default minecraft
-meta, put the JSON files of these versions (e.g. 1_16_combat-0.json)
-into the "extra-versions" directory
+meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
+"extra-versions" directory
 ```

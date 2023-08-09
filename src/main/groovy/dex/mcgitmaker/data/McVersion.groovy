@@ -36,11 +36,22 @@ class McVersion {
     File decompiledMc() {
         def p = Decompiler.decompiledPath(this)
         def f = p.toFile()
-        if (!f.exists() || f.length() == 22) {
+        if (!f.exists() || f.length() == 22 /* empty jar */) {
             Decompiler.decompile(this)
         }
 
         return f
+    }
+
+    boolean removeDecompiled() {
+        def p = Decompiler.decompiledPath(this)
+        def f = p.toFile()
+        if (f.exists()) {
+            Files.delete(p)
+            return true
+        }
+
+        return false
     }
 
     File remappedJar() {

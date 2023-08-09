@@ -51,7 +51,7 @@ dependencies {
     implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
 
     // Decompiler, could be replaced with another fernflower fork
-    implementation "org.quiltmc:quiltflower:${quiltflower_version}"
+    implementation "org.vineflower:vineflower:${vineflower_version}"
 }
 
 // if not working: run ./gradlew run --refresh-dependencies
