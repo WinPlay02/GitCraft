@@ -96,7 +96,7 @@ class McMetadata {
                 libs.add(new Artifact(name: Artifact.nameFromUrl(d.downloads.artifact.url), url: d.downloads.artifact.url, containingPath: LIBRARY_STORE, sha1sum: d.downloads.artifact.sha1))
         }
 
-        fetchAssets(meta)
+        fetchAssetsIndexByMeta(meta)
 
         def javaVersion = meta.javaVersion != null ? meta.javaVersion.majorVersion ?: 8 : 8
         def artifacts = getMcArtifacts(meta)
@@ -128,16 +128,26 @@ class McMetadata {
         return assetsIndex
     }
 
-    private static def fetchAssets(def meta) {
+    private static def fetchAssetsIndexByMeta(def meta) {
         def assetsIndex = fetchAssetsIndex(meta.id + "_" + meta.assets, meta.assetIndex.url, meta.assetIndex.sha1)
+    }
+
+    public static def fetchAssetsOnly(McVersion version) {
+        def assetsIndex = fetchAssetsIndex(version.version + "_" + version.assets_index, null, null)
+        // Fetch Assets
         assetsIndex.objects.each{file_name, info -> 
             new Artifact(name: info.hash, url: "https://resources.download.minecraft.net/" + info.hash.substring(0, 2) + "/" + info.hash, containingPath: ASSETS_OBJECTS, sha1sum: info.hash).fetchArtifact()
         }
     }
 
-    public static def copyExternalAssetsToRepo(McVersion version) {
+    public static def copyExternalAssetsToRepo(McVersion version, Path dest_root) {
         def assetsIndex = fetchAssetsIndex(version.version + "_" + version.assets_index, null, null)
-        def targetRoot = REPO.resolve('minecraft').resolve('external-resources').resolve('assets')
+        // Fetch Assets
+        assetsIndex.objects.each{file_name, info -> 
+            new Artifact(name: info.hash, url: "https://resources.download.minecraft.net/" + info.hash.substring(0, 2) + "/" + info.hash, containingPath: ASSETS_OBJECTS, sha1sum: info.hash).fetchArtifact()
+        }
+        // Copy Assets
+        def targetRoot = dest_root.resolve('minecraft').resolve('external-resources').resolve('assets')
         assetsIndex.objects.each{file_name, info -> 
             def sourcePath = ASSETS_OBJECTS.resolve(info.hash)
             def targetPath = targetRoot.resolve(file_name)

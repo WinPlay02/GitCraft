@@ -7,6 +7,8 @@ import net.fabricmc.loader.api.SemanticVersion
 
 import java.nio.file.Paths
 
+import groovy.cli.picocli.CliBuilder
+
 class GitCraft {
     public static final def MAIN_ARTIFACT_STORE = Paths.get(new File('.').canonicalPath).resolve('artifact-store')
     public static final def DECOMPILED_WORKINGS = MAIN_ARTIFACT_STORE.resolve('decompiled')
@@ -24,14 +26,17 @@ class GitCraft {
 
     public static final def SOURCE_EXTRA_VERSIONS = Paths.get(new File('.').canonicalPath).resolve('extra-versions')
 
-    public static final boolean CONFIG_LOAD_ASSETS = true
-    public static final boolean CONFIG_LOAD_ASSETS_EXTERN = true
-    public static final boolean CONFIG_VERIFY_CHECKSUMS = true
-    public static final boolean CONFIG_CHECKSUM_REMOVE_INVALID_FILES = true
-    public static final boolean CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING = false
-    public static final boolean CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED = false
-    public static final int CONFIG_FAILED_FETCH_RETRY_INTERVAL = 500
-    
+    public static boolean CONFIG_LOAD_INTEGRATED_DATAPACK = true
+    public static boolean CONFIG_LOAD_ASSETS = true
+    public static boolean CONFIG_LOAD_ASSETS_EXTERN = true
+    public static boolean CONFIG_VERIFY_CHECKSUMS = true
+    public static boolean CONFIG_CHECKSUM_REMOVE_INVALID_FILES = true
+    public static boolean CONFIG_SKIP_NON_LINEAR = false
+    public static boolean CONFIG_NO_REPO = false
+    public static boolean CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING = false
+    public static boolean CONFIG_PRINT_EXISTING_FILE_CHECKSUM_MATCHING_SKIPPED = false
+    public static int CONFIG_FAILED_FETCH_RETRY_INTERVAL = 500
+
     McMetadata mcMetadata
     TreeMap<SemanticVersion, McVersion> versions
     TreeMap<SemanticVersion, McVersion> nonLinearVersions
@@ -62,7 +67,51 @@ class GitCraft {
     }
 
     static void main(String[] args) {
+        def cli_args = new CliBuilder(usage:'gradlew run --args="[Options]"', header:'Options:', footer:'If you want to decompile versions which are not part of the default minecraft meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the "extra-versions" directory')
+        cli_args._(longOpt:'only-version', args:1, argName:'version', 'Specify the only version to decompile. The repository be stored in minecraft-repo-<version>. The normal repository (minecraft-repo) will not be touched. --only-version will take precedence over --min-version. Implies --skip-nonlinear')
+        cli_args._(longOpt:'min-version', args:1, argName:'version', 'Specify the min. version to decompile. Each following (mainline) version will be decompiled afterwards. The repository will be stored in minecraft-repo-min-<version>. The normal repository (minecraft-repo) will not be touched. Implies --skip-nonlinear')
+        cli_args._(longOpt:'no-verify', 'Disables checksum verification')
+        cli_args._(longOpt:'no-datapack', 'Disables data (integrated datapack) versioning')
+        cli_args._(longOpt:'no-assets', 'Disables assets versioning (includes external assets)')
+        cli_args._(longOpt:'no-external-assets', 'Disables assets versioning for assets not included inside "minecraft".jar (e.g. other languages). Has no effect if --no-assets is specified')
+        cli_args._(longOpt:'skip-nonlinear', 'Skips non-linear (e.g. April Fools, Combat Snapshots, ...) versions')
+        cli_args._(longOpt:'no-repo', 'Prevents the creation/modification of a repository for versioning, only decompiles the provided (or all) version(s)')
+        cli_args.h(longOpt:'help', 'Displays this help screen')
+        def cli_args_parsed = cli_args.parse(args)
+        CONFIG_LOAD_ASSETS = !cli_args_parsed.hasOption('no-assets')
+        CONFIG_LOAD_ASSETS_EXTERN = !cli_args_parsed.hasOption('no-external-assets')
+        CONFIG_VERIFY_CHECKSUMS = !cli_args_parsed.hasOption('no-verify')
+        CONFIG_SKIP_NON_LINEAR = cli_args_parsed.hasOption('skip-nonlinear')
+        CONFIG_NO_REPO = cli_args_parsed.hasOption('no-repo')
+        CONFIG_LOAD_INTEGRATED_DATAPACK = !cli_args_parsed.hasOption('no-datapack')
+        
+        if (cli_args_parsed.hasOption('help')) {
+            println(cli_args.usage())
+            return;
+        }
+        println("Integrated datapack versioning is ${CONFIG_LOAD_INTEGRATED_DATAPACK ? "enabled" : "disabled"}")
+        println("Asset versioning is ${CONFIG_LOAD_ASSETS ? "enabled" : "disabled"}")
+        println("External asset versioning is ${CONFIG_LOAD_ASSETS_EXTERN ? (CONFIG_LOAD_ASSETS ? "enabled" : "implicitely disabled") : "disabled"}")
+        println("Checksum verification is ${CONFIG_VERIFY_CHECKSUMS ? "enabled" : "disabled"}")
+        println("Non-Linear version are ${CONFIG_SKIP_NON_LINEAR || cli_args_parsed.hasOption('only-version') || cli_args_parsed.hasOption('min-version') ? "skipped" : "included"}")
+        println("Repository creation and versioning is ${CONFIG_NO_REPO ? "skipped" : "enabled"}")
+        
         def gitCraft = new GitCraft()
+        
+        if (cli_args_parsed.hasOption('only-version')) {
+            def subjectVersion = cli_args_parsed.'only-version'
+            println("Decompiling only one Version: ${subjectVersion}")
+            gitCraft.updateRepoOneVersion(subjectVersion)
+            return;
+        }
+        
+        if (cli_args_parsed.hasOption('min-version')) {
+            def subjectVersion = cli_args_parsed.'min-version'
+            println("Decompiling starting at version: ${subjectVersion}")
+            gitCraft.updateRepoMinVersion(subjectVersion)
+            return;
+        }
+        
         gitCraft.updateRepo()
 
         println 'Repo can be found at: ' + REPO.toString()
@@ -84,19 +133,94 @@ class GitCraft {
         r.finish()
     }
 
+    def decompileNoRepository(McVersion mcVersion) {
+        mcVersion.decompiledMc()
+        if (CONFIG_LOAD_ASSETS && CONFIG_LOAD_ASSETS_EXTERN) {
+            McMetadata.fetchAssetsOnly(mcVersion)
+        }
+    }
+
+    def getMinecraftMainlineVersionByName(String version_name) {
+        for (value in versions.values()) {
+            if(value.version.equalsIgnoreCase(version_name)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    def updateRepoMinVersion(String version_name) {
+        def mc_version = getMinecraftMainlineVersionByName(version_name)
+        if (mc_version == null) {
+            println("${version_name} is invalid")
+            System.exit(1)
+        }
+        def r = null
+        if (!CONFIG_NO_REPO) {
+            r = new RepoManager(MAIN_ARTIFACT_STORE.parent.resolve('minecraft-repo-min-' + version_name))
+        }
+        
+        def decompile_starting_this_version = false
+        for (value in versions.values()) {
+            if (value.version.equalsIgnoreCase(version_name)) {
+                decompile_starting_this_version = true;
+            }
+            if (!decompile_starting_this_version) {
+                continue;
+            }
+            if (!CONFIG_NO_REPO) {
+                r.commitDecompiled(value)
+            } else {
+                decompileNoRepository(value)
+            }
+        }
+        if (!CONFIG_NO_REPO) {
+            r.finish()
+        }
+    }
+
+    def updateRepoOneVersion(String version_name) {
+        def mc_version = getMinecraftMainlineVersionByName(version_name)
+        if (mc_version == null) {
+            println("${version_name} is invalid")
+            System.exit(1)
+        }
+        if (!CONFIG_NO_REPO) {
+            def r = new RepoManager(MAIN_ARTIFACT_STORE.parent.resolve('minecraft-repo-' + version_name))
+            r.commitDecompiled(mc_version)
+            r.finish()
+        } else {
+            decompileNoRepository(mc_version)
+        }
+    }
+
     def updateRepo() {
-        def r = new RepoManager()
+        def r = null
+        if (!CONFIG_NO_REPO) {
+            r = new RepoManager()
+        }
 
         versions.each {sv, mcv ->
-            r.commitDecompiled(mcv)
+            if (!CONFIG_NO_REPO) {
+                r.commitDecompiled(mcv)
+            } else {
+                decompileNoRepository(mcv)
+            }
         }
 
         // Only commit non-linear versions after linear versions to find correct branching point
-        nonLinearVersions.each {sv, mcv ->
-            r.commitDecompiled(mcv)
+        if (!CONFIG_SKIP_NON_LINEAR) {
+            nonLinearVersions.each {sv, mcv ->
+                if (!CONFIG_NO_REPO) {
+                    r.commitDecompiled(mcv)
+                } else {
+                    decompileNoRepository(mcv)
+                }
+            }
         }
-
-        r.finish()
+        if (!CONFIG_NO_REPO) {
+            r.finish()
+        }
     }
 
     /**

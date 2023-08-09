@@ -21,10 +21,16 @@ import dex.mcgitmaker.data.McMetadata
 
 class RepoManager {
     Git git
+    Path root_path
     static String MAINLINE_LINEAR_BRANCH = "master"
     static Pattern LINEAR_SNAPSHOT_REGEX = ~/(^\d\dw\d\d[a-z]$)|(^\d.\d+(.\d+)?(-(pre|rc)\d|\_[a-z\_\-]+snapshot-\d+)$)/
 
-    RepoManager() {
+    RepoManager(Path root_path = null) {
+        if(root_path == null) {
+            this.root_path = GitCraft.REPO
+        } else {
+            this.root_path = root_path
+        }
         this.git = setupRepo()
     }
 
@@ -124,7 +130,7 @@ class RepoManager {
         git.reset().setMode(ResetCommand.ResetType.HARD)
 
         // Clear repo
-        GitCraft.REPO.toFile().listFiles().each {
+        this.root_path.toFile().listFiles().each {
             if (!it.toPath().toString().endsWith('.git')) {
                 if (it.isDirectory()) {
                     it.deleteDir()
@@ -137,32 +143,34 @@ class RepoManager {
         // Copy decompiled MC to repo directory
         println 'Moving files to repo...'
         try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.decompiledMc().toPath())) {
-            copyLargeDir(fs.get().getPath("."), GitCraft.REPO.resolve('minecraft').resolve('src'))
+            copyLargeDir(fs.get().getPath("."), this.root_path.resolve('minecraft').resolve('src'))
         }
         
         // Copy assets & data (it makes sense to track them, atleast the data)
         try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.mergedJarPath())) {
             if (CONFIG_LOAD_ASSETS) {
-                copyLargeDir(fs.get().getPath("assets"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('assets'))
+                copyLargeDir(fs.get().getPath("assets"), this.root_path.resolve('minecraft').resolve('resources').resolve('assets'))
             }
-            copyLargeDir(fs.get().getPath("data"), GitCraft.REPO.resolve('minecraft').resolve('resources').resolve('data'))
+            if (CONFIG_LOAD_INTEGRATED_DATAPACK) {
+                copyLargeDir(fs.get().getPath("data"), this.root_path.resolve('minecraft').resolve('resources').resolve('data'))
+            }
         }
 
         if (CONFIG_LOAD_ASSETS && CONFIG_LOAD_ASSETS_EXTERN) {
-            McMetadata.copyExternalAssetsToRepo(mcVersion)
+            McMetadata.copyExternalAssetsToRepo(mcVersion, this.root_path)
         }
 
         // Make commit
         git.add().addFilepattern(".").call()
         java.util.Date version_date = new java.util.Date(java.time.OffsetDateTime.parse(mcVersion.time).toInstant().toEpochMilli())
         PersonIdent author = new PersonIdent("Mojang", "gitcraft@decompiled.mc", version_date, TimeZone.getTimeZone("UTC"))
-        git.commit().setAll(true).setMessage(msg).setAuthor(author).setCommitter(author).call()
+        git.commit().setAll(true).setMessage(msg).setAuthor(author).setCommitter(author).setSign(false).call()
 
         println 'Commited ' + mcVersion.version + ' to the repository! (Target Branch is ' + target_branch + (this.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : "") + ")"
     }
 
     def setupRepo() {
-        return Git.init().setDirectory(GitCraft.REPO.toFile()).call()
+        return Git.init().setDirectory(this.root_path.toFile()).call()
     }
 
     private static void copyLargeDir(Path source, Path target) {
