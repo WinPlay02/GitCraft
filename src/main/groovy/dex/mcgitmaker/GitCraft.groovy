@@ -89,7 +89,7 @@ class GitCraft {
         CONFIG_REFRESH_DECOMPILATION = cli_args_parsed.hasOption('refresh')
         
         if (cli_args_parsed.hasOption('help')) {
-            println(cli_args.usage())
+            cli_args.usage()
             return;
         }
         println("Integrated datapack versioning is ${CONFIG_LOAD_INTEGRATED_DATAPACK ? "enabled" : "disabled"}")
