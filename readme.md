@@ -48,14 +48,14 @@ Options:
                                for versioning, only decompiles the provided (or
                                all) version(s)
       --no-verify            Disables checksum verification
-      --only-version=<version>
-                             Specify the only version to decompile. The
+      --only-version[=<version>[,<version>]...]
+                             Specify the only version(s) to decompile. The
                                repository be stored in
-                               minecraft-repo-<version>. The normal repository
-                               (minecraft-repo) will not be touched.
-                               --only-version will take precedence over
-                               --min-version. Implies --skip-nonlinear
-      --refresh              Refreshs the decompilation by deleting old
+                               minecraft-repo-<version>-<version>-.... The
+                               normal repository (minecraft-repo) will not be
+                               touched. --only-version will take precedence
+                               over --min-version. Implies --skip-nonlinear
+      --refresh              Refreshes the decompilation by deleting old
                                decompiled artifacts and restarting. This will
                                not be useful, if the decompiler has not been
                                updated. The repository has to be deleted
@@ -66,3 +66,7 @@ If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory
 ```
+
+## Cleanup
+
+- To remove everything except generated repositories and extra-versions `git clean -d -f -e extra-versions -x`. Cleans meta files and artifacts. If a decompilation is needed, it needs to be done again.

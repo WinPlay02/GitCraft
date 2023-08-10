@@ -88,6 +88,11 @@ class Util {
         }
     }
 
+    static List<McVersion> orderVersionList(List<McVersion> versions) {
+        println 'Sorting specified versions on semver MC versions...'
+        return versions.stream().sorted((v1, v2) -> SemanticVersion.parse(v1.loaderVersion).compareTo(SemanticVersion.parse(v2.loaderVersion))).collect(Collectors.toList())
+    }
+
     static TreeMap<SemanticVersion, McVersion> orderVersionMap(LinkedHashMap<String, McVersion> metadata) {
         def ORDERED_MAP = new TreeMap<SemanticVersion, McVersion>()
         println 'Sorting on semver MC versions...'

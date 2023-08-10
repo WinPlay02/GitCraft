@@ -6,6 +6,7 @@ import dex.mcgitmaker.loom.Decompiler
 import net.fabricmc.loader.api.SemanticVersion
 
 import java.nio.file.Paths
+import java.util.stream.Collectors
 
 import groovy.cli.picocli.CliBuilder
 
@@ -69,7 +70,7 @@ class GitCraft {
 
     static void main(String[] args) {
         def cli_args = new CliBuilder(usage:'gradlew run --args="[Options]"', header:'Options:', footer:'If you want to decompile versions which are not part of the default minecraft meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the "extra-versions" directory')
-        cli_args._(longOpt:'only-version', args:1, argName:'version', 'Specify the only version to decompile. The repository be stored in minecraft-repo-<version>. The normal repository (minecraft-repo) will not be touched. --only-version will take precedence over --min-version. Implies --skip-nonlinear')
+        cli_args._(longOpt:'only-version', args: -2 /*Option.UNLIMITED_VALUES*/, valueSeparator: ',', argName:'version', 'Specify the only version(s) to decompile. The repository be stored in minecraft-repo-<version>-<version>-.... The normal repository (minecraft-repo) will not be touched. --only-version will take precedence over --min-version. Implies --skip-nonlinear')
         cli_args._(longOpt:'min-version', args:1, argName:'version', 'Specify the min. version to decompile. Each following (mainline) version will be decompiled afterwards. The repository will be stored in minecraft-repo-min-<version>. The normal repository (minecraft-repo) will not be touched. Implies --skip-nonlinear')
         cli_args._(longOpt:'no-verify', 'Disables checksum verification')
         cli_args._(longOpt:'no-datapack', 'Disables data (integrated datapack) versioning')
@@ -77,7 +78,7 @@ class GitCraft {
         cli_args._(longOpt:'no-external-assets', 'Disables assets versioning for assets not included inside "minecraft".jar (e.g. other languages). Has no effect if --no-assets is specified')
         cli_args._(longOpt:'skip-nonlinear', 'Skips non-linear (e.g. April Fools, Combat Snapshots, ...) versions')
         cli_args._(longOpt:'no-repo', 'Prevents the creation/modification of a repository for versioning, only decompiles the provided (or all) version(s)')
-        cli_args._(longOpt:'refresh', 'Refreshs the decompilation by deleting old decompiled artifacts and restarting. This will not be useful, if the decompiler has not been updated. The repository has to be deleted manually.')
+        cli_args._(longOpt:'refresh', 'Refreshes the decompilation by deleting old decompiled artifacts and restarting. This will not be useful, if the decompiler has not been updated. The repository has to be deleted manually.')
         cli_args.h(longOpt:'help', 'Displays this help screen')
         def cli_args_parsed = cli_args.parse(args)
         CONFIG_LOAD_ASSETS = !cli_args_parsed.hasOption('no-assets')
@@ -103,8 +104,8 @@ class GitCraft {
         def gitCraft = new GitCraft()
         
         if (cli_args_parsed.hasOption('only-version')) {
-            def subjectVersion = cli_args_parsed.'only-version'
-            println("Decompiling only one Version: ${subjectVersion}")
+            def subjectVersion = cli_args_parsed.'only-versions'
+            println("Decompiling only specified version(s): ${subjectVersion}")
             gitCraft.updateRepoOneVersion(subjectVersion)
             return;
         }
@@ -193,21 +194,41 @@ class GitCraft {
         }
     }
 
-    def updateRepoOneVersion(String version_name) {
-        def mc_version = getMinecraftMainlineVersionByName(version_name)
-        if (mc_version == null) {
-            println("${version_name} is invalid")
-            System.exit(1)
+    def updateRepoOneVersion(String... version_name_list) {
+        if (version_name_list.length == 0) {
+            println("No version provided. Exiting...")
+            System.exit(0)
         }
-        if (CONFIG_REFRESH_DECOMPILATION) {
-            refreshDeleteDecompiledJar(mc_version)
+        def mc_versions = new ArrayList<McVersion>();
+        for (version_name in version_name_list) {
+            def mc_version = getMinecraftMainlineVersionByName(version_name)
+            if (mc_version == null) {
+                println("${version_name} is invalid")
+                System.exit(1)
+            }
+            mc_versions.add(mc_version);
         }
+        mc_versions = Util.orderVersionList(mc_versions)
+        
+        def r = null
         if (!CONFIG_NO_REPO) {
-            def r = new RepoManager(MAIN_ARTIFACT_STORE.parent.resolve('minecraft-repo-' + version_name))
-            r.commitDecompiled(mc_version)
+            def directory_name = 'minecraft-repo-' + mc_versions.stream().map((mcv) -> mcv.version).collect(Collectors.joining("-"))
+            println("Target repository " + directory_name)
+            r = new RepoManager(MAIN_ARTIFACT_STORE.parent.resolve(directory_name))
+        }
+        for (mc_version in mc_versions) {
+            if (CONFIG_REFRESH_DECOMPILATION) {
+                refreshDeleteDecompiledJar(mc_version)
+            }
+            if (!CONFIG_NO_REPO) {
+                r.commitDecompiled(mc_version)
+            } else {
+                decompileNoRepository(mc_version)
+            }
+        }
+        
+        if (!CONFIG_NO_REPO) {
             r.finish()
-        } else {
-            decompileNoRepository(mc_version)
         }
     }
 
