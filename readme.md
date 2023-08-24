@@ -14,12 +14,12 @@ Artifacts are stored in the current working directory:
 
 If only a specific version should be decompiled and versioned or a version range should be decompiled, provide the `--only-version=<version>` or `--min-version=<version>` parameters. `<version>` should be a (human readable) version name, e.g. `23w14a` or `1.20.1`.
 
-To disabled versioning entirely (and only decompiled), specify `--no-repo`.
+To disabled versioning entirely (and only decompile), specify `--no-repo`.
 
 To disable special versions (e.g. april fools or combat snapshots), specify `--skip-nonlinear`.
 
 Powered by:
-- [Quiltflower](https://github.com/QuiltMC/quiltflower)
+- [Vineflower](https://github.com/Vineflower/vineflower)
 - [Fabric Loader](https://github.com/FabricMC/fabric-loader)
 - [Mapping-IO](https://github.com/FabricMC/mapping-io)
 - [Tiny Remapper](https://github.com/FabricMC/tiny-remapper)
