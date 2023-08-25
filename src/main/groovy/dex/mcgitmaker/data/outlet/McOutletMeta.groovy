@@ -4,6 +4,6 @@ import groovy.transform.ToString
 
 @ToString
 class McOutletMeta {
-    Date lastChanged
-    ArrayList<McFabric> versions
+	Date lastChanged
+	ArrayList<McFabric> versions
 }
