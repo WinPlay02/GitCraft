@@ -178,7 +178,7 @@ class RepoManager {
 		git.add().addFilepattern(".").setRenormalize(false).call();
 		java.util.Date version_date = new java.util.Date(java.time.OffsetDateTime.parse(mcVersion.time).toInstant().toEpochMilli());
 		PersonIdent author = new PersonIdent(GitCraft.config.gitUser, GitCraft.config.gitMail, version_date, TimeZone.getTimeZone("UTC"));
-		git.commit().setAll(true).setMessage(msg).setAuthor(author).setCommitter(author).setSign(false).call();
+		git.commit().setMessage(msg).setAuthor(author).setCommitter(author).setSign(false).call();
 
 		MiscHelper.println("Commited %s to the repository! (Target Branch is %s)", mcVersion.version, target_branch + (RepoManager.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : ""));
 	}
