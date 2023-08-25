@@ -1,5 +1,6 @@
 package dex.mcgitmaker.data;
 
+import com.github.winplay02.MiscHelper;
 import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.Util;
 import dex.mcgitmaker.loom.BundleMetadata;
@@ -117,7 +118,7 @@ public class McVersion {
 	}
 
 	void makeMergedJar() throws IOException {
-		System.out.printf("Merging jars... %s", version);
+		MiscHelper.println("Merging jars... %s", version);
 		File client = artifacts.clientJar().fetchArtifact();
 		File server2merge = artifacts.serverJar().fetchArtifact();
 

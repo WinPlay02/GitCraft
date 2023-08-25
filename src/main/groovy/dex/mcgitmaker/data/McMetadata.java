@@ -1,5 +1,6 @@
 package dex.mcgitmaker.data;
 
+import com.github.winplay02.MiscHelper;
 import com.github.winplay02.meta.ArtifactMeta;
 import com.github.winplay02.meta.AssetsIndexMeta;
 import com.github.winplay02.meta.LauncherMeta;
@@ -44,10 +45,10 @@ public class McMetadata {
 	}
 
 	private static LinkedHashMap<String, McVersion> getInitialMetadata() throws IOException {
-		System.out.println("Creating metadata...");
-		System.out.println("Reading metadata from Mojang...");
+		MiscHelper.println("Creating metadata...");
+		MiscHelper.println("Reading metadata from Mojang...");
 		LauncherMeta mcLauncherVersions = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(RemoteHelper.MINECRAFT_MAIN_META_URL)), LauncherMeta.class);
-		System.out.println("Attempting to read metadata from file...");
+		MiscHelper.println("Attempting to read metadata from file...");
 		LinkedHashMap<String, McVersion> versionMeta = new LinkedHashMap<>();
 		// Read stored versions
 		if (GitCraft.METADATA_STORE.toFile().exists()) {
@@ -65,13 +66,13 @@ public class McMetadata {
 				continue;
 			}
 			if (!extra_version.toPath().toString().endsWith(".json")) {
-				System.out.printf("Skipped extra version '%s' as it is not a .json file%n", extra_version.toPath());
+				MiscHelper.println("Skipped extra version '%s' as it is not a .json file", extra_version.toPath());
 				continue;
 			}
 			McVersion extra_version_object = createVersionDataFromExtra(extra_version.toPath(), versionMeta);
 			if (extra_version_object != null) {
 				versionMeta.put(extra_version_object.version, extra_version_object);
-				System.out.printf("Applied extra version '%s'%n", extra_version_object.version);
+				MiscHelper.println("Applied extra version '%s'", extra_version_object.version);
 			}
 		}
 		return versionMeta;
