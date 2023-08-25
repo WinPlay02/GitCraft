@@ -19,6 +19,11 @@ public class GitCraftConfig {
 	public String[] onlyVersion = null;
 	public String minVersion = null;
 
+	/// Other Settings
+	public String gitUser = "Mojang";
+
+	public String gitMail = "gitcraft@decompiled.mc";
+
 	public static GitCraftConfig defaultConfig() {
 		return new GitCraftConfig();
 	}
