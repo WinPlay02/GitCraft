@@ -100,6 +100,7 @@ public class RemoteHelper {
 					if (GitCraft.config.checksumRemoveInvalidFiles) {
 						MiscHelper.println("Checksum of %s %s %s is %s, expected %s. The mismatching file will now be removed (checksums mismatch)", fileVerbParticiple, outputFileKind, outputFileId, actualSha1, sha1sum);
 						targetFile.delete();
+						cached_hashes.remove(targetFile);
 						return false;
 					} else {
 						MiscHelper.println("Checksum of %s %s %s is %s, expected %s. (checksums mismatch)", fileVerbParticiple, outputFileKind, outputFileId, actualSha1, sha1sum);

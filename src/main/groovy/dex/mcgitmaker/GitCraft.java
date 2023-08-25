@@ -73,6 +73,7 @@ public class GitCraft {
 
 	GitCraft() throws IOException, VersionParsingException {
 		this.mcMetadata = new McMetadata();
+		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
 		versions = Util.orderVersionMap(mcMetadata.metadata);
 		nonLinearVersions = Util.nonLinearVersionList(mcMetadata.metadata);
 		MiscHelper.println("Saving updated metadata...");

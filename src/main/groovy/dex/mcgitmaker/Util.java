@@ -53,7 +53,7 @@ public class Util {
 	public static void addLoaderVersion(McVersion mcVersion) {
 		if (mcVersion.loaderVersion == null) {
 			// Attempt lookup in Outlet database as newer MC versions require a loader update
-			Optional<McFabric> v = Outlet.INSTANCE.outletDatabase.getVersions().stream().filter((it) -> Objects.equals(it.getId(), mcVersion.version)).findAny();
+			Optional<McFabric> v = Outlet.INSTANCE.outletDatabase.getVersion(mcVersion);
 			if (v.isPresent()) {
 				mcVersion.loaderVersion = fixupSemver(v.get().getNormalized());
 				MiscHelper.println("Successfully looked up new semver version for: %s as %s", mcVersion.version, mcVersion.loaderVersion);
@@ -77,7 +77,6 @@ public class Util {
 			}
 			mcVersion.loaderVersion = fixupSemver(x.getNormalized());
 			MiscHelper.println("Semver made for: %s as %s", x.getRaw(), mcVersion.loaderVersion);
-			MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
 		}
 	}
 
