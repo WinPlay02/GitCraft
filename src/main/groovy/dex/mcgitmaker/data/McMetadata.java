@@ -149,11 +149,20 @@ public class McMetadata {
 		AssetsIndexMeta assetsIndex = fetchAssetsOnly(version);
 		// Copy Assets
 		Path targetRoot = dest_root.resolve("minecraft").resolve("external-resources").resolve("assets");
-		for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.objects().entrySet()) {
-			Path sourcePath = GitCraft.ASSETS_OBJECTS.resolve(entry.getValue().hash());
-			Path targetPath = targetRoot.resolve(entry.getKey());
-			targetPath.getParent().toFile().mkdirs();
-			Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+		if(GitCraft.config.useHardlinks) {
+			for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.objects().entrySet()) {
+				Path sourcePath = GitCraft.ASSETS_OBJECTS.resolve(entry.getValue().hash());
+				Path targetPath = targetRoot.resolve(entry.getKey());
+				targetPath.getParent().toFile().mkdirs();
+				Files.createLink(targetPath, sourcePath);
+			}
+		} else {
+			for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.objects().entrySet()) {
+				Path sourcePath = GitCraft.ASSETS_OBJECTS.resolve(entry.getValue().hash());
+				Path targetPath = targetRoot.resolve(entry.getKey());
+				targetPath.getParent().toFile().mkdirs();
+				Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+			}
 		}
 	}
 

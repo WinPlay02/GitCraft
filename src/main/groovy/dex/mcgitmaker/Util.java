@@ -115,12 +115,4 @@ public class Util {
 		MiscHelper.println("The following versions are considered non-linear: %s", NONLINEAR_MAP.values().stream().map((version) -> version.version).collect(Collectors.joining(", ")));
 		return NONLINEAR_MAP;
 	}
-
-	public static void deleteDirectory(Path directory) throws IOException {
-		try (Stream<Path> walk = Files.walk(directory)) {
-			walk.sorted(Comparator.reverseOrder())
-					.map(Path::toFile)
-					.forEach(java.io.File::delete);
-		}
-	}
 }

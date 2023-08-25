@@ -147,7 +147,7 @@ class RepoManager {
 		for (File it : Objects.requireNonNull(this.root_path.toFile().listFiles())) {
 			if (!it.toPath().toString().endsWith(".git")) {
 				if (it.isDirectory()) {
-					Util.deleteDirectory(it.toPath());
+					MiscHelper.deleteDirectory(it.toPath());
 				} else {
 					it.delete();
 				}
@@ -157,16 +157,16 @@ class RepoManager {
 		// Copy decompiled MC to repo directory
 		MiscHelper.println("Moving files to repo...");
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.decompiledMc())) {
-			copyLargeDir(fs.get().getPath("."), this.root_path.resolve("minecraft").resolve("src"));
+			MiscHelper.copyLargeDir(fs.get().getPath("."), this.root_path.resolve("minecraft").resolve("src"));
 		}
 
 		// Copy assets & data (it makes sense to track them, atleast the data)
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.mergedJarPath())) {
 			if (GitCraft.config.loadAssets) {
-				copyLargeDir(fs.get().getPath("assets"), this.root_path.resolve("minecraft").resolve("resources").resolve("assets"));
+				MiscHelper.copyLargeDir(fs.get().getPath("assets"), this.root_path.resolve("minecraft").resolve("resources").resolve("assets"));
 			}
 			if (GitCraft.config.loadIntegratedDatapack) {
-				copyLargeDir(fs.get().getPath("data"), this.root_path.resolve("minecraft").resolve("resources").resolve("data"));
+				MiscHelper.copyLargeDir(fs.get().getPath("data"), this.root_path.resolve("minecraft").resolve("resources").resolve("data"));
 			}
 		}
 
@@ -185,25 +185,6 @@ class RepoManager {
 
 	Git setupRepo() throws GitAPIException {
 		return Git.init().setDirectory(this.root_path.toFile()).call();
-	}
-
-	private static void copyLargeDir(Path source, Path target) {
-		try {
-			if (Files.isDirectory(source)) {
-				if (Files.notExists(target)) {
-					Files.createDirectories(target);
-				}
-
-				try (Stream<Path> paths = Files.list(source)) {
-					paths.forEach(p -> copyLargeDir(p, target.resolve(source.relativize(p).toString())));
-				}
-
-			} else {
-				Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 
 	private static final class CommitMsgFilter extends RevFilter {

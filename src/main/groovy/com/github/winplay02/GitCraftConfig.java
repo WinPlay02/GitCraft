@@ -1,7 +1,5 @@
 package com.github.winplay02;
 
-import java.util.Optional;
-
 public class GitCraftConfig {
 	public boolean loadIntegratedDatapack = true;
 	public boolean loadAssets = true;
@@ -21,8 +19,10 @@ public class GitCraftConfig {
 
 	/// Other Settings
 	public String gitUser = "Mojang";
-
 	public String gitMail = "gitcraft@decompiled.mc";
+
+	/// Experimental Settings
+	public boolean useHardlinks = true;
 
 	public static GitCraftConfig defaultConfig() {
 		return new GitCraftConfig();
