@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
@@ -46,5 +47,23 @@ public class MiscHelper {
 					.map(Path::toFile)
 					.forEach(java.io.File::delete);
 		}
+	}
+
+	public interface ExceptionInsensitiveRunnable {
+		void run() throws Exception;
+	}
+
+	public static void executeTimedStep(String message, ExceptionInsensitiveRunnable runnable) {
+		println(message);
+		long timeStart = System.nanoTime();
+		try {
+			runnable.run();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		long timeEnd = System.nanoTime();
+		long delta = timeEnd - timeStart;
+		Duration deltaDuration = Duration.ofNanos(delta);
+		println("\tFinished: %dm %02ds", deltaDuration.toMinutes(), deltaDuration.toSecondsPart());
 	}
 }

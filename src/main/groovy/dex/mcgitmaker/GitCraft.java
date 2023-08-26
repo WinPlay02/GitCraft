@@ -2,11 +2,10 @@ package dex.mcgitmaker;
 
 import com.github.winplay02.GitCraftCli;
 import com.github.winplay02.GitCraftConfig;
+import com.github.winplay02.MinecraftVersionGraph;
 import com.github.winplay02.MiscHelper;
 import dex.mcgitmaker.data.McMetadata;
 import dex.mcgitmaker.data.McVersion;
-import dex.mcgitmaker.loom.Decompiler;
-import net.fabricmc.loader.api.SemanticVersion;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import net.fabricmc.loader.api.VersionParsingException;
@@ -50,9 +48,8 @@ public class GitCraft {
 	public static final Path SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
 
 	public static GitCraftConfig config = null;
+	MinecraftVersionGraph versionGraph = null;
 	McMetadata mcMetadata;
-	TreeMap<SemanticVersion, McVersion> versions;
-	TreeMap<SemanticVersion, McVersion> nonLinearVersions;
 
 	static {
 		MAIN_ARTIFACT_STORE.toFile().mkdirs();
@@ -71,29 +68,46 @@ public class GitCraft {
 		SOURCE_EXTRA_VERSIONS.toFile().mkdirs();
 	}
 
-	GitCraft() throws IOException, VersionParsingException {
+	GitCraft() throws IOException {
 		this.mcMetadata = new McMetadata();
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
-		versions = Util.orderVersionMap(mcMetadata.metadata);
-		nonLinearVersions = Util.nonLinearVersionList(mcMetadata.metadata);
+		versionGraph = MinecraftVersionGraph.createFromMetadata(mcMetadata.metadata);
 		MiscHelper.println("Saving updated metadata...");
 		Util.saveMetadata(mcMetadata.metadata);
 	}
 
-	public static void main(String[] args) throws VersionParsingException, IOException, GitAPIException {
+	public static void main(String[] args) throws IOException, GitAPIException {
 		GitCraft.config = GitCraftCli.handleCliArgs(args);
 		if (GitCraft.config == null) {
 			return;
 		}
 		GitCraft gitCraft = new GitCraft();
-		RepoManager repoManager;
+		gitCraft.versionGraph = gitCraft.versionGraph.filterMojMapped(); // TODO other mappings
 		if (config.isOnlyVersion()) {
-			repoManager = gitCraft.updateRepoOneVersion(config.onlyVersion);
+			if (config.onlyVersion.length == 0) {
+				MiscHelper.panic("No version provided");
+			}
+			McVersion[] mc_versions = new McVersion[config.onlyVersion.length];
+			for (int i = 0; i < mc_versions.length; ++i) {
+				mc_versions[i] = gitCraft.versionGraph.getMinecraftMainlineVersionByName(config.onlyVersion[i]);
+				if (mc_versions[i] == null) {
+					MiscHelper.panic("%s is invalid", config.onlyVersion[i]);
+				}
+			}
+			gitCraft.versionGraph = gitCraft.versionGraph.filterOnlyVersion(mc_versions);
 		} else if (config.isMinVersion()) {
-			repoManager = gitCraft.updateRepoMinVersion(config.minVersion);
-		} else {
-			repoManager = gitCraft.updateRepo();
+			McVersion mc_version = gitCraft.versionGraph.getMinecraftMainlineVersionByName(config.minVersion);
+			if (mc_version == null) {
+				MiscHelper.panic("%s is invalid", config.minVersion);
+			}
+			gitCraft.versionGraph = gitCraft.versionGraph.filterMinVersion(mc_version);
 		}
+
+		if (config.skipNonLinear) {
+			gitCraft.versionGraph = gitCraft.versionGraph.filterMainlineVersions();
+		}
+
+		RepoManager repoManager = gitCraft.updateRepo();
 		MiscHelper.println("Repo can be found at: %s", repoManager.root_path.toString());
 	}
 
@@ -111,94 +125,13 @@ public class GitCraft {
 		}
 	}
 
-	McVersion getMinecraftMainlineVersionByName(String version_name) {
-		for (McVersion value : versions.values()) {
-			if (value.version.equalsIgnoreCase(version_name)) {
-				return value;
-			}
-		}
-		return null;
-	}
-
-	RepoManager updateRepoMinVersion(String version_name) throws GitAPIException, IOException {
-		McVersion mc_version = getMinecraftMainlineVersionByName(version_name);
-		if (mc_version == null) {
-			MiscHelper.panic("%s is invalid", version_name);
-		}
-		RepoManager r = null;
-		if (!config.noRepo) {
-			r = new RepoManager(MAIN_ARTIFACT_STORE.getParent().resolve("minecraft-repo-min-" + version_name));
-		}
-
-		boolean decompile_starting_this_version = false;
-		for (McVersion value : versions.values()) {
-			if (value.version.equalsIgnoreCase(version_name)) {
-				decompile_starting_this_version = true;
-			}
-			if (!decompile_starting_this_version) {
-				continue;
-			}
-			if (config.refreshDecompilation) {
-				refreshDeleteDecompiledJar(value);
-			}
-			if (!config.noRepo) {
-				assert r != null;
-				r.commitDecompiled(value);
-			} else {
-				decompileNoRepository(value);
-			}
-		}
-		if (!config.noRepo) {
-			assert r != null;
-			r.finish();
-		}
-		return r;
-	}
-
-	RepoManager updateRepoOneVersion(String... version_name_list) throws GitAPIException, IOException {
-		if (version_name_list.length == 0) {
-			MiscHelper.panic("No version provided");
-		}
-		List<McVersion> mc_versions = new ArrayList<>();
-		for (String version_name : version_name_list) {
-			McVersion mc_version = getMinecraftMainlineVersionByName(version_name);
-			if (mc_version == null) {
-				MiscHelper.panic("%s is invalid", version_name);
-			}
-			mc_versions.add(mc_version);
-		}
-		mc_versions = Util.orderVersionList(mc_versions);
-
-		RepoManager r = null;
-		if (!config.noRepo) {
-			String directory_name = "minecraft-repo-" + mc_versions.stream().map((mcv) -> mcv.version).collect(Collectors.joining("-"));
-			r = new RepoManager(MAIN_ARTIFACT_STORE.getParent().resolve(directory_name));
-		}
-		for (McVersion mc_version : mc_versions) {
-			if (config.refreshDecompilation) {
-				refreshDeleteDecompiledJar(mc_version);
-			}
-			if (!config.noRepo) {
-				assert r != null;
-				r.commitDecompiled(mc_version);
-			} else {
-				decompileNoRepository(mc_version);
-			}
-		}
-
-		if (!config.noRepo) {
-			assert r != null;
-			r.finish();
-		}
-		return r;
-	}
-
 	RepoManager updateRepo() throws GitAPIException, IOException {
 		RepoManager r = null;
 		if (!config.noRepo) {
-			r = new RepoManager();
+			String identifier = versionGraph.repoTagsIdentifier();
+			r = new RepoManager(this.versionGraph, identifier.isEmpty() ? null : MAIN_ARTIFACT_STORE.getParent().resolve(String.format("minecraft-repo-%s", identifier)));
 		}
-		for (McVersion mcv : versions.values()) {
+		for (McVersion mcv : versionGraph) {
 			if (config.refreshDecompilation) {
 				refreshDeleteDecompiledJar(mcv);
 			}
@@ -209,24 +142,9 @@ public class GitCraft {
 				decompileNoRepository(mcv);
 			}
 		}
-
-		// Only commit non-linear versions after linear versions to find correct branching point
-		if (!config.skipNonLinear) {
-			for (McVersion mcv : nonLinearVersions.values()) {
-				if (config.refreshDecompilation) {
-					refreshDeleteDecompiledJar(mcv);
-				}
-				if (!config.noRepo) {
-					assert r != null;
-					r.commitDecompiled(mcv);
-				} else {
-					decompileNoRepository(mcv);
-				}
-			}
-		}
 		if (!config.noRepo) {
 			assert r != null;
-			r.finish();
+			r.close();
 		}
 		return r;
 	}

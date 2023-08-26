@@ -33,11 +33,11 @@ Options:
   -h, --help                 Displays this help screen
       --min-version=<version>
                              Specify the min. version to decompile. Each
-                               following (mainline) version will be decompiled
-                               afterwards. The repository will be stored in
-                               minecraft-repo-min-<version>. The normal
+                               following version will be decompiled afterwards,
+                               non-linear versions are still committed to
+                               separate branches. The repository will be stored
+                               in minecraft-repo-min-<version>. The normal
                                repository (minecraft-repo) will not be touched.
-                               Implies --skip-nonlinear
       --no-assets            Disables assets versioning (includes external
                                assets)
       --no-datapack          Disables data (integrated datapack) versioning
@@ -54,14 +54,14 @@ Options:
                                minecraft-repo-<version>-<version>-.... The
                                normal repository (minecraft-repo) will not be
                                touched. --only-version will take precedence
-                               over --min-version. Implies --skip-nonlinear
+                               over --min-version.
       --refresh              Refreshes the decompilation by deleting old
                                decompiled artifacts and restarting. This will
                                not be useful, if the decompiler has not been
                                updated. The repository has to be deleted
                                manually.
       --skip-nonlinear       Skips non-linear (e.g. April Fools, Combat
-                               Snapshots, ...) versions
+                               Snapshots, ...) versions completely
 If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory

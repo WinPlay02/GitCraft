@@ -15,7 +15,7 @@ public class Remapper {
 	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
 
 	public static Path doRemap(McVersion mcVersion) throws IOException {
-		Path output = GitCraft.REMAPPED.resolve(mcVersion.version + ".jar");
+		Path output = GitCraft.REMAPPED.resolve(mcVersion.version + "-mojmap.jar"); // TODO other mappings?
 
 		IMappingProvider mappingProvider = mcVersion.mappingsProvider();
 		// Based on what Fabric-loom does
@@ -27,8 +27,8 @@ public class Remapper {
 					.inferNameFromSameLvIndex(true)
 					.withMappings(mappingProvider)
 					.fixPackageAccess(true)
-					.threads(Runtime.getRuntime().availableProcessors() - 3)  // TODO make configurable
-					//  TODO RecordComponentFixVisitor
+					.threads(GitCraft.config.remappingThreads)
+					//  TODO loom RecordComponentFixVisitor
 					.build();
 
 			remapper.readInputs(mcVersion.merged().toPath());

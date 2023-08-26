@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Objects;
 
 public class McVersion {
 
@@ -140,5 +141,22 @@ public class McVersion {
 		}
 
 		mergedJar = mergedJarPath().toString();
+	}
+
+	public String toCommitMessage() {
+		return this.version + "\n\nSemVer: " + this.loaderVersion;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		McVersion mcVersion = (McVersion) o;
+		return snapshot == mcVersion.snapshot && hasMappings == mcVersion.hasMappings && javaVersion == mcVersion.javaVersion && Objects.equals(version, mcVersion.version) && Objects.equals(loaderVersion, mcVersion.loaderVersion) && Objects.equals(artifacts, mcVersion.artifacts) && Objects.equals(libraries, mcVersion.libraries) && Objects.equals(mainClass, mcVersion.mainClass) && Objects.equals(time, mcVersion.time) && Objects.equals(assets_index, mcVersion.assets_index);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(version, loaderVersion, snapshot, hasMappings, javaVersion, artifacts, libraries, mainClass, time, assets_index);
 	}
 }

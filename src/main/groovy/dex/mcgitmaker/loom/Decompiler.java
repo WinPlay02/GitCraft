@@ -31,21 +31,21 @@ public class Decompiler {
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
 	public static Path decompiledPath(McVersion mcVersion) {
-		return GitCraft.DECOMPILED_WORKINGS.resolve(mcVersion.version + ".jar");
+		return GitCraft.DECOMPILED_WORKINGS.resolve(mcVersion.version + "-mojmap.jar"); // TODO other mappings?
 	}
 
 	// Adapted from loom-quiltflower by Juuxel
 	public static void decompile(McVersion mcVersion) throws IOException {
 		MiscHelper.println("Decompiling: %s...", mcVersion.version);
 		MiscHelper.println("Decompiler log output is suppressed!");
-		Map<String, Object> options = new HashMap<String, Object>();
+		Map<String, Object> options = new HashMap<>();
 
 		options.put(IFernflowerPreferences.INDENT_STRING, "\t");
 		options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
 		options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
 		options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 		options.put(IFernflowerPreferences.LOG_LEVEL, "trace");
-		options.put(IFernflowerPreferences.THREADS, Integer.toString(Runtime.getRuntime().availableProcessors() - 3));
+		options.put(IFernflowerPreferences.THREADS, Integer.toString(GitCraft.config.decompilingThreads));
 		//options.put(IFabricJavadocProvider.PROPERTY_NAME, new QfTinyJavadocProvider(metaData.javaDocs().toFile()));
 
 		// Experimental QF preferences
@@ -75,8 +75,7 @@ public class Decompiler {
 		openFileSystems.add(FileSystemUtil.getJarFileSystem(mc_file, false));
 		ff.addSource(mc_file.toFile());
 
-		MiscHelper.println("Decompiling...");
-		ff.decompileContext();
+		MiscHelper.executeTimedStep("Decompiling...", ff::decompileContext);
 
 		MiscHelper.println("Writing dependencies file...");
 		writeLibraries(targetJarRootPath, mcVersion);
@@ -90,8 +89,8 @@ public class Decompiler {
 	private static void writeLibraries(Path parentDirectory, McVersion mcVersion) throws IOException {
 		Path p = parentDirectory.resolve("dependencies.json");
 		JsonGenerator generator = new JsonGenerator.Options()
-			.excludeFieldsByName("containingPath")
-			.build();
+				.excludeFieldsByName("containingPath")
+				.build();
 
 		List<Artifact> c = mcVersion.libraries.stream().sorted(Comparator.comparing(artifact -> String.join("", artifact.name().split("-")))).collect(Collectors.toList());
 		c.add(Artifact.ofVirtual("Java " + mcVersion.javaVersion));

@@ -127,6 +127,9 @@ public class RemoteHelper {
 		if (checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, false)) {
 			return;
 		}
+		if (output.getParent() != null) {
+			output.getParent().toFile().mkdirs();
+		}
 		do {
 			try {
 				MiscHelper.println("Fetching %s %s from: %s", outputFileKind, outputFileId, url);

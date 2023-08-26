@@ -12,6 +12,8 @@ public class GitCraftConfig {
 	public boolean printExistingFileChecksumMatchingSkipped = false;
 	public boolean refreshDecompilation = false;
 	public int failedFetchRetryInterval = 500;
+	public int remappingThreads = Runtime.getRuntime().availableProcessors() - 3;
+	public int decompilingThreads = Runtime.getRuntime().availableProcessors() - 3;
 
 	/// Optional settings
 	public String[] onlyVersion = null;
@@ -20,6 +22,7 @@ public class GitCraftConfig {
 	/// Other Settings
 	public String gitUser = "Mojang";
 	public String gitMail = "gitcraft@decompiled.mc";
+	public String gitMainlineLinearBranch = "master";
 
 	/// Experimental Settings
 	public boolean useHardlinks = true;
@@ -33,7 +36,7 @@ public class GitCraftConfig {
 		MiscHelper.println("Asset versioning is %s", loadAssets ? "enabled" : "disabled");
 		MiscHelper.println("External asset versioning is %s", loadAssetsExtern ? (loadAssets ? "enabled" : "implicitely disabled") : "disabled");
 		MiscHelper.println("Checksum verification is %s", verifyChecksums ? "enabled" : "disabled");
-		MiscHelper.println("Non-Linear version are %s", skipNonLinear || onlyVersion != null || minVersion != null ? "skipped" : "included");
+		MiscHelper.println("Non-Linear version are %s", skipNonLinear ? "skipped" : "included");
 		MiscHelper.println("Repository creation and versioning is %s", noRepo ? "skipped" : "enabled");
 		MiscHelper.println("All / specified version(s) will be %s", refreshDecompilation ? "deleted and decompiled again" : "reused if existing");
 		if (isOnlyVersion()) {
