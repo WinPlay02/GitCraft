@@ -24,16 +24,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Util {
-	public enum MappingsNamespace {
-		OFFICIAL,
-		MOJMAP;
-
-		@Override
-		public String toString() {
-			return name().toLowerCase(Locale.ENGLISH);
-		}
-	}
-
 	public static void saveMetadata(Map<String, McVersion> data) throws IOException {
 		SerializationHelper.writeAllToPath(GitCraft.METADATA_STORE, SerializationHelper.serialize(data));
 	}

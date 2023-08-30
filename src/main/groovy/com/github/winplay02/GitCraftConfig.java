@@ -23,6 +23,7 @@ public class GitCraftConfig {
 	public String gitUser = "Mojang";
 	public String gitMail = "gitcraft@decompiled.mc";
 	public String gitMainlineLinearBranch = "master";
+	public boolean loomFixRecords = true;
 
 	/// Experimental Settings
 	public boolean useHardlinks = true;

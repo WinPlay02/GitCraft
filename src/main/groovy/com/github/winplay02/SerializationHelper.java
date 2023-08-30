@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class SerializationHelper {
@@ -26,6 +27,9 @@ public class SerializationHelper {
 
 	public static final TypeToken<LinkedHashMap<String, McVersion>> TYPE_LINKED_HASH_MAP_STRING_VERSION = new TypeToken<LinkedHashMap<String, McVersion>>() {
 	};
+	public static final TypeToken<HashMap<String, String>> TYPE_HASH_MAP_STRING_STRING = new TypeToken<HashMap<String, String>>() {
+	};
+
 
 	static {
 		gson = new GsonBuilder().registerTypeHierarchyAdapter(Path.class, new TypeAdapter<Path>() {

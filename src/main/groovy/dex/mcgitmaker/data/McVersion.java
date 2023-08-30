@@ -91,33 +91,6 @@ public class McVersion {
 		return f;
 	}
 
-	public IMappingProvider mappingsProvider() throws IOException {
-		return TinyUtils.createTinyMappingProvider(mappingsPath(),
-				Util.MappingsNamespace.OFFICIAL.toString(), Util.MappingsNamespace.MOJMAP.toString());
-	}
-
-	Path mappingsPath() throws IOException {
-		Path mappingsFile = GitCraft.MAPPINGS.resolve(version + ".tiny");
-
-		if (!mappingsFile.toFile().exists()) {
-			MemoryMappingTree mappingTree = new MemoryMappingTree();
-
-			// Make official the source namespace
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, Util.MappingsNamespace.OFFICIAL.toString());
-
-			try (BufferedReader clientBufferedReader = Files.newBufferedReader(artifacts.clientMappings().fetchArtifact().toPath(), StandardCharsets.UTF_8);
-				 BufferedReader serverBufferedReader = Files.newBufferedReader(artifacts.serverMappings().fetchArtifact().toPath(), StandardCharsets.UTF_8)) {
-				ProGuardReader.read((Reader) clientBufferedReader, Util.MappingsNamespace.MOJMAP.toString(), Util.MappingsNamespace.OFFICIAL.toString(), nsSwitch);
-				ProGuardReader.read((Reader) serverBufferedReader, Util.MappingsNamespace.MOJMAP.toString(), Util.MappingsNamespace.OFFICIAL.toString(), nsSwitch);
-			}
-			try (MappingWriter w = MappingWriter.create(mappingsFile, MappingFormat.TINY_2)) {
-				mappingTree.accept(w);
-			}
-		}
-
-		return mappingsFile;
-	}
-
 	void makeMergedJar() throws IOException {
 		MiscHelper.println("Merging jars... %s", version);
 		File client = artifacts.clientJar().fetchArtifact();

@@ -37,7 +37,6 @@ public class Decompiler {
 	// Adapted from loom-quiltflower by Juuxel
 	public static void decompile(McVersion mcVersion) throws IOException {
 		MiscHelper.println("Decompiling: %s...", mcVersion.version);
-		MiscHelper.println("Decompiler log output is suppressed!");
 		Map<String, Object> options = new HashMap<>();
 
 		options.put(IFernflowerPreferences.INDENT_STRING, "\t");

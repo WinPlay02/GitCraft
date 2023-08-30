@@ -74,6 +74,7 @@ public class GitCraft {
 		versionGraph = MinecraftVersionGraph.createFromMetadata(mcMetadata.metadata);
 		MiscHelper.println("Saving updated metadata...");
 		Util.saveMetadata(mcMetadata.metadata);
+		MiscHelper.println("Decompiler log output is suppressed!");
 	}
 
 	public static void main(String[] args) throws IOException, GitAPIException {

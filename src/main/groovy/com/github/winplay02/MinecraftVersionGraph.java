@@ -1,11 +1,13 @@
 package com.github.winplay02;
 
+import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.data.McVersion;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.impl.game.minecraft.McVersionLookup;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +28,8 @@ import java.util.stream.Stream;
 public class MinecraftVersionGraph implements Iterable<McVersion> {
 
 	public static final String REPO_TAG_MOJMAP = "mojmap";
+
+	private static HashMap<String, String> semverCache = null;
 
 	private MinecraftVersionGraph() {
 	}
@@ -94,9 +98,33 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		return proposedSemVer;
 	}
 
+	private static void loadSemverCache() {
+		if (semverCache == null) {
+			Path cachePath = GitCraft.CURRENT_WORKING_DIRECTORY.resolve("semver-cache.json");
+			if (cachePath.toFile().exists()) {
+				try {
+					semverCache = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(cachePath), SerializationHelper.TYPE_HASH_MAP_STRING_STRING);
+				} catch (IOException e) {
+					semverCache = new HashMap<>();
+					MiscHelper.println("This is not a fatal error: %s", e);
+				}
+			} else {
+				semverCache = new HashMap<>();
+			}
+		}
+	}
+
 	public static void lookupLoaderVersion(McVersion mcVersion) {
 		if (mcVersion.loaderVersion == null) {
-			// TODO fetch from cache file
+			loadSemverCache();
+			if (semverCache.containsKey(mcVersion.version)) {
+				try {
+					SemanticVersion.parse(semverCache.get(mcVersion.version));
+					mcVersion.loaderVersion = mcVersion.version;
+					return;
+				} catch (VersionParsingException ignored) {
+				}
+			}
 			net.fabricmc.loader.impl.game.minecraft.McVersion x = null;
 			Path x_path = null;
 			while (x == null) {
@@ -191,6 +219,11 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 			}
 		}
 		graph.testGraphConnectivity();
+		try {
+			graph.writeSemverCache();
+		} catch (IOException e) {
+			MiscHelper.println("This is not a fatal error: %s", e);
+		}
 		return graph;
 	}
 
@@ -298,5 +331,13 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 	@Override
 	public Iterator<McVersion> iterator() {
 		return stream().iterator();
+	}
+
+	public void writeSemverCache() throws IOException {
+		Map<String, String> semverCache = new HashMap<>();
+		for (McVersion version : this) {
+			semverCache.put(version.version, version.loaderVersion);
+		}
+		SerializationHelper.writeAllToPath(GitCraft.CURRENT_WORKING_DIRECTORY.resolve("semver-cache.json"), SerializationHelper.serialize(semverCache));
 	}
 }

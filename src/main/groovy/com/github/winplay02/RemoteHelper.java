@@ -147,4 +147,31 @@ public class RemoteHelper {
 			}
 		} while (!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true));
 	}
+
+	public static void downloadToFileWithChecksumIfNotExistsNoRetry(String url, Path output, String sha1sum, String outputFileKind, String outputFileId) {
+		File targetFile = output.toFile();
+		if (checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, false)) {
+			return;
+		}
+		if (output.getParent() != null) {
+			output.getParent().toFile().mkdirs();
+		}
+		try {
+			MiscHelper.println("Fetching %s %s from: %s", outputFileKind, outputFileId, url);
+			URLConnection url_connection = new URL(url).openConnection(java.net.Proxy.NO_PROXY);
+			url_connection.setUseCaches(false);
+			try (OutputStream file_output = Files.newOutputStream(output, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
+				try (InputStream open_stream = new BufferedInputStream(url_connection.getInputStream())) {
+					open_stream.transferTo(file_output);
+				}
+				file_output.flush();
+			}
+		} catch (Exception e1) {
+			MiscHelper.println("Failed to fetch URL (retrying in %sms): %s (%s)", GitCraft.config.failedFetchRetryInterval, url, e1);
+			throw new RuntimeException(e1);
+		}
+		if (!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true)) {
+			MiscHelper.panic("File download failed");
+		}
+	}
 }
