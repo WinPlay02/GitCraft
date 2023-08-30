@@ -23,7 +23,10 @@ public class Remapper {
 
 		MemoryMappingTree mappingTree = MappingHelper.createMojMapMappingsProvider(mcVersion);
 		// Based on what Fabric-loom does
-		if (!output.toFile().exists()) {
+		if (!output.toFile().exists() || output.toFile().length() == 22 /* empty jar */) {
+			if (output.toFile().exists()) {
+				output.toFile().delete();
+			}
 			int intermediaryNsId = mappingTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
 			TinyRemapper remapper = TinyRemapper.newRemapper()
 					.renameInvalidLocals(true)
