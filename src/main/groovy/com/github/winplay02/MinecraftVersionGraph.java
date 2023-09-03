@@ -145,7 +145,7 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 			if (semverCache.containsKey(mcVersion.version)) {
 				try {
 					SemanticVersion.parse(semverCache.get(mcVersion.version));
-					mcVersion.loaderVersion = mcVersion.version;
+					mcVersion.loaderVersion = semverCache.get(mcVersion.version);
 					return;
 				} catch (VersionParsingException ignored) {
 				}
@@ -169,6 +169,9 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 				}
 			}
 			mcVersion.loaderVersion = fixupSemver(Objects.equals(x.getNormalized(), "client") ? mcVersion.version : x.getNormalized());
+			if (mcVersion.version.equalsIgnoreCase("23w13a_or_b_original")) { // support extra original
+				mcVersion.loaderVersion = "1.20-alpha.23.13.ab.original";
+			}
 			MiscHelper.println("Semver mapped for: %s as %s", x.getRaw(), mcVersion.loaderVersion);
 		}
 	}
@@ -177,6 +180,15 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 	public static String findPreviousBaseNodeVersionNameForNonLinearVersionString(McVersion mcVersion) {
 		switch (mcVersion.loaderVersion) {
 			// Combat
+			case "1.14.3-rc.4.combat.1" -> {
+				return "1.14.3-rc.4";
+			}
+			case "1.14.5-combat.2" -> {
+				return "1.14.4";
+			}
+			case "1.14.5-combat.3" -> {
+				return "1.14.5-combat.2";
+			}
 			case "1.15-rc.3.combat.4" -> {
 				return "1.15-rc.3";
 			}
@@ -221,6 +233,9 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 				return "1.19-alpha.22.13.a";
 			}
 			case "1.20-alpha.23.13.ab" -> {
+				return "1.20-alpha.23.13.a";
+			}
+			case "1.20-alpha.23.13.ab.original" -> {
 				return "1.20-alpha.23.13.a";
 			}
 			default -> {
