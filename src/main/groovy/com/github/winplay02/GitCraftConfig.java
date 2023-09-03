@@ -14,6 +14,7 @@ public class GitCraftConfig {
 	public int failedFetchRetryInterval = 500;
 	public int remappingThreads = Runtime.getRuntime().availableProcessors() - 3;
 	public int decompilingThreads = Runtime.getRuntime().availableProcessors() - 3;
+	public MappingHelper.MappingFlavour usedMapping = MappingHelper.MappingFlavour.MOJMAP;
 
 	/// Optional settings
 	public String[] onlyVersion = null;
@@ -47,6 +48,7 @@ public class GitCraftConfig {
 		} else {
 			MiscHelper.println("Versions to decompile: all");
 		}
+		MiscHelper.println("Mappings used: %s", usedMapping);
 	}
 
 	public boolean isOnlyVersion() {

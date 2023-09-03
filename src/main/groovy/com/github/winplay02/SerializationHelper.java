@@ -1,5 +1,6 @@
 package com.github.winplay02;
 
+import com.github.winplay02.meta.FabricYarnVersionMeta;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -13,13 +14,15 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.TreeMap;
 
 public class SerializationHelper {
 
@@ -27,9 +30,10 @@ public class SerializationHelper {
 
 	public static final TypeToken<LinkedHashMap<String, McVersion>> TYPE_LINKED_HASH_MAP_STRING_VERSION = new TypeToken<LinkedHashMap<String, McVersion>>() {
 	};
-	public static final TypeToken<HashMap<String, String>> TYPE_HASH_MAP_STRING_STRING = new TypeToken<HashMap<String, String>>() {
+	public static final TypeToken<TreeMap<String, String>> TYPE_TREE_MAP_STRING_STRING = new TypeToken<TreeMap<String, String>>() {
 	};
-
+	public static final TypeToken<ArrayList<FabricYarnVersionMeta>> TYPE_LIST_FABRIC_YARN_VERSION_META = new TypeToken<ArrayList<FabricYarnVersionMeta>>() {
+	};
 
 	static {
 		gson = new GsonBuilder().registerTypeHierarchyAdapter(Path.class, new TypeAdapter<Path>() {
@@ -51,11 +55,15 @@ public class SerializationHelper {
 					return Path.of(in.nextString());
 				}
 			}
-		}).create();
+		}).setPrettyPrinting().create();
 	}
 
 	public static <T> String serialize(T objectToSerialize) {
-		return gson.toJson(objectToSerialize);
+		StringWriter writer = new StringWriter();
+		JsonWriter jsonWriter = new JsonWriter(writer);
+		jsonWriter.setIndent("\t");
+		gson.toJson(objectToSerialize, objectToSerialize.getClass(), jsonWriter);
+		return writer.toString();
 	}
 
 	public static void writeAllToPath(Path path, String json) throws IOException {

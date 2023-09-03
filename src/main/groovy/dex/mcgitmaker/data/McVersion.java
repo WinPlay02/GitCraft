@@ -1,5 +1,6 @@
 package dex.mcgitmaker.data;
 
+import com.github.winplay02.MappingHelper;
 import com.github.winplay02.MiscHelper;
 import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.Util;
@@ -55,27 +56,23 @@ public class McVersion {
 	public String time;
 	public String assets_index;
 
-	public Path decompiledMc() throws IOException {
-		Path p = Decompiler.decompiledPath(this);
+	public Path decompiledMc(MappingHelper.MappingFlavour mappingFlavour) throws IOException {
+		Path p = Decompiler.decompiledPath(this, mappingFlavour);
 		File f = p.toFile();
 		if (!f.exists() || f.length() == 22 /* empty jar */) {
-			Decompiler.decompile(this);
+			Decompiler.decompile(this, mappingFlavour);
 		}
 		return p;
 	}
 
-	public boolean removeDecompiled() throws IOException {
-		Path p = Decompiler.decompiledPath(this);
+	public boolean removeDecompiled(MappingHelper.MappingFlavour mappingFlavour) throws IOException {
+		Path p = Decompiler.decompiledPath(this, mappingFlavour);
 		File f = p.toFile();
 		if (f.exists()) {
 			Files.delete(p);
 			return true;
 		}
 		return false;
-	}
-
-	public Path remappedJar() throws IOException {
-		return Remapper.doRemap(this);
 	}
 
 	public Path mergedJarPath() {

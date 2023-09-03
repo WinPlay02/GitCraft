@@ -27,9 +27,7 @@ import java.util.stream.Stream;
 
 public class MinecraftVersionGraph implements Iterable<McVersion> {
 
-	public static final String REPO_TAG_MOJMAP = "mojmap";
-
-	private static HashMap<String, String> semverCache = null;
+	private static TreeMap<String, String> semverCache = null;
 
 	private MinecraftVersionGraph() {
 	}
@@ -79,10 +77,10 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		return true;
 	}
 
-	protected static final Pattern LINEAR_SNAPSHOT_REGEX = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)\\d|_[a-z_\\-]+snapshot-\\d+)$)");
+	protected static final Pattern LINEAR_SNAPSHOT_REGEX = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)\\d+|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
 
 	public static boolean isVersionNonLinearSnapshot(McVersion mcVersion) {
-		return mcVersion.snapshot && !(LINEAR_SNAPSHOT_REGEX.matcher(mcVersion.version).matches());
+		return mcVersion.snapshot && (Objects.equals(mcVersion.version, "15w14a") || !(LINEAR_SNAPSHOT_REGEX.matcher(mcVersion.version).matches())); // mark 15w14a explicit as april fools snapshot, since this case should not be covered by the regex
 	}
 
 	public static String fixupSemver(String proposedSemVer) {
@@ -91,6 +89,33 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		}
 		if (Objects.equals(proposedSemVer, "1.16.2-Combat.Test.8")) { // this is wrong here, fabric gets it correct
 			return "1.16.3-combat.8";
+		}
+		if (Objects.equals(proposedSemVer, "0.30.1.c")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.30.1-c";
+		}
+		if (Objects.equals(proposedSemVer, "0.0.13.a")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.13-a";
+		}
+		if (Objects.equals(proposedSemVer, "0.0.13.a.3")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.13-a3";
+		}
+		if (Objects.equals(proposedSemVer, "0.0.11.a")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.11-a";
+		}
+		if (Objects.equals(proposedSemVer, "rd-161348")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.0.161348-rd";
+		}
+		if (Objects.equals(proposedSemVer, "rd-160052")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.0.160052-rd";
+		}
+		if (Objects.equals(proposedSemVer, "rd-20090515")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.0.132328-rd20090515";
+		}
+		if (Objects.equals(proposedSemVer, "rd-132328")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.0.132328-rd";
+		}
+		if (Objects.equals(proposedSemVer, "rd-132211")) { // this might be correct, but semver parser from fabric loader does not accept it
+			return "0.0.0.132211-rd";
 		}
 		if (proposedSemVer.contains("-Experimental")) {
 			return proposedSemVer.replace("-Experimental", "-alpha.0.0.Experimental");
@@ -103,13 +128,13 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 			Path cachePath = GitCraft.CURRENT_WORKING_DIRECTORY.resolve("semver-cache.json");
 			if (cachePath.toFile().exists()) {
 				try {
-					semverCache = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(cachePath), SerializationHelper.TYPE_HASH_MAP_STRING_STRING);
+					semverCache = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(cachePath), SerializationHelper.TYPE_TREE_MAP_STRING_STRING);
 				} catch (IOException e) {
-					semverCache = new HashMap<>();
+					semverCache = new TreeMap<>();
 					MiscHelper.println("This is not a fatal error: %s", e);
 				}
 			} else {
-				semverCache = new HashMap<>();
+				semverCache = new TreeMap<>();
 			}
 		}
 	}
@@ -131,15 +156,19 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 				try {
 					x_path = mcVersion.artifacts.clientJar().fetchArtifact().toPath();
 					x = McVersionLookup.getVersion(List.of(x_path), mcVersion.mainClass, null);
+					break;
+				} catch (Exception ignored) {
+				}
+				try {
+					x_path = mcVersion.artifacts.clientJar().fetchArtifact().toPath();
+					x = McVersionLookup.getVersion(List.of(x_path), null, mcVersion.version);
+					break;
 				} catch (Exception e) {
-					MiscHelper.println("Semver lookup failed. Retrying... ");
-					if (x_path != null) {
-						x_path.toFile().delete();
-					}
+					MiscHelper.println("Semver lookup failed (for %s). Retrying... ", mcVersion.version);
 					MiscHelper.sleep(250);
 				}
 			}
-			mcVersion.loaderVersion = fixupSemver(x.getNormalized());
+			mcVersion.loaderVersion = fixupSemver(Objects.equals(x.getNormalized(), "client") ? mcVersion.version : x.getNormalized());
 			MiscHelper.println("Semver mapped for: %s as %s", x.getRaw(), mcVersion.loaderVersion);
 		}
 	}
@@ -176,6 +205,15 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 				return "1.16.3-combat.8.b";
 			}
 			// April
+			case "1.8.4-alpha.15.14.a+loveandhugs" -> {
+				return "1.8.3";
+			}
+			case "1.9.2-rv+trendy" -> {
+				return "1.9.2";
+			}
+			case "1.14-alpha.19.13.shareware" -> {
+				return "1.14-alpha.19.13.b";
+			}
 			case "1.16-alpha.20.13.inf" -> {
 				return "1.16-alpha.20.13.b";
 			}
@@ -207,10 +245,6 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 	public static MinecraftVersionGraph createFromMetadata(LinkedHashMap<String, McVersion> metadata) {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
 		for (McVersion version : metadata.values()) {
-			if (!version.hasMappings) {
-				// TODO other mappings
-				continue;
-			}
 			lookupLoaderVersion(version);
 			if (MinecraftVersionGraph.isVersionNonLinearSnapshot(version)) {
 				graph.nonLinearVersions.put(parseFromLoaderVersion(version.loaderVersion), version);
@@ -227,8 +261,8 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		return graph;
 	}
 
-	public MinecraftVersionGraph filterMojMapped() {
-		return new MinecraftVersionGraph(this, (entry -> entry.getValue().hasMappings), REPO_TAG_MOJMAP);
+	public MinecraftVersionGraph filterMapping(MappingHelper.MappingFlavour mappingFlavour) {
+		return new MinecraftVersionGraph(this, (entry -> mappingFlavour.doMappingsExist(entry.getValue())));
 	}
 
 	public MinecraftVersionGraph filterMainlineVersions() {
@@ -315,12 +349,10 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		return version != null && this.stream().anyMatch((graphVersion) -> graphVersion.equals(version));
 	}
 
-	public String repoTagsIdentifier() {
+	public String repoTagsIdentifier(MappingHelper.MappingFlavour mappingFlavour) {
 		List<String> sortedTags = new ArrayList<>();
-		if (repoTags.contains(REPO_TAG_MOJMAP)) {
-			sortedTags.add(REPO_TAG_MOJMAP);
-		}
-		sortedTags.addAll(this.repoTags.stream().filter(tag -> !tag.equals(REPO_TAG_MOJMAP)).toList());
+		sortedTags.add(mappingFlavour.toString());
+		sortedTags.addAll(this.repoTags.stream().filter(tag -> !tag.equals(mappingFlavour.toString())).toList());
 		return String.join("-", sortedTags);
 	}
 
@@ -334,7 +366,7 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 	}
 
 	public void writeSemverCache() throws IOException {
-		Map<String, String> semverCache = new HashMap<>();
+		Map<String, String> semverCache = new TreeMap<>();
 		for (McVersion version : this) {
 			semverCache.put(version.version, version.loaderVersion);
 		}

@@ -1,14 +1,13 @@
 package dex.mcgitmaker.data;
 
 import com.github.winplay02.MiscHelper;
+import com.github.winplay02.RemoteHelper;
+import com.github.winplay02.SerializationHelper;
 import com.github.winplay02.meta.ArtifactMeta;
 import com.github.winplay02.meta.AssetsIndexMeta;
 import com.github.winplay02.meta.LauncherMeta;
 import com.github.winplay02.meta.LibraryMeta;
-import com.github.winplay02.SerializationHelper;
-import com.github.winplay02.RemoteHelper;
 import com.github.winplay02.meta.VersionMeta;
-import com.google.gson.reflect.TypeToken;
 import dex.mcgitmaker.GitCraft;
 import groovy.lang.Tuple2;
 
@@ -58,6 +57,10 @@ public class McMetadata {
 		for (LauncherMeta.LauncherVersionEntry version : mcLauncherVersions.versions()) {
 			if (!versionMeta.containsKey(version.id())) {
 				versionMeta.put(version.id(), createVersionDataFromLauncherMeta(version.id(), version.url(), version.sha1()));
+			} else {
+				if (!ensureVersionMetaPresence(version.id(), version.url(), version.sha1())) {
+					versionMeta.put(version.id(), createVersionDataFromLauncherMeta(version.id(), version.url(), version.sha1()));
+				}
 			}
 		}
 		// Import extra verions
@@ -86,6 +89,22 @@ public class McMetadata {
 		return createVersionData(meta, pExtraFile, null);
 	}
 
+	private static boolean ensureVersionMetaPresence(String metaID, String metaURL, String metaSha1) {
+		Path metaFile = GitCraft.META_CACHE.resolve(metaID + ".json");
+		boolean upToDate = true; // was present valid and not stale
+		if (!metaFile.toFile().exists() && Objects.requireNonNull(RemoteHelper.calculateSHA1Checksum(metaFile.toFile())).equalsIgnoreCase(metaSha1)) {
+			upToDate = false; // downloaded new file, or updated stale file
+			RemoteHelper.downloadToFileWithChecksumIfNotExists(metaURL, metaFile, metaSha1, "version meta", metaID);
+		}
+		Path targetPath = getMcArtifactRootPath(metaID).resolve("version.json");
+		try {
+			Files.copy(metaFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return upToDate;
+	}
+
 	private static McVersion createVersionDataFromLauncherMeta(String metaID, String metaURL, String metaSha1) throws IOException {
 		Path metaFile = GitCraft.META_CACHE.resolve(metaID + ".json");
 		RemoteHelper.downloadToFileWithChecksumIfNotExists(metaURL, metaFile, metaSha1, "version meta", metaID);
@@ -102,19 +121,15 @@ public class McMetadata {
 				libs.add(new Artifact(artifactMeta.url(), Artifact.nameFromUrl(artifactMeta.url()), GitCraft.LIBRARY_STORE, artifactMeta.sha1()));
 			}
 		}
-		// Fetch Assets index
-		fetchAssetsIndexByMeta(meta);
 
 		int javaVersion = meta.javaVersion() != null ? meta.javaVersion().majorVersion() : 8;
 		McArtifacts artifacts = getMcArtifacts(meta);
 
-		if (artifacts.hasMappings()) {
-			getMcArtifactRootPath(meta.id()).toFile().mkdirs();
-			Path targetPath = getMcArtifactRootPath(meta.id()).resolve("version.json");
-			Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-			if (!RemoteHelper.checksumCheckFileIsValidAndExists(targetPath.toFile(), metaSha1, "stored version meta", meta.id(), false)) {
-				throw new RuntimeException("A valid stored version meta for %s does not exist".formatted(meta.id()));
-			}
+		getMcArtifactRootPath(meta.id()).toFile().mkdirs();
+		Path targetPath = getMcArtifactRootPath(meta.id()).resolve("version.json");
+		Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+		if (!RemoteHelper.checksumCheckFileIsValidAndExists(targetPath.toFile(), metaSha1, "stored version meta", meta.id(), false)) {
+			throw new RuntimeException("A valid stored version meta for %s does not exist".formatted(meta.id()));
 		}
 
 		return new McVersion(meta.id(), null, Objects.equals(meta.type(), "snapshot") || Objects.equals(meta.type(), "pending"), artifacts.hasMappings(), javaVersion, artifacts, libs, meta.mainClass(), null, meta.time(), meta.assets());
@@ -132,12 +147,15 @@ public class McMetadata {
 		return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile.toPath()), AssetsIndexMeta.class);
 	}
 
-	private static void fetchAssetsIndexByMeta(VersionMeta meta) throws IOException {
-		fetchAssetsIndex(meta.id() + "_" + meta.assets(), meta.assetIndex().url(), meta.assetIndex().sha1());
+	private static AssetsIndexMeta fetchAssetsIndexByVersion(McVersion version) throws IOException {
+		// Fetch Assets index
+		Path targetPath = getMcArtifactRootPath(version.version).resolve("version.json");
+		VersionMeta meta = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetPath), VersionMeta.class);
+		return fetchAssetsIndex(meta.id() + "_" + meta.assets(), meta.assetIndex().url(), meta.assetIndex().sha1());
 	}
 
 	public static AssetsIndexMeta fetchAssetsOnly(McVersion version) throws IOException {
-		AssetsIndexMeta assetsIndex = fetchAssetsIndex(version.version + "_" + version.assets_index, null, null);
+		AssetsIndexMeta assetsIndex = fetchAssetsIndexByVersion(version);
 		// Fetch Assets
 		for (AssetsIndexMeta.AssetsIndexEntry info : assetsIndex.objects().values()) {
 			new Artifact(RemoteHelper.makeAssetUrl(info.hash()), info.hash(), GitCraft.ASSETS_OBJECTS, info.hash()).fetchArtifact();
@@ -149,7 +167,7 @@ public class McMetadata {
 		AssetsIndexMeta assetsIndex = fetchAssetsOnly(version);
 		// Copy Assets
 		Path targetRoot = dest_root.resolve("minecraft").resolve("external-resources").resolve("assets");
-		if(GitCraft.config.useHardlinks) {
+		if (GitCraft.config.useHardlinks) {
 			for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.objects().entrySet()) {
 				Path sourcePath = GitCraft.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 				Path targetPath = targetRoot.resolve(entry.getKey());

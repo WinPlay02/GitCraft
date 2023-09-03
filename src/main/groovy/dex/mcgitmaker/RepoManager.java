@@ -1,18 +1,14 @@
 package dex.mcgitmaker;
 
-import com.github.winplay02.GitCraftConfig;
+import com.github.winplay02.MappingHelper;
 import com.github.winplay02.MinecraftVersionGraph;
 import com.github.winplay02.MiscHelper;
 import dex.mcgitmaker.data.McMetadata;
 import dex.mcgitmaker.data.McVersion;
 import dex.mcgitmaker.loom.FileSystemUtil;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
@@ -102,9 +98,9 @@ class RepoManager implements Closeable {
 		}
 	}
 
-	void copyFiles(McVersion mcVersion) throws IOException {
+	void copyFiles(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) throws IOException {
 		// Copy decompiled MC to repo directory
-		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.decompiledMc())) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.decompiledMc(mappingFlavour))) {
 			MiscHelper.copyLargeDir(fs.get().getPath("."), this.root_path.resolve("minecraft").resolve("src"));
 		}
 
@@ -123,7 +119,7 @@ class RepoManager implements Closeable {
 		}
 	}
 
-	void commitDecompiled(McVersion mcVersion) throws GitAPIException, IOException {
+	void commitDecompiled(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) throws GitAPIException, IOException {
 		MiscHelper.println("Version: %s", mcVersion.version);
 		String target_branch;
 		if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
@@ -154,9 +150,9 @@ class RepoManager implements Closeable {
 			target_branch = GitCraft.config.gitMainlineLinearBranch;
 		}
 
-		mcVersion.decompiledMc();
+		mcVersion.decompiledMc(mappingFlavour);
 		MiscHelper.executeTimedStep("Clearing working directory...", this::clearWorkingTree);
-		MiscHelper.executeTimedStep("Moving files to repo...", () -> copyFiles(mcVersion));
+		MiscHelper.executeTimedStep("Moving files to repo...", () -> copyFiles(mcVersion, mappingFlavour));
 
 		// Make commit
 		MiscHelper.executeTimedStep("Committing files to repo...", () -> {

@@ -2,21 +2,17 @@ package dex.mcgitmaker;
 
 import com.github.winplay02.GitCraftCli;
 import com.github.winplay02.GitCraftConfig;
+import com.github.winplay02.MappingHelper;
 import com.github.winplay02.MinecraftVersionGraph;
 import com.github.winplay02.MiscHelper;
 import dex.mcgitmaker.data.McMetadata;
 import dex.mcgitmaker.data.McVersion;
+import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import net.fabricmc.loader.api.VersionParsingException;
-import org.eclipse.jgit.api.errors.GitAPIException;
 
 public class GitCraft {
 
@@ -83,7 +79,7 @@ public class GitCraft {
 			return;
 		}
 		GitCraft gitCraft = new GitCraft();
-		gitCraft.versionGraph = gitCraft.versionGraph.filterMojMapped(); // TODO other mappings
+		gitCraft.versionGraph = gitCraft.versionGraph.filterMapping(GitCraft.config.usedMapping);
 		if (config.isOnlyVersion()) {
 			if (config.onlyVersion.length == 0) {
 				MiscHelper.panic("No version provided");
@@ -112,15 +108,15 @@ public class GitCraft {
 		MiscHelper.println("Repo can be found at: %s", repoManager.root_path.toString());
 	}
 
-	void refreshDeleteDecompiledJar(McVersion mcVersion) throws IOException {
-		if (mcVersion.removeDecompiled()) {
+	void refreshDeleteDecompiledJar(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) throws IOException {
+		if (mcVersion.removeDecompiled(mappingFlavour)) {
 			MiscHelper.println("$%s.jar has been deleted", mcVersion.version);
-			decompileNoRepository(mcVersion);
+			decompileNoRepository(mcVersion, mappingFlavour);
 		}
 	}
 
-	void decompileNoRepository(McVersion mcVersion) throws IOException {
-		mcVersion.decompiledMc();
+	void decompileNoRepository(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) throws IOException {
+		mcVersion.decompiledMc(mappingFlavour);
 		if (config.loadAssets && config.loadAssetsExtern) {
 			McMetadata.fetchAssetsOnly(mcVersion);
 		}
@@ -129,18 +125,18 @@ public class GitCraft {
 	RepoManager updateRepo() throws GitAPIException, IOException {
 		RepoManager r = null;
 		if (!config.noRepo) {
-			String identifier = versionGraph.repoTagsIdentifier();
+			String identifier = versionGraph.repoTagsIdentifier(GitCraft.config.usedMapping);
 			r = new RepoManager(this.versionGraph, identifier.isEmpty() ? null : MAIN_ARTIFACT_STORE.getParent().resolve(String.format("minecraft-repo-%s", identifier)));
 		}
 		for (McVersion mcv : versionGraph) {
 			if (config.refreshDecompilation) {
-				refreshDeleteDecompiledJar(mcv);
+				refreshDeleteDecompiledJar(mcv, GitCraft.config.usedMapping);
 			}
 			if (!config.noRepo) {
 				assert r != null;
-				r.commitDecompiled(mcv);
+				r.commitDecompiled(mcv, GitCraft.config.usedMapping);
 			} else {
-				decompileNoRepository(mcv);
+				decompileNoRepository(mcv, GitCraft.config.usedMapping);
 			}
 		}
 		if (!config.noRepo) {

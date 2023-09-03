@@ -16,10 +16,6 @@ public record Artifact(String url, String name, Path containingPath, String sha1
 		this(url, name, containingPath, null);
 	}
 
-	public static Artifact ofVirtual(String name) {
-		return new Artifact("", name, null);
-	}
-
 	public File fetchArtifact() {
 		Path path = containingPath().resolve(name);
 		ensureArtifactPresence(path);
@@ -36,5 +32,15 @@ public record Artifact(String url, String name, Path containingPath, String sha1
 		}
 		String[] urlParts = url.split("/");
 		return urlParts[urlParts.length - 1];
+	}
+
+	public record DependencyArtifact(String sha1sum, String name, String url) {
+		public DependencyArtifact(Artifact artifact) {
+			this(artifact.sha1sum(), artifact.name(), artifact.url());
+		}
+
+		public static DependencyArtifact ofVirtual(String name) {
+			return new DependencyArtifact(null, name, null);
+		}
 	}
 }

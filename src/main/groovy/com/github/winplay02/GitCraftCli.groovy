@@ -1,7 +1,9 @@
 package com.github.winplay02;
 
 import groovy.cli.picocli.CliBuilder
-import groovy.cli.picocli.OptionAccessor;
+import groovy.cli.picocli.OptionAccessor
+
+import java.util.stream.Collectors;
 
 class GitCraftCli {
 	static CliBuilder createCli() {
@@ -9,7 +11,7 @@ class GitCraftCli {
 		cli_args.setUsage("gradlew run --args=\"[Options]\"");
 		cli_args.setHeader("Options:");
 		cli_args.setFooter("If you want to decompile versions which are not part of the default minecraft meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the \"extra-versions\" directory");
-		cli_args._(longOpt: 'only-version', args: -2 /*Option.UNLIMITED_VALUES*/, valueSeparator: ',', argName:
+		cli_args._(longOpt: 'only-version', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName:
 				'version', 'Specify the only version(s) to decompile. The repository be stored in minecraft-repo-<version>-<version>-.... The normal repository (minecraft-repo) will not be touched. --only-version will take precedence over --min-version.');
 		cli_args._(longOpt: 'min-version', args: 1, argName:
 				'version', 'Specify the min. version to decompile. Each following version will be decompiled afterwards, non-linear versions are still committed to separate branches. The repository will be stored in minecraft-repo-min-<version>. The normal repository (minecraft-repo) will not be touched.');
@@ -23,6 +25,7 @@ class GitCraftCli {
 				'no-repo', 'Prevents the creation/modification of a repository for versioning, only decompiles the provided (or all) version(s)');
 		cli_args._(longOpt:
 				'refresh', 'Refreshes the decompilation by deleting old decompiled artifacts and restarting. This will not be useful, if the decompiler has not been updated. The repository has to be deleted manually.');
+		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingHelper.MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingHelper.MappingFlavour, argName: "mapping", defaultValue: "mojmap");
 		cli_args.h(longOpt: 'help', 'Displays this help screen');
 		return cli_args;
 	}
@@ -50,6 +53,7 @@ class GitCraftCli {
 			String subjectVersion = cli_args_parsed.'min-version';
 			config.minVersion = subjectVersion;
 		}
+		config.usedMapping = cli_args_parsed.'mappings';
 		config.printConfigInformation();
 		return config;
 	}

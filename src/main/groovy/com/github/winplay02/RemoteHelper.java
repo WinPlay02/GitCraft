@@ -167,7 +167,7 @@ public class RemoteHelper {
 				file_output.flush();
 			}
 		} catch (Exception e1) {
-			MiscHelper.println("Failed to fetch URL (retrying in %sms): %s (%s)", GitCraft.config.failedFetchRetryInterval, url, e1);
+			MiscHelper.println("Failed to fetch URL: %s (%s)", url, e1);
 			throw new RuntimeException(e1);
 		}
 		if (!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true)) {

@@ -1,12 +1,12 @@
 package dex.mcgitmaker.loom;
 
+import com.github.winplay02.MappingHelper;
 import com.github.winplay02.MiscHelper;
+import com.github.winplay02.SerializationHelper;
 import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.NIODirectoryResultSaver;
 import dex.mcgitmaker.data.Artifact;
 import dex.mcgitmaker.data.McVersion;
-import groovy.json.JsonGenerator;
-import groovy.json.JsonOutput;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
@@ -15,27 +15,27 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Decompiler {
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
-	public static Path decompiledPath(McVersion mcVersion) {
-		return GitCraft.DECOMPILED_WORKINGS.resolve(mcVersion.version + "-mojmap.jar"); // TODO other mappings?
+	public static Path decompiledPath(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) {
+		return GitCraft.DECOMPILED_WORKINGS.resolve(String.format("%s-%s.jar", mcVersion.version, mappingFlavour.toString()));
 	}
 
 	// Adapted from loom-quiltflower by Juuxel
-	public static void decompile(McVersion mcVersion) throws IOException {
+	public static void decompile(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) throws IOException {
 		MiscHelper.println("Decompiling: %s...", mcVersion.version);
 		Map<String, Object> options = new HashMap<>();
 
@@ -53,7 +53,7 @@ public class Decompiler {
 		//options.putAll(ReflectionUtil.<Map<String, String>>maybeGetFieldOrRecordComponent(metaData, "options").orElse(Map.of()));
 
 		List<FileSystemUtil.Delegate> openFileSystems = new ArrayList<>();
-		FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath(mcVersion), true);
+		FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath(mcVersion, mappingFlavour), true);
 		openFileSystems.add(decompiledJar);
 		Iterator<Path> resultFsIt = decompiledJar.get().getRootDirectories().iterator();
 		if (!resultFsIt.hasNext()) {
@@ -70,7 +70,7 @@ public class Decompiler {
 			ff.addLibrary(lib_file);
 		}
 
-		Path mc_file = mcVersion.remappedJar();
+		Path mc_file = Remapper.doRemap(mcVersion, mappingFlavour);
 		openFileSystems.add(FileSystemUtil.getJarFileSystem(mc_file, false));
 		ff.addSource(mc_file.toFile());
 
@@ -87,14 +87,13 @@ public class Decompiler {
 
 	private static void writeLibraries(Path parentDirectory, McVersion mcVersion) throws IOException {
 		Path p = parentDirectory.resolve("dependencies.json");
-		JsonGenerator generator = new JsonGenerator.Options()
-				.excludeFieldsByName("containingPath")
-				.build();
 
-		List<Artifact> c = mcVersion.libraries.stream().sorted(Comparator.comparing(artifact -> String.join("", artifact.name().split("-")))).collect(Collectors.toList());
-		c.add(Artifact.ofVirtual("Java " + mcVersion.javaVersion));
+		List<Artifact.DependencyArtifact> c = Stream.concat(
+						Arrays.stream(new Artifact.DependencyArtifact[]{Artifact.DependencyArtifact.ofVirtual("Java " + mcVersion.javaVersion)}),
+						mcVersion.libraries.stream().map(Artifact.DependencyArtifact::new).sorted(Comparator.comparing(artifact -> String.join("", artifact.name().split("-")))))
+				.collect(Collectors.toList());
 
-		Files.writeString(p, JsonOutput.prettyPrint(generator.toJson(c)), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+		SerializationHelper.writeAllToPath(p, SerializationHelper.serialize(c));
 	}
 
 	// Adapted from loom-quiltflower by Juuxel
