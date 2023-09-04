@@ -12,11 +12,13 @@ Artifacts are stored in the current working directory:
 - The decompiled code is stored in separate JARs inside the `artifact-store/decompiled` directory, to not write thousands of files directly onto the file system
 - To decompile versions not provided by Mojang directly, put the meta files into `extra-versions` and they will be picked up
 
-If only a specific version should be decompiled and versioned or a version range should be decompiled, provide the `--only-version=<version>` or `--min-version=<version>` parameters. `<version>` should be a (human readable) version name, e.g. `23w14a` or `1.20.1`.
+If only a specific version should be decompiled and versioned or a version range should be decompiled, provide the `--only-version=<version>` or `--min-version=<version>` parameters. `<version>` should be a (human-readable) version name, e.g. `23w14a` or `1.20.1`.
 
 To disabled versioning entirely (and only decompile), specify `--no-repo`.
 
 To disable special versions (e.g. april fools or combat snapshots), specify `--skip-nonlinear`.
+
+To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `fabric_intermediary` and `yarn`.
 
 Powered by:
 - [Vineflower](https://github.com/Vineflower/vineflower)
@@ -24,6 +26,9 @@ Powered by:
 - [Mapping-IO](https://github.com/FabricMC/mapping-io)
 - [Tiny Remapper](https://github.com/FabricMC/tiny-remapper)
 - Mojang's generous mapping files (Mojmap)
+- [Loom](https://github.com/FabricMC/fabric-loom)
+- [Yarn](https://github.com/FabricMC/yarn)
+- [Fabric Intermediary Mappings](https://github.com/FabricMC/intermediary)
 
 ## Help / Usage
 
@@ -31,6 +36,10 @@ Powered by:
 Usage: gradlew run --args="[Options]"
 Options:
   -h, --help                 Displays this help screen
+      --mappings=<mapping>   Specifies the mappings used to decompile the
+                               source tree. Mojmaps are selected by default.
+                               Possible values are: mojmap,
+                               fabric_intermediary, yarn
       --min-version=<version>
                              Specify the min. version to decompile. Each
                                following version will be decompiled afterwards,
@@ -66,6 +75,17 @@ If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory
 ```
+
+## Notes about Yarn
+- Yarn support is experimental as some versions can not (yet) be remapped with yarn
+  - Some versions of yarn are completely broken, so they are skipped. Affected versions: `19w13a`, `19w13b`, `19w14a`, `19w14b`
+- Other quirks, which were successfully worked around:
+  - Some build of yarn are broken, so older ones are used instead. Affected versions: `19w04b`, `19w08a`, `19w12b`
+  - Older versions of yarn don't exist in merged form. They are merged with intermediary mappings. Affected versions: `< 20w09a`
+  - Older versions of yarn only exist with switched namespaces. They were switched back to their correct namespaces. Affected versions: `< 1.14.3`
+  - One version of yarn exists in maven, but does not exist in meta.fabricmc.net. Affected version: `1.14.2 Pre-Release 1`
+  - Some combat snapshots are located in a non-standard-path (on maven.fabricmc.net and on meta.fabricmc.net). Affected versions: `1.15_combat-6`, `1.16_combat-0`
+- Version `1.16_combat-1`, `1.16_combat-2`, `1.16_combat-4`, `1.16_combat-5`, `1.16_combat-6` do not exist at all
 
 ## Cleanup
 

@@ -5,9 +5,14 @@ import dex.mcgitmaker.GitCraft;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.IDN;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -156,22 +161,40 @@ public class RemoteHelper {
 		if (output.getParent() != null) {
 			output.getParent().toFile().mkdirs();
 		}
-		try {
-			MiscHelper.println("Fetching %s %s from: %s", outputFileKind, outputFileId, url);
-			URLConnection url_connection = new URL(url).openConnection(java.net.Proxy.NO_PROXY);
-			url_connection.setUseCaches(false);
-			try (OutputStream file_output = Files.newOutputStream(output, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
-				try (InputStream open_stream = new BufferedInputStream(url_connection.getInputStream())) {
-					open_stream.transferTo(file_output);
+		do {
+			try {
+				MiscHelper.println("Fetching %s %s from: %s", outputFileKind, outputFileId, url);
+				URLConnection url_connection = new URL(url).openConnection(java.net.Proxy.NO_PROXY);
+				url_connection.setUseCaches(false);
+				try (OutputStream file_output = Files.newOutputStream(output, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
+					try (InputStream open_stream = new BufferedInputStream(url_connection.getInputStream())) {
+						open_stream.transferTo(file_output);
+					}
+					file_output.flush();
 				}
-				file_output.flush();
+				break;
+			} catch (FileNotFoundException | MalformedURLException e1) {
+				MiscHelper.println("Failed to fetch URL: %s (%s)", url, e1);
+				targetFile.delete();
+				throw new RuntimeException(e1);
+			} catch (Exception e1) {
+				MiscHelper.println("Failed to fetch URL (retrying in %sms): %s (%s)", GitCraft.config.failedFetchRetryInterval, url, e1);
+				targetFile.delete();
+				MiscHelper.sleep(GitCraft.config.failedFetchRetryInterval);
 			}
-		} catch (Exception e1) {
-			MiscHelper.println("Failed to fetch URL: %s (%s)", url, e1);
-			throw new RuntimeException(e1);
-		}
+		} while (!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true));
 		if (!checksumCheckFileIsValidAndExists(targetFile, sha1sum, outputFileKind, outputFileId, true)) {
 			MiscHelper.panic("File download failed");
+		}
+	}
+
+	public static String urlencodedURL(String url) {
+		try {
+			URL urlObject = new URL(url);
+			URI uriObject = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), IDN.toASCII(urlObject.getHost()), urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
+			return uriObject.toASCIIString();
+		} catch (MalformedURLException | URISyntaxException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

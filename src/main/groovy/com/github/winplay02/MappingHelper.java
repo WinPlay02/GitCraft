@@ -60,10 +60,21 @@ public class MappingHelper {
 			};
 		}
 
+		private boolean isYarnBrokenVersion(McVersion mcVersion) {
+			return mcVersion.version.equals("19w13a") || mcVersion.version.equals("19w13b") || mcVersion.version.equals("19w14a") || mcVersion.version.equals("19w14b")
+					/* not really broken, but does not exist: */
+					|| mcVersion.version.equals("1.16_combat-1") || mcVersion.version.equals("1.16_combat-2") || mcVersion.version.equals("1.16_combat-4") || mcVersion.version.equals("1.16_combat-5") || mcVersion.version.equals("1.16_combat-6")
+					/* not broken, but does not exist, because of a re-upload */
+					|| mcVersion.version.equals("23w13a_or_b_original");
+		}
+
 		public boolean doMappingsExist(McVersion mcVersion) {
 			return switch (this) {
 				case MOJMAP -> mcVersion.hasMappings;
 				case YARN -> {
+					if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
+						yield false;
+					}
 					try {
 						yield SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) YARN_MAPPINGS_START_VERSION) >= 0;
 					} catch (VersionParsingException e) {
@@ -89,7 +100,8 @@ public class MappingHelper {
 						yield Optional.empty();
 					}
 				}
-				case YARN -> Optional.ofNullable(mappingsPathYarn(mcVersion));
+				case YARN ->
+						Optional.ofNullable(isYarnBrokenVersion(mcVersion) ? null : mappingsPathYarn(mcVersion)); // exclude broken versions
 				case FABRIC_INTERMEDIARY -> Optional.ofNullable(mappingsPathIntermediary(mcVersion));
 			};
 		}
@@ -130,7 +142,7 @@ public class MappingHelper {
 				throw new RuntimeException(e);
 			}
 		}
-		return yarnVersions.get(mcVersion.version);
+		return yarnVersions.get(mappingsIntermediaryPathQuirkVersion(mcVersion.version));
 	}
 
 	public static MemoryMappingTree createIntermediaryMappingsProvider(McVersion mcVersion) throws IOException {
@@ -149,7 +161,9 @@ public class MappingHelper {
 	private static Path mappingsPathYarn(McVersion mcVersion) {
 		FabricYarnVersionMeta yarnVersion = getYarnLatestBuild(mcVersion);
 		if (yarnVersion == null) {
-			MiscHelper.panic("Tried to use yarn for version %s. Yarn mappings do not exist for this version.", mcVersion.version);
+			// MiscHelper.panic("Tried to use yarn for version %s. Yarn mappings do not exist for this version.", mcVersion.version);
+			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", mcVersion.version);
+			yarnVersion = new FabricYarnVersionMeta(mcVersion.version, "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", mcVersion.version, 1), String.format("%s+build.%s", mcVersion.version, 1), !mcVersion.snapshot);
 		}
 		Path mappingsFile = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-build.%s.tiny", mcVersion.version, yarnVersion.build()));
 		if (mappingsFile.toFile().exists()) {
@@ -167,12 +181,7 @@ public class MappingHelper {
 			mappingsFileJar.toFile().delete();
 		}
 		MiscHelper.println("Merged Yarn mappings do not exist for %s, merging with intermediary ourselves...", mcVersion.version);
-		Path mappingsFileUnmerged = null;
-		try {
-			mappingsFileUnmerged = mappingsPathYarnUnmerged(mcVersion, yarnVersion);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		Path mappingsFileUnmerged = mappingsPathYarnUnmerged(mcVersion, yarnVersion);
 		Path mappingsFileIntermediary = mappingsPathIntermediary(mcVersion);
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 		try {
@@ -236,17 +245,46 @@ public class MappingHelper {
 		return sharedName;
 	}
 
-	private static Path mappingsPathYarnUnmerged(McVersion mcVersion, FabricYarnVersionMeta yarnVersion) throws IOException {
-		Path mappingsFileUnmerged = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.version, yarnVersion.build()));
-		if (!mappingsFileUnmerged.toFile().exists()) {
-			Path mappingsFileUnmergedJar = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.version, yarnVersion.build()));
-			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(yarnVersion.makeMavenURLUnmergedV2(), mappingsFileUnmergedJar, null, "unmerged yarn mapping", mcVersion.version);
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileUnmergedJar)) {
-				Path mappingsPathInJar = fs.get().getPath("mappings", "mappings.tiny");
-				Files.copy(mappingsPathInJar, mappingsFileUnmerged, StandardCopyOption.REPLACE_EXISTING);
+	private static Path mappingsPathYarnUnmerged(McVersion mcVersion, FabricYarnVersionMeta yarnVersion) {
+		try {
+			Path mappingsFileUnmerged = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.version, yarnVersion.build()));
+			if (!mappingsFileUnmerged.toFile().exists()) {
+				Path mappingsFileUnmergedJar = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.version, yarnVersion.build()));
+				RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(yarnVersion.makeMavenURLUnmergedV2(), mappingsFileUnmergedJar, null, "unmerged yarn mapping", mcVersion.version);
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileUnmergedJar)) {
+					Path mappingsPathInJar = fs.get().getPath("mappings", "mappings.tiny");
+					Files.copy(mappingsPathInJar, mappingsFileUnmerged, StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
+			return mappingsFileUnmerged;
+		} catch (IOException | RuntimeException e) {
+			MiscHelper.println("Yarn mappings in tiny-v2 format do not exist for %s, falling back to tiny-v1 mappings...", mcVersion.version);
+			try {
+				Path mappingsFileUnmergedv1 = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", mcVersion.version, yarnVersion.build()));
+				if (!mappingsFileUnmergedv1.toFile().exists()) {
+					Path mappingsFileUnmergedJarv1 = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", mcVersion.version, yarnVersion.build()));
+					RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(yarnVersion.makeMavenURLUnmergedV1(), mappingsFileUnmergedJarv1, null, "unmerged yarn mapping (v1 fallback)", mcVersion.version);
+					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileUnmergedJarv1)) {
+						Path mappingsPathInJar = fs.get().getPath("mappings", "mappings.tiny");
+						Files.copy(mappingsPathInJar, mappingsFileUnmergedv1, StandardCopyOption.REPLACE_EXISTING);
+					}
+				}
+				return mappingsFileUnmergedv1;
+			} catch (IOException e2) {
+				MiscHelper.println("Yarn mappings for version %s cannot be fetched. Giving up after trying merged-v2, v2, and v1 mappings.", mcVersion.version);
+				throw new RuntimeException(e);
 			}
 		}
-		return mappingsFileUnmerged;
+	}
+
+	private static String mappingsIntermediaryPathQuirkVersion(String version) {
+		if (version.equalsIgnoreCase("1.15_combat-6")) {
+			return "1_15_combat-6";
+		}
+		if (version.equalsIgnoreCase("1.16_combat-0")) {
+			return "1_16_combat-0";
+		}
+		return version;
 	}
 
 	private static Path mappingsPathIntermediary(McVersion mcVersion) {
@@ -259,7 +297,7 @@ public class MappingHelper {
 		}
 		Path mappingsFile = GitCraft.MAPPINGS.resolve(mcVersion.version + "-intermediary.tiny");
 		if (!mappingsFile.toFile().exists()) {
-			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(String.format("https://raw.githubusercontent.com/FabricMC/intermediary/master/mappings/%s.tiny", mcVersion.version), mappingsFile, null, "intermediary mapping", mcVersion.version);
+			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(RemoteHelper.urlencodedURL(String.format("https://raw.githubusercontent.com/FabricMC/intermediary/master/mappings/%s.tiny", mappingsIntermediaryPathQuirkVersion(mcVersion.version))), mappingsFile, null, "intermediary mapping", mcVersion.version);
 		}
 		return mappingsFile;
 	}

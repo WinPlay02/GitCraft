@@ -7,6 +7,7 @@ import com.github.winplay02.MinecraftVersionGraph;
 import com.github.winplay02.MiscHelper;
 import dex.mcgitmaker.data.McMetadata;
 import dex.mcgitmaker.data.McVersion;
+import dex.mcgitmaker.loom.Remapper;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.File;
@@ -51,7 +52,6 @@ public class GitCraft {
 		MAIN_ARTIFACT_STORE.toFile().mkdirs();
 		DECOMPILED_WORKINGS.toFile().mkdirs();
 		MAPPINGS.toFile().mkdirs();
-		REPO.toFile().mkdirs();
 		MC_VERSION_STORE.toFile().mkdirs();
 		LIBRARY_STORE.toFile().mkdirs();
 		REMAPPED.toFile().mkdirs();
@@ -104,13 +104,20 @@ public class GitCraft {
 			gitCraft.versionGraph = gitCraft.versionGraph.filterMainlineVersions();
 		}
 
-		RepoManager repoManager = gitCraft.updateRepo();
-		MiscHelper.println("Repo can be found at: %s", repoManager.root_path.toString());
+		try (RepoManager repoManager = gitCraft.updateRepo()) {
+			if (repoManager != null) {
+				MiscHelper.println("Repo can be found at: %s", repoManager.root_path.toString());
+			}
+		}
 	}
 
 	void refreshDeleteDecompiledJar(McVersion mcVersion, MappingHelper.MappingFlavour mappingFlavour) throws IOException {
+		Path remappedPath = Remapper.remappedPath(mcVersion, mappingFlavour);
+		if (remappedPath.toFile().exists() && remappedPath.toFile().delete()) {
+			MiscHelper.println("%s-%s.jar (remapped) has been deleted", mcVersion.version, mappingFlavour);
+		}
 		if (mcVersion.removeDecompiled(mappingFlavour)) {
-			MiscHelper.println("$%s.jar has been deleted", mcVersion.version);
+			MiscHelper.println("%s-%s.jar (decompiled) has been deleted", mcVersion.version, mappingFlavour);
 			decompileNoRepository(mcVersion, mappingFlavour);
 		}
 	}
