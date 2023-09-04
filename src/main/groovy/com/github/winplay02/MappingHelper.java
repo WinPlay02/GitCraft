@@ -61,11 +61,11 @@ public class MappingHelper {
 		}
 
 		private boolean isYarnBrokenVersion(McVersion mcVersion) {
-			return mcVersion.version.equals("19w13a") || mcVersion.version.equals("19w13b") || mcVersion.version.equals("19w14a") || mcVersion.version.equals("19w14b")
+			return GitCraftConfig.yarnBrokenVersions.contains(mcVersion.version)
 					/* not really broken, but does not exist: */
-					|| mcVersion.version.equals("1.16_combat-1") || mcVersion.version.equals("1.16_combat-2") || mcVersion.version.equals("1.16_combat-4") || mcVersion.version.equals("1.16_combat-5") || mcVersion.version.equals("1.16_combat-6")
+					|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.version)
 					/* not broken, but does not exist, because of a re-upload */
-					|| mcVersion.version.equals("23w13a_or_b_original");
+					|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.version);
 		}
 
 		public boolean doMappingsExist(McVersion mcVersion) {
@@ -76,14 +76,14 @@ public class MappingHelper {
 						yield false;
 					}
 					try {
-						yield SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) YARN_MAPPINGS_START_VERSION) >= 0;
+						yield SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) GitCraftConfig.YARN_MAPPINGS_START_VERSION) >= 0;
 					} catch (VersionParsingException e) {
 						throw new RuntimeException(e);
 					}
 				}
 				case FABRIC_INTERMEDIARY -> {
 					try {
-						yield SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) INTERMEDIARY_MAPPINGS_START_VERSION) >= 0;
+						yield SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) GitCraftConfig.INTERMEDIARY_MAPPINGS_START_VERSION) >= 0;
 					} catch (VersionParsingException e) {
 						throw new RuntimeException(e);
 					}
@@ -117,19 +117,8 @@ public class MappingHelper {
 			return TinyUtils.createTinyMappingProvider(mappingsPath.get(), getSourceNS(), getDestinationNS());
 		}
 	}
-
-	public static final SemanticVersion INTERMEDIARY_MAPPINGS_START_VERSION, YARN_MAPPINGS_START_VERSION, YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION;
+	
 	public static final String FABRIC_YARN_META = "https://meta.fabricmc.net/v2/versions/yarn";
-
-	static {
-		try {
-			INTERMEDIARY_MAPPINGS_START_VERSION = SemanticVersion.parse("1.14-alpha.18.43.b");
-			YARN_MAPPINGS_START_VERSION = SemanticVersion.parse("1.14-alpha.18.49.a");
-			YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION = SemanticVersion.parse("1.14.3");
-		} catch (VersionParsingException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	private static Map<String, FabricYarnVersionMeta> yarnVersions = null;
 
@@ -193,7 +182,7 @@ public class MappingHelper {
 			try {
 				// unmerged yarn mappings (1.14 - 1.14.3 (exclusive)) seem to have their mappings backwards
 				SemanticVersion targetVersion = SemanticVersion.parse(mcVersion.loaderVersion);
-				if (targetVersion.compareTo((Version) YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION) < 0) {
+				if (targetVersion.compareTo((Version) GitCraftConfig.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION) < 0) {
 					MiscHelper.println("Yarn mappings for version %s are known to have switched namespaces", mcVersion.version);
 					MappingReader.read(mappingsFileUnmerged, new MappingNsRenamer(nsSwitchYarn, Map.of(MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())));
 				} else {
@@ -278,18 +267,12 @@ public class MappingHelper {
 	}
 
 	private static String mappingsIntermediaryPathQuirkVersion(String version) {
-		if (version.equalsIgnoreCase("1.15_combat-6")) {
-			return "1_15_combat-6";
-		}
-		if (version.equalsIgnoreCase("1.16_combat-0")) {
-			return "1_16_combat-0";
-		}
-		return version;
+		return GitCraftConfig.yarnInconsistentVersionNaming.getOrDefault(version, version);
 	}
 
 	private static Path mappingsPathIntermediary(McVersion mcVersion) {
 		try {
-			if (SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) INTERMEDIARY_MAPPINGS_START_VERSION) < 0) {
+			if (SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) GitCraftConfig.INTERMEDIARY_MAPPINGS_START_VERSION) < 0) {
 				return null;
 			}
 		} catch (VersionParsingException e) {

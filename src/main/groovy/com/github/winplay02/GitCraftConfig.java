@@ -1,5 +1,12 @@
 package com.github.winplay02;
 
+import groovy.lang.Tuple2;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.VersionParsingException;
+
+import java.util.List;
+import java.util.Map;
+
 public class GitCraftConfig {
 	public boolean loadIntegratedDatapack = true;
 	public boolean loadAssets = true;
@@ -28,6 +35,49 @@ public class GitCraftConfig {
 
 	/// Experimental Settings
 	public boolean useHardlinks = true;
+
+	/// Mapping Settings
+
+	public static final SemanticVersion INTERMEDIARY_MAPPINGS_START_VERSION, YARN_MAPPINGS_START_VERSION, YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION;
+
+	static {
+		try {
+			INTERMEDIARY_MAPPINGS_START_VERSION = SemanticVersion.parse("1.14-alpha.18.43.b");
+			YARN_MAPPINGS_START_VERSION = SemanticVersion.parse("1.14-alpha.18.49.a");
+			YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION = SemanticVersion.parse("1.14.3");
+		} catch (VersionParsingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static List<String> yarnBrokenVersions = List.of("19w13a", "19w13b", "19w14a", "19w14b");
+
+	public static List<String> yarnMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
+
+	public static List<String> yarnMissingReuploadedVersions = List.of("23w13a_or_b_original");
+
+	// Maps (version, [broken] build) -> [working] build or -1
+	public static Map<Tuple2<String, Integer>, Integer> yarnBrokenBuildOverride = Map.of(
+			// FIXUP Version 19w04b Build 9 is broken
+			Tuple2.tuple("19w04b", 9), 8, /* 19w04b.9 -> Mapping source name conflicts detected: (3 instances) */
+			// FIXUP Version 19w08a Build 6-9 is broken
+			Tuple2.tuple("19w08a", 9), 5, /* 19w08a -> Mapping target name conflicts detected: (1 instance) */
+			// FIXUP Version 19w12b Build 7-12 is broken
+			Tuple2.tuple("19w12b", 12), 6, /* 19w12b -> Mapping target name conflicts detected: (1 instance); Mapping source name conflicts detected: (7 instances) */
+			// FIXUP Version 19w13a Build 1-10 is broken
+			Tuple2.tuple("19w13a", 10), -1, /* 19w13a -> Mapping target name conflicts detected: (1 instance) */ // No working build found
+			// FIXUP Version 19w13b Build 1-12 is broken
+			Tuple2.tuple("19w13b", 12), -1, /* 19w13b -> Mapping target name conflicts detected: (1 instance) */ // No working build found
+			// FIXUP Version 19w14a Build 1-9 is broken
+			Tuple2.tuple("19w14a", 9), -1, /* 19w14a -> Mapping target name conflicts detected: (1 instance) */ // No working build found
+			// FIXUP Version 19w14b Build 1-9 is broken
+			Tuple2.tuple("19w14b", 9), -1 /* 19w14b -> Mapping target name conflicts detected: (2 instances) */ // No working build found
+	);
+
+	public static Map<String, String> yarnInconsistentVersionNaming = Map.of(
+			"1.15_combat-6", "1_15_combat-6", // 1.15_combat-6
+			"1.16_combat-0", "1_16_combat-0" // 1.16_combat-0
+	);
 
 	public static GitCraftConfig defaultConfig() {
 		return new GitCraftConfig();
