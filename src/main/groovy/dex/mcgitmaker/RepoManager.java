@@ -74,12 +74,12 @@ class RepoManager implements Closeable {
 		}
 	}
 
-	boolean findVersionCurrentBranch(McVersion mcVersion) throws GitAPIException {
-		return git.log().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
+	boolean findVersionCurrentBranch(McVersion mcVersion) throws GitAPIException, IOException {
+		return git.log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
 	}
 
-	RevCommit findVersionObjectCurrentBranch(McVersion mcVersion) throws GitAPIException {
-		Iterator<RevCommit> iterator = git.log().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
+	RevCommit findVersionObjectCurrentBranch(McVersion mcVersion) throws GitAPIException, IOException {
+		Iterator<RevCommit> iterator = git.log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
 		if (iterator.hasNext()) {
 			return iterator.next();
 		}
