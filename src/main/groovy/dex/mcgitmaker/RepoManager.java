@@ -124,7 +124,7 @@ class RepoManager implements Closeable {
 		String target_branch;
 		if (git.getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
 			target_branch = MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.version : GitCraft.config.gitMainlineLinearBranch;
-			checkoutVersionBranch(target_branch, mcVersion);
+			checkoutVersionBranch(target_branch.replace(" ", "-"), mcVersion);
 			if (findVersionCurrentBranch(mcVersion)) {
 				MiscHelper.println("Version %s already exists in repo, skipping", mcVersion.version);
 				return;
