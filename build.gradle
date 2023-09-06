@@ -1,63 +1,64 @@
 plugins {
-    id 'groovy'
-    id 'application'
+	id 'groovy'
+	id 'application'
 }
 
 repositories {
-    maven {
-        name = 'Fabric'
-        url = 'https://maven.fabricmc.net/'
-    }
-    maven {
-        url = "https://maven.quiltmc.org/repository/release"
-    }
-    mavenCentral()
+	maven {
+		name = 'Fabric'
+		url = 'https://maven.fabricmc.net/'
+	}
+	maven {
+		url = "https://maven.quiltmc.org/repository/release"
+	}
+	mavenCentral()
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
-    it.options.release = 17
+	it.options.encoding = "UTF-8"
+	it.options.release = 17
 }
 
 application {
-    mainClass = 'dex.mcgitmaker.GitCraft'
+	mainClass = 'dex.mcgitmaker.GitCraft'
+	applicationDefaultJvmArgs = ['-Xmx4G', '-XX:+HeapDumpOnOutOfMemoryError']
 }
 
 dependencies {
 	// General
-    implementation "org.codehaus.groovy:groovy-all:${groovy_version}"
+	implementation "org.codehaus.groovy:groovy-all:${groovy_version}"
 	implementation "com.google.code.gson:gson:${gson_version}"
 
-    // Loader and its deps
-    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-    implementation "org.ow2.asm:asm:${project.asm_version}"
-    implementation "org.ow2.asm:asm-analysis:${project.asm_version}"
-    implementation "org.ow2.asm:asm-commons:${project.asm_version}"
-    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
-    implementation "org.ow2.asm:asm-util:${project.asm_version}"
+	// Loader and its deps
+	implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+	implementation "org.ow2.asm:asm:${project.asm_version}"
+	implementation "org.ow2.asm:asm-analysis:${project.asm_version}"
+	implementation "org.ow2.asm:asm-commons:${project.asm_version}"
+	implementation "org.ow2.asm:asm-tree:${project.asm_version}"
+	implementation "org.ow2.asm:asm-util:${project.asm_version}"
 
-    implementation("net.fabricmc:stitch:${stitch_version}") {
-        exclude module: 'enigma'
-    }
+	implementation("net.fabricmc:stitch:${stitch_version}") {
+		exclude module: 'enigma'
+	}
 
-    // tinyfile management
-    implementation("net.fabricmc:tiny-remapper:${tiny_remapper_version}")
-    implementation "net.fabricmc:access-widener:${access_widener_version}"
-    implementation "net.fabricmc:mapping-io:${mappingio_version}"
+	// tinyfile management
+	implementation("net.fabricmc:tiny-remapper:${tiny_remapper_version}")
+	implementation "net.fabricmc:access-widener:${access_widener_version}"
+	implementation "net.fabricmc:mapping-io:${mappingio_version}"
 	implementation "net.fabricmc:fabric-loom:${loom_version}"
 
-    implementation("net.fabricmc:lorenz-tiny:${lorenz_tiny_version}") {
-        transitive = false
-    }
+	implementation("net.fabricmc:lorenz-tiny:${lorenz_tiny_version}") {
+		transitive = false
+	}
 
-    // https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
-    implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
+	// https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
+	implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
 
-    // Decompiler, could be replaced with another fernflower fork
-    implementation "org.vineflower:vineflower:${vineflower_version}"
+	// Decompiler, could be replaced with another fernflower fork
+	implementation "org.vineflower:vineflower:${vineflower_version}"
 }
 
 // if not working: run ./gradlew run --refresh-dependencies
 configurations.all {
-    resolutionStrategy.cacheDynamicVersionsFor 15, 'minutes'
+	resolutionStrategy.cacheDynamicVersionsFor 15, 'minutes'
 }
