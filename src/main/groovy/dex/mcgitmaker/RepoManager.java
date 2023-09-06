@@ -156,7 +156,10 @@ class RepoManager implements Closeable {
 
 		// Make commit
 		MiscHelper.executeTimedStep("Committing files to repo...", () -> {
-			git.add().addFilepattern(".").setRenormalize(true).call();
+			// Remove removed files from index
+			git.add().addFilepattern(".").setRenormalize(false).setUpdate(true).call();
+			// Stage new files
+			git.add().addFilepattern(".").setRenormalize(false).call();
 			Date version_date = new Date(OffsetDateTime.parse(mcVersion.time).toInstant().toEpochMilli());
 			PersonIdent author = new PersonIdent(GitCraft.config.gitUser, GitCraft.config.gitMail, version_date, TimeZone.getTimeZone("UTC"));
 			git.commit().setMessage(mcVersion.toCommitMessage()).setAuthor(author).setCommitter(author).setSign(false).call();
