@@ -41,25 +41,6 @@ public class Remapper {
 					.fixPackageAccess(true)
 					.threads(GitCraft.config.remappingThreads);
 
-			//if (mappingFlavour == MappingHelper.MappingFlavour.YARN && FabricYarnVersionMeta.shouldRemappingIgnoreUnfixableConflicts(mcVersion)) {
-			//	remapperBuilder = remapperBuilder.ignoreConflicts(true);
-			//}
-
-			if (GitCraft.config.loomFixRecords) {
-				if (!GitCraftConfig.intermediaryMissingVersions.contains(mcVersion.version)) {
-					MemoryMappingTree intermediaryMappingTree = MappingHelper.createIntermediaryMappingsProvider(mcVersion);
-					int intermediaryNsId = intermediaryMappingTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
-					remapperBuilder = remapperBuilder.extraPreApplyVisitor(((cls, next) -> { // See https://github.com/FabricMC/fabric-loom/pull/497
-						if (GitCraft.config.loomFixRecords && !cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
-							return new RecordComponentFixVisitor(next, intermediaryMappingTree, intermediaryNsId);
-						} else {
-							return next;
-						}
-					}));
-				} else {
-					MiscHelper.println("Cannot fix records, as intermediary mappings do not exist for version %s", mcVersion.version);
-				}
-			}
 			TinyRemapper remapper = remapperBuilder.build();
 			remapper.readInputs(mcVersion.merged().toPath());
 			try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(output).build()) {

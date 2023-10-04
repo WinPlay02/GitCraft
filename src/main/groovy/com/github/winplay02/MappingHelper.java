@@ -117,7 +117,7 @@ public class MappingHelper {
 			return TinyUtils.createTinyMappingProvider(mappingsPath.get(), getSourceNS(), getDestinationNS());
 		}
 	}
-	
+
 	public static final String FABRIC_YARN_META = "https://meta.fabricmc.net/v2/versions/yarn";
 
 	private static Map<String, FabricYarnVersionMeta> yarnVersions = null;
@@ -139,10 +139,6 @@ public class MappingHelper {
 		Path intermediaryPath = mappingsPathIntermediary(mcVersion);
 		if (intermediaryPath != null) {
 			MappingReader.read(intermediaryPath, mappingTree);
-		} else {
-			if (GitCraft.config.loomFixRecords) {
-				MiscHelper.panic("Loom should be used to fix invalid records, but intermediary mappings are not (yet) available");
-			}
 		}
 		return mappingTree;
 	}
