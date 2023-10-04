@@ -36,15 +36,15 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		this.repoTags = new HashSet<>(previous.repoTags);
 		this.overriddenEdges = new HashMap<>(previous.overriddenEdges);
 		this.versions = previous.versions.entrySet().stream().filter(predicate)
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> {
-					MiscHelper.panic("Duplicate keys in tree map");
-					return null;
-				}, TreeMap::new));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> {
+				MiscHelper.panic("Duplicate keys in tree map");
+				return null;
+			}, TreeMap::new));
 		this.nonLinearVersions = previous.nonLinearVersions.entrySet().stream().filter(predicate)
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> {
-					MiscHelper.panic("Duplicate keys in tree map");
-					return null;
-				}, TreeMap::new));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> {
+				MiscHelper.panic("Duplicate keys in tree map");
+				return null;
+			}, TreeMap::new));
 		this.repoTags.addAll(Arrays.asList(tags));
 		reconnectGraph(previous);
 	}
@@ -140,6 +140,14 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 	}
 
 	public static void lookupLoaderVersion(McVersion mcVersion) {
+		// FIX until fabric-loader is updated
+		{
+			if (GitCraftConfig.minecraftVersionSemVerOverride.containsKey(mcVersion.version)) {
+				mcVersion.loaderVersion = GitCraftConfig.minecraftVersionSemVerOverride.get(mcVersion.version);
+				return;
+			}
+		}
+		// END FIX
 		if (mcVersion.loaderVersion == null) {
 			loadSemverCache();
 			if (semverCache.containsKey(mcVersion.version)) {

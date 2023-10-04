@@ -81,6 +81,11 @@ public class GitCraftConfig {
 			"1.16_combat-0", "1_16_combat-0" // 1.16_combat-0
 	);
 
+	// Version Override
+	public static Map<String, String> minecraftVersionSemVerOverride = Map.of(
+		"23w40a", "1.20.3-alpha.23.40.a"
+	);
+
 	public static GitCraftConfig defaultConfig() {
 		return new GitCraftConfig();
 	}
