@@ -8,6 +8,7 @@ import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentTreeV1;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.MappingWriter;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
@@ -42,11 +43,18 @@ import java.util.stream.Collectors;
 public class MappingHelper {
 
 	public enum MappingFlavour {
-		MOJMAP, FABRIC_INTERMEDIARY, YARN;
+		MOJMAP, FABRIC_INTERMEDIARY, YARN, MOJMAP_PARCHMENT;
 
 		@Override
 		public String toString() {
 			return super.toString().toLowerCase(Locale.ROOT);
+		}
+
+		public boolean supportsComments() {
+			return switch (this) {
+				case MOJMAP_PARCHMENT -> true;
+				case MOJMAP, YARN, FABRIC_INTERMEDIARY -> false;
+			};
 		}
 
 		public String getSourceNS() {
@@ -55,21 +63,28 @@ public class MappingHelper {
 
 		public String getDestinationNS() {
 			return switch (this) {
-				case MOJMAP, YARN -> MappingsNamespace.NAMED.toString();
+				case MOJMAP, YARN, MOJMAP_PARCHMENT -> MappingsNamespace.NAMED.toString();
 				case FABRIC_INTERMEDIARY -> MappingsNamespace.INTERMEDIARY.toString();
 			};
 		}
 
 		private boolean isYarnBrokenVersion(McVersion mcVersion) {
 			return GitCraftConfig.yarnBrokenVersions.contains(mcVersion.version)
-					/* not really broken, but does not exist: */
-					|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.version)
-					/* not broken, but does not exist, because of a re-upload */
-					|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.version);
+				/* not really broken, but does not exist: */
+				|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.version)
+				/* not broken, but does not exist, because of a re-upload */
+				|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.version);
 		}
 
 		public boolean doMappingsExist(McVersion mcVersion) {
 			return switch (this) {
+				case MOJMAP_PARCHMENT -> {
+					try {
+						yield mcVersion.hasMappings && !mcVersion.snapshot && SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) GitCraftConfig.PARCHMENT_START_VERSION) >= 0;
+					} catch (VersionParsingException e) {
+						throw new RuntimeException(e);
+					}
+				}
 				case MOJMAP -> mcVersion.hasMappings;
 				case YARN -> {
 					if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
@@ -93,15 +108,22 @@ public class MappingHelper {
 
 		public Optional<Path> getMappingsPath(McVersion mcVersion) {
 			return switch (this) {
+				case MOJMAP_PARCHMENT -> {
+					try {
+						yield Optional.of(mappingsPathParchment(mcVersion));
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
 				case MOJMAP -> {
 					try {
 						yield Optional.of(mappingsPathMojMap(mcVersion));
 					} catch (IOException e) {
-						yield Optional.empty();
+						throw new RuntimeException(e);
 					}
 				}
 				case YARN ->
-						Optional.ofNullable(isYarnBrokenVersion(mcVersion) ? null : mappingsPathYarn(mcVersion)); // exclude broken versions
+					Optional.ofNullable(isYarnBrokenVersion(mcVersion) ? null : mappingsPathYarn(mcVersion)); // exclude broken versions
 				case FABRIC_INTERMEDIARY -> Optional.ofNullable(mappingsPathIntermediary(mcVersion));
 			};
 		}
@@ -141,6 +163,47 @@ public class MappingHelper {
 			MappingReader.read(intermediaryPath, mappingTree);
 		}
 		return mappingTree;
+	}
+
+	private static Path mappingsPathParchment(McVersion mcVersion) throws IOException {
+		if (!mcVersion.version.equals("1.20.1")) {
+			throw new RuntimeException("This is a testing implementation, other versions are not yet supported");
+		}
+		Path mappingsFileTiny = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s.tiny", mcVersion.version, "1.20.1-2023.09.03"));
+		if (mappingsFileTiny.toFile().exists()) {
+			return mappingsFileTiny;
+		}
+		Path mappingsFileJson = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s.json", mcVersion.version, "1.20.1-2023.09.03"));
+		if (!mappingsFileJson.toFile().exists()) {
+			Path mappingsFileJar = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s.jar", mcVersion.version, "1.20.1-2023.09.03"));
+			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(
+				"https://maven.parchmentmc.org/org/parchmentmc/data/parchment-1.20.1/2023.09.03/parchment-1.20.1-2023.09.03.zip",
+				mappingsFileJar,
+				null,
+				"parchment mapping",
+				mcVersion.version
+			);
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileJar)) {
+				Path mappingsPathInJar = fs.get().getPath("parchment.json");
+				Files.copy(mappingsPathInJar, mappingsFileJson, StandardCopyOption.REPLACE_EXISTING);
+			} catch (IOException e) {
+				mappingsFileJar.toFile().delete();
+				throw new RuntimeException("Parchment mappings are invalid");
+			}
+		}
+		Path mappingsFileMojmap = mappingsPathMojMap(mcVersion);
+		ParchmentTreeV1 parchmentTreeV1 = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(mappingsFileJson), ParchmentTreeV1.class);
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		{
+			MappingSourceNsSwitch nsSwitchIntermediary = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.NAMED.toString());
+			MappingReader.read(mappingsFileMojmap, nsSwitchIntermediary);
+		}
+		try (MappingWriter writer = MappingWriter.create(mappingsFileTiny, MappingFormat.TINY_2)) {
+			parchmentTreeV1.visit(mappingTree, MappingsNamespace.NAMED.toString());
+			MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(writer, MappingsNamespace.OFFICIAL.toString());
+			mappingTree.accept(sourceNsSwitch);
+		}
+		return mappingsFileTiny;
 	}
 
 	private static Path mappingsPathYarn(McVersion mcVersion) {

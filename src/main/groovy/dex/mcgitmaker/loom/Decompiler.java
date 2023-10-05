@@ -7,6 +7,8 @@ import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.NIODirectoryResultSaver;
 import dex.mcgitmaker.data.Artifact;
 import dex.mcgitmaker.data.McVersion;
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
@@ -45,12 +47,13 @@ public class Decompiler {
 		options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 		options.put(IFernflowerPreferences.LOG_LEVEL, "trace");
 		options.put(IFernflowerPreferences.THREADS, Integer.toString(GitCraft.config.decompilingThreads));
-		//options.put(IFabricJavadocProvider.PROPERTY_NAME, new QfTinyJavadocProvider(metaData.javaDocs().toFile()));
 
 		// Experimental QF preferences
 		options.put(IFernflowerPreferences.PATTERN_MATCHING, "1");
 		options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
-		//options.putAll(ReflectionUtil.<Map<String, String>>maybeGetFieldOrRecordComponent(metaData, "options").orElse(Map.of()));
+		if(mappingFlavour.supportsComments()) {
+			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappingFlavour.getMappingsPath(mcVersion).orElseThrow().toFile()));
+		}
 
 		List<FileSystemUtil.Delegate> openFileSystems = new ArrayList<>();
 		FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath(mcVersion, mappingFlavour), true);
