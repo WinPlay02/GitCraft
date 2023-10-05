@@ -18,7 +18,7 @@ To disabled versioning entirely (and only decompile), specify `--no-repo`.
 
 To disable special versions (e.g. april fools or combat snapshots), specify `--skip-nonlinear`.
 
-To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `fabric_intermediary` and `yarn`.
+To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `mojmap_parchment`, `fabric_intermediary` and `yarn`.
 
 Powered by:
 - [Vineflower](https://github.com/Vineflower/vineflower)
@@ -29,6 +29,7 @@ Powered by:
 - [Loom](https://github.com/FabricMC/fabric-loom)
 - [Yarn](https://github.com/FabricMC/yarn)
 - [Fabric Intermediary Mappings](https://github.com/FabricMC/intermediary)
+- [Parchment](https://github.com/ParchmentMC/Parchment)
 
 ## Help / Usage
 
@@ -39,7 +40,7 @@ Options:
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
-                               fabric_intermediary, yarn
+                               fabric_intermediary, yarn, mojmap_parchment
       --min-version=<version>
                              Specify the min. version to decompile. Each
                                following version will be decompiled afterwards,

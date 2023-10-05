@@ -111,7 +111,7 @@ public class MappingHelper {
 				case MOJMAP_PARCHMENT -> {
 					try {
 						yield Optional.of(mappingsPathParchment(mcVersion));
-					} catch (IOException e) {
+					} catch (Exception e) {
 						throw new RuntimeException(e);
 					}
 				}
@@ -165,19 +165,17 @@ public class MappingHelper {
 		return mappingTree;
 	}
 
-	private static Path mappingsPathParchment(McVersion mcVersion) throws IOException {
-		if (!mcVersion.version.equals("1.20.1")) {
-			throw new RuntimeException("This is a testing implementation, other versions are not yet supported");
-		}
-		Path mappingsFileTiny = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s.tiny", mcVersion.version, "1.20.1-2023.09.03"));
+	private static Path mappingsPathParchment(McVersion mcVersion) throws Exception {
+		String parchmentLatestReleaseVersionBuild = RemoteHelper.readMavenLatestRelease(String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/maven-metadata.xml", mcVersion.version));
+		Path mappingsFileTiny = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.tiny", mcVersion.version, mcVersion.version, parchmentLatestReleaseVersionBuild));
 		if (mappingsFileTiny.toFile().exists()) {
 			return mappingsFileTiny;
 		}
-		Path mappingsFileJson = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s.json", mcVersion.version, "1.20.1-2023.09.03"));
+		Path mappingsFileJson = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.json", mcVersion.version, mcVersion.version, parchmentLatestReleaseVersionBuild));
 		if (!mappingsFileJson.toFile().exists()) {
-			Path mappingsFileJar = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s.jar", mcVersion.version, "1.20.1-2023.09.03"));
+			Path mappingsFileJar = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.jar", mcVersion.version, mcVersion.version, parchmentLatestReleaseVersionBuild));
 			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(
-				"https://maven.parchmentmc.org/org/parchmentmc/data/parchment-1.20.1/2023.09.03/parchment-1.20.1-2023.09.03.zip",
+				String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", mcVersion.version, parchmentLatestReleaseVersionBuild, mcVersion.version, parchmentLatestReleaseVersionBuild),
 				mappingsFileJar,
 				null,
 				"parchment mapping",

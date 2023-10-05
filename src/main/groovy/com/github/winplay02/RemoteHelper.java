@@ -1,7 +1,10 @@
 package com.github.winplay02;
 
 import dex.mcgitmaker.GitCraft;
+import org.w3c.dom.Document;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -196,5 +199,10 @@ public class RemoteHelper {
 		} catch (MalformedURLException | URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public static String readMavenLatestRelease(String mavenMetadata) throws Exception {
+		Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(mavenMetadata);
+		return XPathFactory.newInstance().newXPath().compile("/metadata/versioning/release").evaluate(document);
 	}
 }
