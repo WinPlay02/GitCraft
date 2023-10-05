@@ -80,7 +80,7 @@ public class MappingHelper {
 			return switch (this) {
 				case MOJMAP_PARCHMENT -> {
 					try {
-						yield mcVersion.hasMappings && !mcVersion.snapshot && SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) GitCraftConfig.PARCHMENT_START_VERSION) >= 0;
+						yield mcVersion.hasMappings && !mcVersion.snapshot && !GitCraftConfig.parchmentMissingVersions.contains(mcVersion.version) && SemanticVersion.parse(mcVersion.loaderVersion).compareTo((Version) GitCraftConfig.PARCHMENT_START_VERSION) >= 0;
 					} catch (VersionParsingException e) {
 						throw new RuntimeException(e);
 					}
