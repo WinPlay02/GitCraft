@@ -13,12 +13,18 @@ Artifacts are stored in the current working directory:
 - To decompile versions not provided by Mojang directly, put the meta files into `extra-versions` and they will be picked up
 
 If only a specific version should be decompiled and versioned or a version range should be decompiled, provide the `--only-version=<version>` or `--min-version=<version>` parameters. `<version>` should be a (human-readable) version name, e.g. `23w14a` or `1.20.1`.
+To exclude only a specific version (or multiple versions) use `--exclude-version`.
 
 To disabled versioning entirely (and only decompile), specify `--no-repo`.
 
 To disable special versions (e.g. april fools or combat snapshots), specify `--skip-nonlinear`.
+To disable either snapshots or stable releases, use either `--only-stable` or `--only-snapshot`.
 
 To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `mojmap_parchment`, `fabric_intermediary` and `yarn`.
+
+Fallback mappings can be used with `--fallback-mappings`. For example `mojmap` could be used as a fallback to a `mojmap_parchment` mapping, as not every version of minecraft is available.
+
+If a specific target directory should be used, instead of the default generated repository name, use `--override-repo-target`.
 
 Powered by:
 - [Vineflower](https://github.com/Vineflower/vineflower)
@@ -36,6 +42,16 @@ Powered by:
 ```
 Usage: gradlew run --args="[Options]"
 Options:
+      --exclude-version[=<version>[,<version>]...]
+                             Specify version(s) to exclude from decompilation.
+                               The exclusion info will be added to the
+                               repository name. The normal repository will not
+                               be touched.
+      --fallback-mappings[=<mapping>[,<mapping>]...]
+                             If the primary mapping fails, these mappings are
+                               tried (in given order). By default none is tried
+                               as a fallback. Possible values are: mojmap,
+                               fabric_intermediary, yarn, mojmap_parchment
   -h, --help                 Displays this help screen
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
@@ -47,7 +63,7 @@ Options:
                                non-linear versions are still committed to
                                separate branches. The repository will be stored
                                in minecraft-repo-min-<version>. The normal
-                               repository (minecraft-repo) will not be touched.
+                               repository will not be touched.
       --no-assets            Disables assets versioning (includes external
                                assets)
       --no-datapack          Disables data (integrated datapack) versioning
@@ -58,13 +74,23 @@ Options:
                                for versioning, only decompiles the provided (or
                                all) version(s)
       --no-verify            Disables checksum verification
+      --only-snapshot        Only decompiles snapshots (includes pending and
+                               non-linear, if not otherwise specified).
+      --only-stable          Only decompiles stable releases.
       --only-version[=<version>[,<version>]...]
                              Specify the only version(s) to decompile. The
                                repository be stored in
                                minecraft-repo-<version>-<version>-.... The
-                               normal repository (minecraft-repo) will not be
-                               touched. --only-version will take precedence
-                               over --min-version.
+                               normal repository will not be touched.
+                               --only-version will take precedence over
+                               --min-version.
+      --override-repo-target=<path>
+                             Changes the location of the target repository, as
+                               repo names may get quite long and unintuitive.
+                               If not used carefully, this can lead to
+                               repositories with unwanted mixed mappings or
+                               straight up refuse to work as some versions in
+                               the target repository may be missing.
       --refresh              Refreshes the decompilation by deleting old
                                decompiled artifacts and restarting. This will
                                not be useful, if the decompiler has not been
@@ -87,6 +113,11 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
   - One version of yarn exists in maven, but does not exist in meta.fabricmc.net. Affected version: `1.14.2 Pre-Release 1`
   - Some combat snapshots are located in a non-standard-path (on maven.fabricmc.net and on meta.fabricmc.net). Affected versions: `1.15_combat-6`, `1.16_combat-0`
 - Version `1.16_combat-1`, `1.16_combat-2`, `1.16_combat-4`, `1.16_combat-5`, `1.16_combat-6` do not exist at all
+
+## Notes about Parchment
+- Parchment supports only release versions of minecraft
+- Supported minecraft versions start at `1.16.5`, but not every release version since then is available
+- Only "release"-builds of parchment are supported at this time. No nightlies/snapshots are used.
 
 ## Cleanup
 

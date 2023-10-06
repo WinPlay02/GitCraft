@@ -284,8 +284,8 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		return graph;
 	}
 
-	public MinecraftVersionGraph filterMapping(MappingHelper.MappingFlavour mappingFlavour) {
-		return new MinecraftVersionGraph(this, (entry -> mappingFlavour.doMappingsExist(entry.getValue())));
+	public MinecraftVersionGraph filterMapping(MappingHelper.MappingFlavour mappingFlavour, MappingHelper.MappingFlavour[] mappingFallback) {
+		return new MinecraftVersionGraph(this, (entry -> mappingFlavour.doMappingsExist(entry.getValue()) || (mappingFallback != null && mappingFallback.length > 0 && Arrays.stream(mappingFallback).anyMatch(mapping -> mapping.doMappingsExist(entry.getValue())))));
 	}
 
 	public MinecraftVersionGraph filterMainlineVersions() {
@@ -302,6 +302,22 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 	public MinecraftVersionGraph filterOnlyVersion(McVersion... version) {
 		List<McVersion> versionList = Arrays.asList(version);
 		return new MinecraftVersionGraph(this, (entry -> versionList.contains(entry.getValue())), versionList.stream().map((mcv) -> mcv.version).collect(Collectors.joining("-")));
+	}
+
+	public MinecraftVersionGraph filterExcludeVersion(McVersion... version) {
+		List<McVersion> versionList = Arrays.asList(version);
+		if (versionList.isEmpty()) {
+			return this;
+		}
+		return new MinecraftVersionGraph(this, (entry -> !versionList.contains(entry.getValue())), "exclude-" + versionList.stream().map((mcv) -> mcv.version).collect(Collectors.joining("-")));
+	}
+
+	public MinecraftVersionGraph filterStableRelease() {
+		return new MinecraftVersionGraph(this, (entry -> !entry.getValue().snapshot), "stable");
+	}
+
+	public MinecraftVersionGraph filterSnapshots() {
+		return new MinecraftVersionGraph(this, (entry -> entry.getValue().snapshot), "snapshot");
 	}
 
 	public McVersion getRootVersion() {
@@ -372,9 +388,12 @@ public class MinecraftVersionGraph implements Iterable<McVersion> {
 		return version != null && this.stream().anyMatch((graphVersion) -> graphVersion.equals(version));
 	}
 
-	public String repoTagsIdentifier(MappingHelper.MappingFlavour mappingFlavour) {
+	public String repoTagsIdentifier(MappingHelper.MappingFlavour mappingFlavour, MappingHelper.MappingFlavour[] mappingFallback) {
 		List<String> sortedTags = new ArrayList<>();
 		sortedTags.add(mappingFlavour.toString());
+		if (mappingFallback != null && mappingFallback.length > 0) {
+			sortedTags.add(String.format("fallback-%s", Arrays.stream(mappingFallback).map(Object::toString).collect(Collectors.joining("-"))));
+		}
 		sortedTags.addAll(this.repoTags.stream().filter(tag -> !tag.equals(mappingFlavour.toString())).toList());
 		return String.join("-", sortedTags);
 	}

@@ -1,5 +1,10 @@
 package com.github.winplay02;
 
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.impl.FabricLoaderImpl;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -44,8 +49,8 @@ public class MiscHelper {
 	public static void deleteDirectory(Path directory) throws IOException {
 		try (Stream<Path> walk = Files.walk(directory)) {
 			walk.sorted(Comparator.reverseOrder())
-					.map(Path::toFile)
-					.forEach(java.io.File::delete);
+				.map(Path::toFile)
+				.forEach(java.io.File::delete);
 		}
 	}
 
@@ -65,5 +70,17 @@ public class MiscHelper {
 		long delta = timeEnd - timeStart;
 		Duration deltaDuration = Duration.ofNanos(delta);
 		println("\tFinished: %dm %02ds", deltaDuration.toMinutes(), deltaDuration.toSecondsPart());
+	}
+
+	public static void checkFabricLoaderVersion() {
+		try {
+			SemanticVersion actualFabricLoaderVersion = SemanticVersion.parse(FabricLoaderImpl.VERSION);
+			SemanticVersion minRequiredVersion = SemanticVersion.parse(GitCraftConfig.MIN_SUPPORTED_FABRIC_LOADER);
+			if (actualFabricLoaderVersion.compareTo((Version) minRequiredVersion) < 0) {
+				panic("Fabric loader is out of date. Min required version: %s, Actual provided version: %s", GitCraftConfig.MIN_SUPPORTED_FABRIC_LOADER, FabricLoaderImpl.VERSION);
+			}
+		} catch (VersionParsingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
