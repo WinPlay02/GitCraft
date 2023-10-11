@@ -16,7 +16,7 @@ import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingNsRenamer;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.MappingFormat;
-import net.fabricmc.mappingio.format.ProGuardReader;
+import net.fabricmc.mappingio.format.proguard.ProGuardFileReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
@@ -24,7 +24,6 @@ import net.fabricmc.tinyremapper.TinyUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -196,7 +195,7 @@ public class MappingHelper {
 			MappingSourceNsSwitch nsSwitchIntermediary = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.NAMED.toString());
 			MappingReader.read(mappingsFileMojmap, nsSwitchIntermediary);
 		}
-		try (MappingWriter writer = MappingWriter.create(mappingsFileTiny, MappingFormat.TINY_2)) {
+		try (MappingWriter writer = MappingWriter.create(mappingsFileTiny, MappingFormat.TINY_2_FILE)) {
 			parchmentTreeV1.visit(mappingTree, MappingsNamespace.NAMED.toString());
 			MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(writer, MappingsNamespace.OFFICIAL.toString());
 			mappingTree.accept(sourceNsSwitch);
@@ -249,7 +248,7 @@ public class MappingHelper {
 				throw new RuntimeException(e);
 			}
 			yarn_fixInnerClasses(mappingTree);
-			try (MappingWriter writer = MappingWriter.create(mappingsFile, MappingFormat.TINY_2)) {
+			try (MappingWriter writer = MappingWriter.create(mappingsFile, MappingFormat.TINY_2_FILE)) {
 				MappingNsCompleter nsCompleter = new MappingNsCompleter(writer, Map.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 				MappingDstNsReorder dstReorder = new MappingDstNsReorder(nsCompleter, List.of(MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString()));
 				MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(dstReorder, MappingsNamespace.OFFICIAL.toString());
@@ -352,10 +351,10 @@ public class MappingHelper {
 			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.OFFICIAL.toString());
 
 			try (BufferedReader clientBufferedReader = Files.newBufferedReader(mcVersion.artifacts.clientMappings().fetchArtifact().toPath(), StandardCharsets.UTF_8); BufferedReader serverBufferedReader = Files.newBufferedReader(mcVersion.artifacts.serverMappings().fetchArtifact().toPath(), StandardCharsets.UTF_8)) {
-				ProGuardReader.read((Reader) clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
-				ProGuardReader.read((Reader) serverBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
+				ProGuardFileReader.read(clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
+				ProGuardFileReader.read(serverBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
 			}
-			try (MappingWriter w = MappingWriter.create(mappingsFile, MappingFormat.TINY_2)) {
+			try (MappingWriter w = MappingWriter.create(mappingsFile, MappingFormat.TINY_2_FILE)) {
 				mappingTree.accept(w);
 			}
 		}

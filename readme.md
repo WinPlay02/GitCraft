@@ -1,5 +1,5 @@
 # GitCraft
-Generates a Git repository of decompiled Minecraft, starting from 1.14.4. For personal use only. Do not share or upload the resulting repository.
+Generates a Git repository of decompiled Minecraft. For personal use only. Do not share or upload the resulting repository.
 
 To get started, execute `./gradlew run` from the command line, advanced usage (`./gradlew run --args="[Options]"`) is shown below.
 
