@@ -1,5 +1,7 @@
-package com.github.winplay02;
+package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.MappingHelper;
 import dex.mcgitmaker.data.McVersion;
 import groovy.lang.Tuple2;
 import net.fabricmc.loader.api.SemanticVersion;
@@ -44,6 +46,11 @@ public class GitCraftConfig {
 
 	/// Experimental Settings
 	public boolean useHardlinks = true;
+
+	/// Remote Settings
+	public static final String URL_MINECRAFT_MAIN_META = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+
+	public static final String URL_FABRIC_YARN_META = "https://meta.fabricmc.net/v2/versions/yarn";
 
 	/// Mapping Settings
 	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.14.23";

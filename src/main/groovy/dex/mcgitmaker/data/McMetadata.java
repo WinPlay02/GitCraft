@@ -1,13 +1,14 @@
 package dex.mcgitmaker.data;
 
-import com.github.winplay02.MiscHelper;
-import com.github.winplay02.RemoteHelper;
-import com.github.winplay02.SerializationHelper;
-import com.github.winplay02.meta.ArtifactMeta;
-import com.github.winplay02.meta.AssetsIndexMeta;
-import com.github.winplay02.meta.LauncherMeta;
-import com.github.winplay02.meta.LibraryMeta;
-import com.github.winplay02.meta.VersionMeta;
+import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RemoteHelper;
+import com.github.winplay02.gitcraft.util.SerializationHelper;
+import com.github.winplay02.gitcraft.meta.ArtifactMeta;
+import com.github.winplay02.gitcraft.meta.AssetsIndexMeta;
+import com.github.winplay02.gitcraft.meta.LauncherMeta;
+import com.github.winplay02.gitcraft.meta.LibraryMeta;
+import com.github.winplay02.gitcraft.meta.VersionMeta;
 import dex.mcgitmaker.GitCraft;
 import groovy.lang.Tuple2;
 
@@ -46,7 +47,7 @@ public class McMetadata {
 	private static LinkedHashMap<String, McVersion> getInitialMetadata() throws IOException {
 		MiscHelper.println("Creating metadata...");
 		MiscHelper.println("Reading metadata from Mojang...");
-		LauncherMeta mcLauncherVersions = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(RemoteHelper.MINECRAFT_MAIN_META_URL)), LauncherMeta.class);
+		LauncherMeta mcLauncherVersions = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(GitCraftConfig.URL_MINECRAFT_MAIN_META)), LauncherMeta.class);
 		MiscHelper.println("Attempting to read metadata from file...");
 		LinkedHashMap<String, McVersion> versionMeta = new LinkedHashMap<>();
 		// Read stored versions
@@ -92,9 +93,9 @@ public class McMetadata {
 	private static boolean ensureVersionMetaPresence(String metaID, String metaURL, String metaSha1) {
 		Path metaFile = GitCraft.META_CACHE.resolve(metaID + ".json");
 		boolean upToDate = true; // was present valid and not stale
-		if (!metaFile.toFile().exists() && Objects.requireNonNull(RemoteHelper.calculateSHA1Checksum(metaFile.toFile())).equalsIgnoreCase(metaSha1)) {
+		if (!metaFile.toFile().exists() && Objects.requireNonNull(RemoteHelper.SHA1.getChecksumFile(metaFile)).equalsIgnoreCase(metaSha1)) {
 			upToDate = false; // downloaded new file, or updated stale file
-			RemoteHelper.downloadToFileWithChecksumIfNotExists(metaURL, metaFile, metaSha1, "version meta", metaID);
+			RemoteHelper.downloadToFileWithChecksumIfNotExists(metaURL, new RemoteHelper.LocalFileInfo(metaFile, metaSha1, "version meta", metaID), RemoteHelper.SHA1);
 		}
 		Path targetPath = getMcArtifactRootPath(metaID).resolve("version.json");
 		try {
@@ -107,7 +108,7 @@ public class McMetadata {
 
 	private static McVersion createVersionDataFromLauncherMeta(String metaID, String metaURL, String metaSha1) throws IOException {
 		Path metaFile = GitCraft.META_CACHE.resolve(metaID + ".json");
-		RemoteHelper.downloadToFileWithChecksumIfNotExists(metaURL, metaFile, metaSha1, "version meta", metaID);
+		RemoteHelper.downloadToFileWithChecksumIfNotExists(metaURL, new RemoteHelper.LocalFileInfo(metaFile, metaSha1, "version meta", metaID), RemoteHelper.SHA1);
 		VersionMeta meta = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(metaFile), VersionMeta.class);
 		return createVersionData(meta, metaFile, metaSha1);
 	}
@@ -128,7 +129,7 @@ public class McMetadata {
 		getMcArtifactRootPath(meta.id()).toFile().mkdirs();
 		Path targetPath = getMcArtifactRootPath(meta.id()).resolve("version.json");
 		Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-		if (!RemoteHelper.checksumCheckFileIsValidAndExists(targetPath.toFile(), metaSha1, "stored version meta", meta.id(), false)) {
+		if (!RemoteHelper.checksumCheckFileIsValidAndExists(new RemoteHelper.LocalFileInfo(targetPath, metaSha1, "stored version meta", meta.id()), RemoteHelper.SHA1, false)) {
 			throw new RuntimeException("A valid stored version meta for %s does not exist".formatted(meta.id()));
 		}
 
@@ -136,15 +137,15 @@ public class McMetadata {
 	}
 
 	private static AssetsIndexMeta fetchAssetsIndex(String assetsId, String url, String sha1Hash) throws IOException {
-		File targetFile = GitCraft.ASSETS_INDEX.resolve(assetsId + ".json").toFile();
+		Path targetFile = GitCraft.ASSETS_INDEX.resolve(assetsId + ".json");
 
-		if (!RemoteHelper.checksumCheckFileIsValidAndExists(targetFile, sha1Hash, "assets index", assetsId, false) && url == null) {
+		if (!RemoteHelper.checksumCheckFileIsValidAndExists(new RemoteHelper.LocalFileInfo(targetFile, sha1Hash, "assets index", assetsId), RemoteHelper.SHA1, false) && url == null) {
 			throw new RuntimeException("assets index %s is expected to be already downloaded but it is missing".formatted(assetsId));
 		}
 
-		RemoteHelper.downloadToFileWithChecksumIfNotExists(url, targetFile.toPath(), sha1Hash, "assets index", assetsId);
+		RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(targetFile, sha1Hash, "assets index", assetsId), RemoteHelper.SHA1);
 
-		return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile.toPath()), AssetsIndexMeta.class);
+		return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), AssetsIndexMeta.class);
 	}
 
 	private static AssetsIndexMeta fetchAssetsIndexByVersion(McVersion version) throws IOException {
@@ -158,7 +159,7 @@ public class McMetadata {
 		AssetsIndexMeta assetsIndex = fetchAssetsIndexByVersion(version);
 		// Fetch Assets
 		for (AssetsIndexMeta.AssetsIndexEntry info : assetsIndex.objects().values()) {
-			new Artifact(RemoteHelper.makeAssetUrl(info.hash()), info.hash(), GitCraft.ASSETS_OBJECTS, info.hash()).fetchArtifact();
+			new Artifact(RemoteHelper.makeMinecraftAssetUrl(info.hash()), info.hash(), GitCraft.ASSETS_OBJECTS, info.hash()).fetchArtifact();
 		}
 		return assetsIndex;
 	}
@@ -206,5 +207,9 @@ public class McMetadata {
 	// containing path, file name
 	private static Tuple2<Path, String> getMcArtifactData(String version, String url) {
 		return new Tuple2<>(getMcArtifactRootPath(version), Artifact.nameFromUrl(url));
+	}
+
+	public static void saveMetadata(Map<String, McVersion> data) throws IOException {
+		SerializationHelper.writeAllToPath(GitCraft.METADATA_STORE, SerializationHelper.serialize(data));
 	}
 }

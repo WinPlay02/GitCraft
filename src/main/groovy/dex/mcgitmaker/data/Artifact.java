@@ -1,6 +1,6 @@
 package dex.mcgitmaker.data;
 
-import com.github.winplay02.RemoteHelper;
+import com.github.winplay02.gitcraft.util.RemoteHelper;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -23,7 +23,7 @@ public record Artifact(String url, String name, Path containingPath, String sha1
 	}
 
 	void ensureArtifactPresence(Path p) {
-		RemoteHelper.downloadToFileWithChecksumIfNotExists(url, p, sha1sum, "artifact", name);
+		RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(p, sha1sum, "artifact", name), RemoteHelper.SHA1);
 	}
 
 	static String nameFromUrl(String url) {

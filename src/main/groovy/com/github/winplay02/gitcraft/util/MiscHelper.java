@@ -1,5 +1,6 @@
-package com.github.winplay02;
+package com.github.winplay02.gitcraft.util;
 
+import com.github.winplay02.gitcraft.GitCraftConfig;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;

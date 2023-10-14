@@ -1,13 +1,8 @@
 package dex.mcgitmaker.loom;
 
-import com.github.winplay02.GitCraftConfig;
-import com.github.winplay02.MappingHelper;
-import com.github.winplay02.MiscHelper;
+import com.github.winplay02.gitcraft.util.MappingHelper;
 import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.data.McVersion;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.RecordComponentFixVisitor;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -33,13 +28,13 @@ public class Remapper {
 			}
 
 			TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
-					.renameInvalidLocals(true)
-					.rebuildSourceFilenames(true)
-					.invalidLvNamePattern(MC_LV_PATTERN)
-					.inferNameFromSameLvIndex(true)
-					.withMappings(mappingFlavour.getMappingsProvider(mcVersion))
-					.fixPackageAccess(true)
-					.threads(GitCraft.config.remappingThreads);
+				.renameInvalidLocals(true)
+				.rebuildSourceFilenames(true)
+				.invalidLvNamePattern(MC_LV_PATTERN)
+				.inferNameFromSameLvIndex(true)
+				.withMappings(mappingFlavour.getMappingsProvider(mcVersion))
+				.fixPackageAccess(true)
+				.threads(GitCraft.config.remappingThreads);
 
 			TinyRemapper remapper = remapperBuilder.build();
 			remapper.readInputs(mcVersion.merged().toPath());

@@ -1,17 +1,20 @@
 package dex.mcgitmaker.data;
 
-import com.github.winplay02.MappingHelper;
-import com.github.winplay02.MiscHelper;
+import com.github.winplay02.gitcraft.util.MappingHelper;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 import dex.mcgitmaker.GitCraft;
-import dex.mcgitmaker.loom.BundleMetadata;
 import dex.mcgitmaker.loom.Decompiler;
+import dex.mcgitmaker.loom.FileSystemUtil;
+import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.stitch.merge.JarMerger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -76,6 +79,12 @@ public class McVersion {
 		return f;
 	}
 
+	private void unpackJarEntry(BundleMetadata.Entry entry, Path jar, Path dest) throws IOException {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar); InputStream is = Files.newInputStream(fs.get().getPath(entry.path()))) {
+			Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+
 	void makeMergedJar() throws IOException {
 		MiscHelper.println("Merging jars... %s", version);
 		File client = artifacts.clientJar().fetchArtifact();
@@ -85,11 +94,11 @@ public class McVersion {
 		if (sbm != null) {
 			Path minecraftExtractedServerJar = GitCraft.MC_VERSION_STORE.resolve(version).resolve("extracted-server.jar");
 
-			if (sbm.versions.size() != 1) {
-				throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(sbm.versions.size()));
+			if (sbm.versions().size() != 1) {
+				throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(sbm.versions().size()));
 			}
 
-			sbm.versions.get(0).unpackEntry(server2merge.toPath(), minecraftExtractedServerJar);
+			unpackJarEntry(sbm.versions().get(0), server2merge.toPath(), minecraftExtractedServerJar);
 			server2merge = minecraftExtractedServerJar.toFile();
 		}
 

@@ -1,5 +1,8 @@
-package com.github.winplay02;
+package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.util.MappingHelper;
+import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.SerializationHelper;
 import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.data.McVersion;
 import net.fabricmc.loader.api.SemanticVersion;

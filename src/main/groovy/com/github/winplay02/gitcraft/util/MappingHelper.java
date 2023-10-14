@@ -1,6 +1,7 @@
-package com.github.winplay02;
+package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.meta.FabricYarnVersionMeta;
+import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.meta.FabricYarnVersionMeta;
 import dex.mcgitmaker.GitCraft;
 import dex.mcgitmaker.data.McVersion;
 import dex.mcgitmaker.loom.FileSystemUtil;
@@ -69,10 +70,10 @@ public class MappingHelper {
 
 		private boolean isYarnBrokenVersion(McVersion mcVersion) {
 			return GitCraftConfig.yarnBrokenVersions.contains(mcVersion.version)
-				/* not really broken, but does not exist: */
-				|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.version)
-				/* not broken, but does not exist, because of a re-upload */
-				|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.version);
+					/* not really broken, but does not exist: */
+					|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.version)
+					/* not broken, but does not exist, because of a re-upload */
+					|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.version);
 		}
 
 		public boolean doMappingsExist(McVersion mcVersion) {
@@ -122,7 +123,7 @@ public class MappingHelper {
 					}
 				}
 				case YARN ->
-					Optional.ofNullable(isYarnBrokenVersion(mcVersion) ? null : mappingsPathYarn(mcVersion)); // exclude broken versions
+						Optional.ofNullable(isYarnBrokenVersion(mcVersion) ? null : mappingsPathYarn(mcVersion)); // exclude broken versions
 				case FABRIC_INTERMEDIARY -> Optional.ofNullable(mappingsPathIntermediary(mcVersion));
 			};
 		}
@@ -139,14 +140,13 @@ public class MappingHelper {
 		}
 	}
 
-	public static final String FABRIC_YARN_META = "https://meta.fabricmc.net/v2/versions/yarn";
 
 	private static Map<String, FabricYarnVersionMeta> yarnVersions = null;
 
 	public static FabricYarnVersionMeta getYarnLatestBuild(McVersion mcVersion) {
 		if (yarnVersions == null) {
 			try {
-				List<FabricYarnVersionMeta> yarnVersionMetas = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(FABRIC_YARN_META)), SerializationHelper.TYPE_LIST_FABRIC_YARN_VERSION_META);
+				List<FabricYarnVersionMeta> yarnVersionMetas = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(GitCraftConfig.URL_FABRIC_YARN_META)), SerializationHelper.TYPE_LIST_FABRIC_YARN_VERSION_META);
 				yarnVersions = yarnVersionMetas.stream().collect(Collectors.groupingBy(FabricYarnVersionMeta::gameVersion)).values().stream().map(fabricYarnVersionMetas -> fabricYarnVersionMetas.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(FabricYarnVersionMeta::gameVersion, Function.identity()));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -173,12 +173,12 @@ public class MappingHelper {
 		Path mappingsFileJson = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.json", mcVersion.version, mcVersion.version, parchmentLatestReleaseVersionBuild));
 		if (!mappingsFileJson.toFile().exists()) {
 			Path mappingsFileJar = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.jar", mcVersion.version, mcVersion.version, parchmentLatestReleaseVersionBuild));
-			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(
-				String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", mcVersion.version, parchmentLatestReleaseVersionBuild, mcVersion.version, parchmentLatestReleaseVersionBuild),
-				mappingsFileJar,
-				null,
-				"parchment mapping",
-				mcVersion.version
+			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(
+					String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", mcVersion.version, parchmentLatestReleaseVersionBuild, mcVersion.version, parchmentLatestReleaseVersionBuild),
+					new RemoteHelper.LocalFileInfo(mappingsFileJar,
+							null,
+							"parchment mapping",
+							mcVersion.version)
 			);
 			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileJar)) {
 				Path mappingsPathInJar = fs.get().getPath("parchment.json");
@@ -216,7 +216,7 @@ public class MappingHelper {
 		}
 		Path mappingsFileJar = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-build.%s.jar", mcVersion.version, yarnVersion.build()));
 		try {
-			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(yarnVersion.makeMavenURLMergedV2(), mappingsFileJar, null, "yarn mapping", mcVersion.version);
+			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLMergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileJar, null, "yarn mapping", mcVersion.version));
 			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileJar)) {
 				Path mappingsPathInJar = fs.get().getPath("mappings", "mappings.tiny");
 				Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
@@ -295,7 +295,7 @@ public class MappingHelper {
 			Path mappingsFileUnmerged = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.version, yarnVersion.build()));
 			if (!mappingsFileUnmerged.toFile().exists()) {
 				Path mappingsFileUnmergedJar = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.version, yarnVersion.build()));
-				RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(yarnVersion.makeMavenURLUnmergedV2(), mappingsFileUnmergedJar, null, "unmerged yarn mapping", mcVersion.version);
+				RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLUnmergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileUnmergedJar, null, "unmerged yarn mapping", mcVersion.version));
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileUnmergedJar)) {
 					Path mappingsPathInJar = fs.get().getPath("mappings", "mappings.tiny");
 					Files.copy(mappingsPathInJar, mappingsFileUnmerged, StandardCopyOption.REPLACE_EXISTING);
@@ -308,7 +308,7 @@ public class MappingHelper {
 				Path mappingsFileUnmergedv1 = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", mcVersion.version, yarnVersion.build()));
 				if (!mappingsFileUnmergedv1.toFile().exists()) {
 					Path mappingsFileUnmergedJarv1 = GitCraft.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", mcVersion.version, yarnVersion.build()));
-					RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(yarnVersion.makeMavenURLUnmergedV1(), mappingsFileUnmergedJarv1, null, "unmerged yarn mapping (v1 fallback)", mcVersion.version);
+					RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLUnmergedV1(), new RemoteHelper.LocalFileInfo(mappingsFileUnmergedJarv1, null, "unmerged yarn mapping (v1 fallback)", mcVersion.version));
 					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileUnmergedJarv1)) {
 						Path mappingsPathInJar = fs.get().getPath("mappings", "mappings.tiny");
 						Files.copy(mappingsPathInJar, mappingsFileUnmergedv1, StandardCopyOption.REPLACE_EXISTING);
@@ -336,7 +336,7 @@ public class MappingHelper {
 		}
 		Path mappingsFile = GitCraft.MAPPINGS.resolve(mcVersion.version + "-intermediary.tiny");
 		if (!mappingsFile.toFile().exists()) {
-			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(RemoteHelper.urlencodedURL(String.format("https://raw.githubusercontent.com/FabricMC/intermediary/master/mappings/%s.tiny", mappingsIntermediaryPathQuirkVersion(mcVersion.version))), mappingsFile, null, "intermediary mapping", mcVersion.version);
+			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub("FabricMC/intermediary", "master", String.format("%s.tiny", mappingsIntermediaryPathQuirkVersion(mcVersion.version)), new RemoteHelper.LocalFileInfo(mappingsFile, null, "intermediary mapping", mcVersion.version));
 		}
 		return mappingsFile;
 	}

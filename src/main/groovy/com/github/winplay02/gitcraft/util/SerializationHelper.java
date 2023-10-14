@@ -1,6 +1,6 @@
-package com.github.winplay02;
+package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.meta.FabricYarnVersionMeta;
+import com.github.winplay02.gitcraft.meta.FabricYarnVersionMeta;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;

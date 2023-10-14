@@ -1,8 +1,8 @@
 package dex.mcgitmaker;
 
-import com.github.winplay02.MappingHelper;
-import com.github.winplay02.MinecraftVersionGraph;
-import com.github.winplay02.MiscHelper;
+import com.github.winplay02.gitcraft.util.MappingHelper;
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 import dex.mcgitmaker.data.McMetadata;
 import dex.mcgitmaker.data.McVersion;
 import dex.mcgitmaker.loom.FileSystemUtil;

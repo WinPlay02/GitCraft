@@ -1,10 +1,10 @@
 package dex.mcgitmaker;
 
-import com.github.winplay02.GitCraftCli;
-import com.github.winplay02.GitCraftConfig;
-import com.github.winplay02.MappingHelper;
-import com.github.winplay02.MinecraftVersionGraph;
-import com.github.winplay02.MiscHelper;
+import com.github.winplay02.gitcraft.GitCraftCli;
+import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.util.MappingHelper;
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 import dex.mcgitmaker.data.McMetadata;
 import dex.mcgitmaker.data.McVersion;
 import dex.mcgitmaker.loom.Remapper;
@@ -69,7 +69,7 @@ public class GitCraft {
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
 		versionGraph = MinecraftVersionGraph.createFromMetadata(mcMetadata.metadata);
 		MiscHelper.println("Saving updated metadata...");
-		Util.saveMetadata(mcMetadata.metadata);
+		McMetadata.saveMetadata(mcMetadata.metadata);
 		MiscHelper.println("Decompiler log output is suppressed!");
 	}
 
