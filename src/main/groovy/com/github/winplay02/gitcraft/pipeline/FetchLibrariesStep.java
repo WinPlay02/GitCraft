@@ -1,9 +1,11 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ public class FetchLibrariesStep extends Step {
 	}
 
 	@Override
-	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour) throws Exception {
+	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
 		List<StepResult> results = new ArrayList<>(mcVersion.libraries().size());
 		for (Artifact library : mcVersion.libraries()) {
 			results.add(library.fetchArtifact(this.rootPath, "library"));

@@ -99,17 +99,16 @@ public class GitCraft {
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		try (RepoWrapper repo = GitCraft.getRepository()) {
-			STEP_COMMIT.prepare(GitCraft.versionGraph, repo);
-			runMainPipeline(GitCraft.DEFAULT_PIPELINE);
+			runMainPipeline(GitCraft.DEFAULT_PIPELINE, repo);
 			if (repo != null) {
 				MiscHelper.println("Repo can be found at: %s", repo.getRootPath().toString());
 			}
 		}
 	}
 
-	private static void runMainPipeline(List<Step> pipeline) {
+	private static void runMainPipeline(List<Step> pipeline, RepoWrapper repo) {
 		for (OrderedVersion mcv : versionGraph) {
-			Step.executePipeline(pipeline, mcv, GitCraft.config.getMappingsForMinecraftVersion(mcv).orElseThrow());
+			Step.executePipeline(pipeline, mcv, GitCraft.config.getMappingsForMinecraftVersion(mcv).orElseThrow(), versionGraph, repo);
 		}
 	}
 

@@ -1,9 +1,11 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RepoWrapper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -37,7 +39,7 @@ public class RemapStep extends Step {
 	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
 
 	@Override
-	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour) throws Exception {
+	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
 		Path remappedPath = getInternalArtifactPath(mcVersion, mappingFlavour);
 		if (Files.exists(remappedPath) && Files.size(remappedPath) > 22 /* not empty jar */) {
 			return StepResult.UP_TO_DATE;

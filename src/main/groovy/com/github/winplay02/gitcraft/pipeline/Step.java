@@ -1,10 +1,18 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RepoWrapper;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public abstract class Step {
@@ -62,6 +71,7 @@ public abstract class Step {
 	}
 
 	public static class PipelineCache {
+		protected Optional<Boolean> versionAlreadyInRepo = Optional.empty();
 		protected AssetsIndex assetsIndexMeta = null;
 		protected Map<String, Path> cachedPaths = new HashMap<>();
 
@@ -98,25 +108,42 @@ public abstract class Step {
 		return null;
 	}
 
-	public boolean preconditionsShouldRun(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour) {
-		return true; // TODO check if version is already in repo, and return false, if so
+	protected final boolean findVersionRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
+		if (repo.getGit().getRepository().resolve(Constants.HEAD) == null) {
+			return false;
+		}
+		return repo.getGit().log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
 	}
 
-	public abstract StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour) throws Exception;
+	public boolean preconditionsShouldRun(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
+		if (repo == null) {
+			return true;
+		}
+		if (pipelineCache.versionAlreadyInRepo.isEmpty()) {
+			try {
+				pipelineCache.versionAlreadyInRepo = Optional.of(findVersionRev(mcVersion, repo));
+			} catch (GitAPIException | IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return !pipelineCache.versionAlreadyInRepo.get();
+	}
 
-	public static void executePipeline(List<Step> steps, OrderedVersion mcVersion, MappingFlavour mappingFlavour) {
+	public abstract StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception;
+
+	public static void executePipeline(List<Step> steps, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
 		PipelineCache pipelineCache = new PipelineCache();
 		for (Step step : steps) {
 			Exception cachedException = null;
 			StepResult result;
 			try {
-				if (step.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour)) {
+				if (step.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo)) {
 					if (step.ignoresMappings()) {
 						MiscHelper.println("Performing step '%s' for version %s...", step.getName(), mcVersion.launcherFriendlyVersionName());
 					} else {
 						MiscHelper.println("Performing step '%s' for version %s (%s mappings)...", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
 					}
-					result = step.run(pipelineCache, mcVersion, mappingFlavour);
+					result = step.run(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo);
 				} else {
 					result = StepResult.NOT_RUN;
 				}
@@ -150,14 +177,37 @@ public abstract class Step {
 			if (result == StepResult.FAILED) {
 				if (cachedException != null) {
 					if (step.ignoresMappings()) {
-						MiscHelper.panicBecause(cachedException, "\tStep '%s' for version %s \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
+						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
 					} else {
-						MiscHelper.panicBecause(cachedException, "\tStep '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
 					}
 				}
 			} else if (result != StepResult.NOT_RUN) {
 				pipelineCache.putPath(step, step.getArtifactPath(mcVersion, mappingFlavour).orElse(null));
 			}
+		}
+	}
+
+	protected static final class CommitMsgFilter extends RevFilter {
+		String msg;
+
+		CommitMsgFilter(String msg) {
+			this.msg = msg;
+		}
+
+		@Override
+		public boolean include(RevWalk walker, RevCommit c) {
+			return Objects.equals(c.getFullMessage(), this.msg);
+		}
+
+		@Override
+		public RevFilter clone() {
+			return this;
+		}
+
+		@Override
+		public String toString() {
+			return "MSG FILTER";
 		}
 	}
 }

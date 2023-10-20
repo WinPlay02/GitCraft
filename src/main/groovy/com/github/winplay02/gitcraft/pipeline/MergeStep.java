@@ -1,9 +1,11 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RepoWrapper;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.stitch.merge.JarMerger;
@@ -42,7 +44,7 @@ public class MergeStep extends Step {
 	}
 
 	@Override
-	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour) throws IOException {
+	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException {
 		// TODO do not run for (ancient) versions, where this does not make sense
 		Path mergedPath = getInternalArtifactPath(mcVersion, mappingFlavour);
 		if (Files.exists(mergedPath)) {

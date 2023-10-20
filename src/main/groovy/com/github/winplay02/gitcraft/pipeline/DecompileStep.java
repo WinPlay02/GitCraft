@@ -1,11 +1,13 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FFNIODirectoryResultSaver;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RepoWrapper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
@@ -54,7 +56,7 @@ public class DecompileStep extends Step {
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
 	@Override
-	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour) throws Exception {
+	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
 		Path decompiledPath = getInternalArtifactPath(mcVersion, mappingFlavour);
 		if (Files.exists(decompiledPath) && Files.size(decompiledPath) > 22 /* not empty jar */) {
 			return StepResult.UP_TO_DATE;
