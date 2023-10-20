@@ -1,10 +1,11 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
+import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.integrity.GitBlobSHA1Algorithm;
 import com.github.winplay02.gitcraft.integrity.IntegrityAlgorithm;
 import com.github.winplay02.gitcraft.integrity.SHA1Algorithm;
-import dex.mcgitmaker.GitCraft;
+import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
+import com.github.winplay02.gitcraft.pipeline.Step;
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -34,9 +35,6 @@ public class RemoteHelper {
 
 	public static final IntegrityAlgorithm GIT_BLOB_SHA1 = new GitBlobSHA1Algorithm();
 
-	public static String makeMinecraftAssetUrl(String hash) {
-		return String.format("https://resources.download.minecraft.net/%s/%s", hash.substring(0, 2), hash);
-	}
 
 	protected static void deleteFile(Path file) {
 		try {
@@ -57,17 +55,17 @@ public class RemoteHelper {
 				}
 				if (!actualHash.equalsIgnoreCase(localFileInfo.checksum())) {
 					if (GitCraft.config.checksumRemoveInvalidFiles) {
-						MiscHelper.println("%s-Checksum of %s %s %s is %s, expected %s. The mismatching file will now be removed (checksums mismatch)", integrityAlgorithm.getAlgorithmName(), fileVerbParticiple, localFileInfo.outputFileKind(), localFileInfo.outputFileId(), actualHash, localFileInfo.checksum());
+						MiscHelper.println("%s-Checksum of %s %s %s is %s, expected %s. The mismatching file will now be removed \u001B[31m(checksums mismatch)\u001B[0m", integrityAlgorithm.getAlgorithmName(), fileVerbParticiple, localFileInfo.outputFileKind(), localFileInfo.outputFileId(), actualHash, localFileInfo.checksum());
 						deleteFile(localFileInfo.targetFile());
 						integrityAlgorithm.invalidateFile(localFileInfo.targetFile());
 						return false;
 					} else {
-						MiscHelper.println("%s-Checksum of %s %s %s is %s, expected %s. (checksums mismatch)", integrityAlgorithm.getAlgorithmName(), fileVerbParticiple, localFileInfo.outputFileKind(), localFileInfo.outputFileId(), actualHash, localFileInfo.checksum());
+						MiscHelper.println("%s-Checksum of %s %s %s is %s, expected %s. \u001B[31m(checksums mismatch)\u001B[0m", integrityAlgorithm.getAlgorithmName(), fileVerbParticiple, localFileInfo.outputFileKind(), localFileInfo.outputFileId(), actualHash, localFileInfo.checksum());
 						return true;
 					}
 				} else {
 					if (GitCraft.config.printExistingFileChecksumMatching || useRemote) {
-						MiscHelper.println("%s %s %s is valid (checksums match)", fileVerbParticipleCap, localFileInfo.outputFileKind(), localFileInfo.outputFileId());
+						MiscHelper.println("%s %s %s is valid \u001B[32m(checksums match)\u001B[0m", fileVerbParticipleCap, localFileInfo.outputFileKind(), localFileInfo.outputFileId());
 					}
 					return true;
 				}
@@ -81,9 +79,9 @@ public class RemoteHelper {
 		return false;
 	}
 
-	public static void downloadToFileWithChecksumIfNotExists(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
+	public static Step.StepResult downloadToFileWithChecksumIfNotExists(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
 		if (checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, false)) {
-			return;
+			return Step.StepResult.UP_TO_DATE;
 		}
 		if (localFileInfo.targetFile().getParent() != null) {
 			try {
@@ -104,15 +102,16 @@ public class RemoteHelper {
 					file_output.flush();
 				}
 			} catch (Exception e1) {
-				MiscHelper.println("Failed to fetch URL (retrying in %sms): %s (%s)", GitCraft.config.failedFetchRetryInterval, url, e1);
+				MiscHelper.println("\u001B[31mFailed to fetch URL (retrying in %sms): %s (%s)\u001B[0m", GitCraft.config.failedFetchRetryInterval, url, e1);
 				MiscHelper.sleep(GitCraft.config.failedFetchRetryInterval);
 			}
 		} while (!checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, true));
+		return Step.StepResult.SUCCESS;
 	}
 
-	public static void downloadToFileWithChecksumIfNotExistsNoRetry(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
+	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetry(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
 		if (checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, false)) {
-			return;
+			return Step.StepResult.UP_TO_DATE;
 		}
 		if (localFileInfo.targetFile().getParent() != null) {
 			try {
@@ -134,11 +133,11 @@ public class RemoteHelper {
 				}
 				break;
 			} catch (FileNotFoundException | MalformedURLException e1) {
-				MiscHelper.println("Failed to fetch URL: %s (%s)", url, e1);
+				MiscHelper.println("\u001B[31mFailed to fetch URL: %s (%s)\u001B[0m", url, e1);
 				deleteFile(localFileInfo.targetFile());
 				throw new RuntimeException(e1);
 			} catch (Exception e1) {
-				MiscHelper.println("Failed to fetch URL (retrying in %sms): %s (%s)", GitCraft.config.failedFetchRetryInterval, url, e1);
+				MiscHelper.println("\u001B[31mFailed to fetch URL (retrying in %sms): %s (%s)\u001B[0m", GitCraft.config.failedFetchRetryInterval, url, e1);
 				deleteFile(localFileInfo.targetFile());
 				MiscHelper.sleep(GitCraft.config.failedFetchRetryInterval);
 			}
@@ -146,24 +145,29 @@ public class RemoteHelper {
 		if (!checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, true)) {
 			MiscHelper.panic("File download failed");
 		}
+		return Step.StepResult.SUCCESS;
 	}
 
-	public static void downloadToFileWithChecksumIfNotExistsNoRetryMaven(String url, LocalFileInfo localFileInfo) {
+	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetryMaven(String url, LocalFileInfo localFileInfo) {
 		String urlSha1 = urlencodedURL(url + ".sha1");
 		try {
-			String sha1 = SerializationHelper.fetchAllFromURL(new URL(urlSha1));
-			downloadToFileWithChecksumIfNotExistsNoRetry(urlencodedURL(url), new LocalFileInfo(localFileInfo.targetFile(), sha1, localFileInfo.outputFileKind(), localFileInfo.outputFileId()), SHA1);
+			String sha1 = null;
+			try {
+				sha1 = SerializationHelper.fetchAllFromURL(new URL(urlSha1));
+			} catch (FileNotFoundException ignored) {
+			}
+			return downloadToFileWithChecksumIfNotExistsNoRetry(urlencodedURL(url), new LocalFileInfo(localFileInfo.targetFile(), sha1, localFileInfo.outputFileKind(), localFileInfo.outputFileId()), SHA1);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static void downloadToFileWithChecksumIfNotExistsNoRetryGitHub(String repository, String branch, String path, LocalFileInfo localFileInfo) {
+	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetryGitHub(String repository, String branch, String path, LocalFileInfo localFileInfo) {
 		String githubApiUrl = urlencodedURL(String.format("https://api.github.com/repos/%s/contents/%s?ref=%s", repository, path, branch));
 		try {
 			GithubRepositoryBlobContent apiResponse = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(githubApiUrl)), GithubRepositoryBlobContent.class);
 			String sha1Blob = apiResponse.sha();
-			downloadToFileWithChecksumIfNotExistsNoRetry(urlencodedURL(apiResponse.download_url()), new LocalFileInfo(localFileInfo.targetFile(), sha1Blob, localFileInfo.outputFileKind(), localFileInfo.outputFileId()), GIT_BLOB_SHA1);
+			return downloadToFileWithChecksumIfNotExistsNoRetry(apiResponse.download_url(), new LocalFileInfo(localFileInfo.targetFile(), sha1Blob, localFileInfo.outputFileKind(), localFileInfo.outputFileId()), GIT_BLOB_SHA1);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -1,4 +1,4 @@
-# GitCraft
+# GitCraft-Next
 Generates a Git repository of decompiled Minecraft. For personal use only. Do not share or upload the resulting repository.
 
 To get started, execute `./gradlew run` from the command line, advanced usage (`./gradlew run --args="[Options]"`) is shown below.
@@ -103,6 +103,14 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory
 ```
 
+## Fork / Changes
+- This repository was originally forked from [dexman545/GitCraft](https://github.com/dexman545/GitCraft)
+- More mappings are supported: Yarn, Parchment, (Fabric Intermediary), Mojmaps
+- Assets versioning is supported
+- Dynamic loading of meta files
+- complex version graphs
+- Most of the code was rewritten to allow these changes
+
 ## Notes about Yarn
 - Yarn support is experimental as some versions can not (yet) be remapped with yarn
   - Some versions of yarn are completely broken, so they are skipped. Affected versions: `19w13a`, `19w13b`, `19w14a`, `19w14b`
@@ -110,6 +118,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
   - Some build of yarn are broken, so older ones are used instead. Affected versions: `19w04b`, `19w08a`, `19w12b`
   - Older versions of yarn don't exist in merged form. They are merged with intermediary mappings. Affected versions: `< 20w09a`
   - Older versions of yarn only exist with switched namespaces. They were switched back to their correct namespaces. Affected versions: `< 1.14.3`
+    - This seems to be only happening with "newer" v2 builds, not the old tiny-v1 builds
   - One version of yarn exists in maven, but does not exist in meta.fabricmc.net. Affected version: `1.14.2 Pre-Release 1`
   - Some combat snapshots are located in a non-standard-path (on maven.fabricmc.net and on meta.fabricmc.net). Affected versions: `1.15_combat-6`, `1.16_combat-0`
 - Version `1.16_combat-1`, `1.16_combat-2`, `1.16_combat-4`, `1.16_combat-5`, `1.16_combat-6` do not exist at all

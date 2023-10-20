@@ -1,12 +1,12 @@
-package com.github.winplay02.gitcraft;
+package com.github.winplay02.gitcraft
 
-import com.github.winplay02.gitcraft.util.MappingHelper
+import com.github.winplay02.gitcraft.mappings.MappingFlavour
 import com.github.winplay02.gitcraft.util.MiscHelper
 import groovy.cli.picocli.CliBuilder
 import groovy.cli.picocli.OptionAccessor
 
 import java.nio.file.Path
-import java.util.stream.Collectors;
+import java.util.stream.Collectors
 
 class GitCraftCli {
 	static CliBuilder createCli() {
@@ -30,8 +30,8 @@ class GitCraftCli {
 				'no-repo', 'Prevents the creation/modification of a repository for versioning, only decompiles the provided (or all) version(s)');
 		cli_args._(longOpt:
 				'refresh', 'Refreshes the decompilation by deleting old decompiled artifacts and restarting. This will not be useful, if the decompiler has not been updated. The repository has to be deleted manually.');
-		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingHelper.MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingHelper.MappingFlavour, argName: "mapping", defaultValue: "mojmap");
-		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingHelper.MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingHelper.MappingFlavour[]);
+		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour, argName: "mapping", defaultValue: "mojmap");
+		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
 		cli_args._(longOpt: 'only-stable', 'Only decompiles stable releases.');
 		cli_args._(longOpt: 'only-snapshot', 'Only decompiles snapshots (includes pending and non-linear, if not otherwise specified).');
 		cli_args._(longOpt: 'override-repo-target', args: 1, argName: 'path', type: Path,
@@ -69,7 +69,7 @@ class GitCraftCli {
 		}
 		config.usedMapping = cli_args_parsed.'mappings';
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
-			MappingHelper.MappingFlavour[] fallbackMappings = cli_args_parsed.'fallback-mappingss';
+			MappingFlavour[] fallbackMappings = cli_args_parsed.'fallback-mappingss';
 			config.fallbackMappings = fallbackMappings;
 		}
 		config.onlyStableReleases = cli_args_parsed.hasOption("only-stable");

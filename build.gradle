@@ -20,13 +20,13 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 application {
-	mainClass = 'dex.mcgitmaker.GitCraft'
+	mainClass = 'com.github.winplay02.gitcraft.GitCraft'
 	applicationDefaultJvmArgs = ['-Xmx4G', '-XX:+HeapDumpOnOutOfMemoryError']
 }
 
 dependencies {
 	// General
-	implementation "org.codehaus.groovy:groovy-all:${groovy_version}"
+	implementation "org.apache.groovy:groovy-all:${groovy_version}"
 	implementation "com.google.code.gson:gson:${gson_version}"
 
 	// Loader and its deps

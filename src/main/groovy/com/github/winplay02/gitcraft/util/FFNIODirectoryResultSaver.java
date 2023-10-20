@@ -1,23 +1,21 @@
-package dex.mcgitmaker;
+package com.github.winplay02.gitcraft.util;
 
+import net.fabricmc.loom.util.FileSystemUtil;
 import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
-public class NIODirectoryResultSaver implements IResultSaver {
+public class FFNIODirectoryResultSaver implements IResultSaver {
 	private final Path root;
 
-	public NIODirectoryResultSaver(Path root) {
+	public FFNIODirectoryResultSaver(Path root) {
 		this.root = root;
 	}
 
@@ -82,11 +80,13 @@ public class NIODirectoryResultSaver implements IResultSaver {
 
 	@Override
 	public void copyEntry(String source, String path, String archiveName, String entryName) {
-		try (ZipFile srcArchive = new ZipFile(new File(source))) {
-			ZipEntry entry = srcArchive.getEntry(entryName);
-			if (entry != null) {
-				try (InputStream input = srcArchive.getInputStream(entry)) {
-					Files.copy(input, this.root.resolve(entryName));
+		Path srcPath = Path.of(source);
+		Path targetPath = this.root.resolve(path).resolve(entryName);
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(srcPath)) {
+			Path zipEntry = fs.getPath(entryName);
+			if (zipEntry != null) {
+				try (OutputStream output = Files.newOutputStream(targetPath)) {
+					Files.copy(zipEntry, output);
 				}
 			}
 		} catch (IOException ex) {

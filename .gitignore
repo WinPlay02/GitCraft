@@ -1,6 +1,7 @@
 # GitCraft
 artifact-store/
-minecraft-repo/
+minecraft\-repo*/
+minecraft\-repo*/**
 remote-cache/
 
 # Gradle

@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.util;
 
 import com.github.winplay02.gitcraft.meta.FabricYarnVersionMeta;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -8,7 +9,6 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
-import dex.mcgitmaker.data.McVersion;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,7 +28,7 @@ public class SerializationHelper {
 
 	protected static Gson gson;
 
-	public static final TypeToken<LinkedHashMap<String, McVersion>> TYPE_LINKED_HASH_MAP_STRING_VERSION = new TypeToken<LinkedHashMap<String, McVersion>>() {
+	public static final TypeToken<LinkedHashMap<String, OrderedVersion>> TYPE_LINKED_HASH_MAP_STRING_VERSION = new TypeToken<LinkedHashMap<String, OrderedVersion>>() {
 	};
 	public static final TypeToken<TreeMap<String, String>> TYPE_TREE_MAP_STRING_STRING = new TypeToken<TreeMap<String, String>>() {
 	};

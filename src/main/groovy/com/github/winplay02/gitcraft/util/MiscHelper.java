@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MiscHelper {
@@ -30,6 +32,10 @@ public class MiscHelper {
 
 	public static void panic(String formatString, Object... args) {
 		throw new RuntimeException(String.format(formatString, args));
+	}
+
+	public static void panicBecause(Exception cause, String formatString, Object... args) {
+		throw new RuntimeException(String.format(formatString, args), cause);
 	}
 
 	public static void copyLargeDir(Path source, Path target) {
@@ -50,8 +56,31 @@ public class MiscHelper {
 	public static void deleteDirectory(Path directory) throws IOException {
 		try (Stream<Path> walk = Files.walk(directory)) {
 			walk.sorted(Comparator.reverseOrder())
-				.map(Path::toFile)
-				.forEach(java.io.File::delete);
+					.map(Path::toFile)
+					.forEach(java.io.File::delete);
+		}
+	}
+
+	public static List<Path> listDirectly(Path directory) throws IOException {
+		try (Stream<Path> walk = Files.walk(directory, 1)) {
+			return walk.sorted(Comparator.reverseOrder())
+					.filter(path -> !path.equals(directory))
+					.collect(Collectors.toList());
+		}
+	}
+
+	public static List<Path> listRecursively(Path directory) throws IOException {
+		try (Stream<Path> walk = Files.walk(directory)) {
+			return walk.sorted(Comparator.naturalOrder())
+					.collect(Collectors.toList());
+		}
+	}
+
+	public static List<Path> listRecursivelyFilteredExtension(Path directory, String extension) throws IOException {
+		try (Stream<Path> walk = Files.walk(directory)) {
+			return walk.sorted(Comparator.naturalOrder())
+					.filter(path -> path.toString().endsWith(extension))
+					.collect(Collectors.toList());
 		}
 	}
 

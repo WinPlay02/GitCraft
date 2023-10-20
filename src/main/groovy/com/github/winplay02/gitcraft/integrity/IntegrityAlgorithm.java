@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.integrity;
 
-import dex.mcgitmaker.GitCraft;
+import com.github.winplay02.gitcraft.GitCraft;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +46,10 @@ public abstract class IntegrityAlgorithm {
 			cachedHashes.put(path, hash);
 		}
 		return cachedHashes.get(path);
+	}
+
+	public final boolean fileMatchesChecksum(Path path, String expectedChecksum) {
+		return getChecksumFile(path).equalsIgnoreCase(expectedChecksum);
 	}
 
 	public void invalidateFile(Path path) {
