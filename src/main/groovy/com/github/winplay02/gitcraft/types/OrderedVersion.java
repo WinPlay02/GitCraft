@@ -33,7 +33,7 @@ public record OrderedVersion(
 		Artifact serverMappings,
 		Set<Artifact> libraries,
 		Artifact assetsIndex
-) implements Comparable<SemanticVersion> {
+) implements Comparable<OrderedVersion> {
 
 	public static Artifact getClientJarFromMeta(VersionMeta versionMeta) {
 		if (versionMeta.downloads().client() != null) {
@@ -129,12 +129,27 @@ public record OrderedVersion(
 		return this.launcherFriendlyVersionName() + "\n\nSemVer: " + this.semanticVersion();
 	}
 
-	@Override
 	public int compareTo(SemanticVersion o) {
 		try {
 			return SemanticVersion.parse(semanticVersion()).compareTo((Version) o);
 		} catch (VersionParsingException e) {
 			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", launcherFriendlyVersionName(), semanticVersion());
+		}
+		return 0;
+	}
+
+	@Override
+	public int compareTo(OrderedVersion o) {
+		SemanticVersion thisVersion = null;
+		try {
+			thisVersion = SemanticVersion.parse(semanticVersion());
+		} catch (VersionParsingException e) {
+			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", launcherFriendlyVersionName(), semanticVersion());
+		}
+		try {
+			return thisVersion.compareTo((Version) SemanticVersion.parse(o.semanticVersion()));
+		} catch (VersionParsingException e) {
+			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", o.launcherFriendlyVersionName(), o.semanticVersion());
 		}
 		return 0;
 	}

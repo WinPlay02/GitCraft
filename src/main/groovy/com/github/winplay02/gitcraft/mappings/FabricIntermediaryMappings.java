@@ -3,8 +3,8 @@ package com.github.winplay02.gitcraft.mappings;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
-import com.github.winplay02.gitcraft.GitCraft;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingWriter;
 import net.fabricmc.mappingio.format.MappingFormat;
@@ -30,6 +30,9 @@ public class FabricIntermediaryMappings extends Mapping {
 
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
+		if (GitCraftConfig.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
+			return false;
+		}
 		return mcVersion.compareTo(GitCraftConfig.INTERMEDIARY_MAPPINGS_START_VERSION) >= 0;
 	}
 
@@ -56,11 +59,11 @@ public class FabricIntermediaryMappings extends Mapping {
 	}
 
 	protected Path getMappingsPathInternalV1(OrderedVersion mcVersion) {
-		return GitCraft.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary-v1.tiny");
+		return GitCraftPaths.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary-v1.tiny");
 	}
 
 	@Override
 	protected Path getMappingsPathInternal(OrderedVersion mcVersion) {
-		return GitCraft.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary.tiny");
+		return GitCraftPaths.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary.tiny");
 	}
 }

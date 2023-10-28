@@ -56,9 +56,20 @@ dependencies {
 
 	// Decompiler, could be replaced with another fernflower fork
 	implementation "org.vineflower:vineflower:${vineflower_version}"
+
+	// Testing
+	testImplementation(platform("org.junit:junit-bom:5.10.0"))
+	testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
 }
 
 // if not working: run ./gradlew run --refresh-dependencies
 configurations.all {
 	resolutionStrategy.cacheDynamicVersionsFor 15, 'minutes'
+}
+
+
+
+test {
+	maxHeapSize = "4G"
+	useJUnitPlatform()
 }

@@ -1,9 +1,9 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
@@ -25,7 +25,7 @@ public class MergeStep extends Step {
 	}
 
 	public MergeStep() {
-		this(GitCraft.MC_VERSION_STORE);
+		this(GitCraftPaths.MC_VERSION_STORE);
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class MergeStep extends Step {
 		Path server2merge = mcVersion.serverJar().resolve(artifactRootPath);
 		BundleMetadata sbm = BundleMetadata.fromJar(server2merge);
 		if (sbm != null) {
-			Path minecraftExtractedServerJar = GitCraft.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName()).resolve("extracted-server.jar");
+			Path minecraftExtractedServerJar = GitCraftPaths.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName()).resolve("extracted-server.jar");
 
 			if (sbm.versions().size() != 1) {
 				throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(sbm.versions().size()));

@@ -16,7 +16,7 @@ public class RepoWrapper implements Closeable {
 	}
 
 	public RepoWrapper(Path root_path) throws Exception {
-		this.root_path = Objects.requireNonNullElse(root_path, GitCraft.REPO);
+		this.root_path = Objects.requireNonNullElse(root_path, GitCraftPaths.REPO);
 		this.git = Git.init().setInitialBranch(GitCraft.config.gitMainlineLinearBranch).setDirectory(this.root_path.toFile()).call();
 	}
 

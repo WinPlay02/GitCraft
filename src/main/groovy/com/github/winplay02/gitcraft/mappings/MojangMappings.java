@@ -2,7 +2,7 @@ package com.github.winplay02.gitcraft.mappings;
 
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingWriter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -35,7 +35,7 @@ public class MojangMappings extends Mapping {
 	@Override
 	public Step.StepResult prepareMappings(OrderedVersion mcVersion) throws IOException {
 		Path mojmapPath = getMappingsPathInternal(mcVersion);
-		Path artifactTargetPath = GitCraft.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName());
+		Path artifactTargetPath = GitCraftPaths.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName());
 		if (Files.exists(mojmapPath)) {
 			return Step.StepResult.UP_TO_DATE;
 		}
@@ -64,6 +64,6 @@ public class MojangMappings extends Mapping {
 
 	@Override
 	public Path getMappingsPathInternal(OrderedVersion mcVersion) {
-		return GitCraft.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-moj.tiny");
+		return GitCraftPaths.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-moj.tiny");
 	}
 }

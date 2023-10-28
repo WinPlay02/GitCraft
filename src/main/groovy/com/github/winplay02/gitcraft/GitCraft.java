@@ -1,5 +1,7 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.manifest.ManifestProvider;
+import com.github.winplay02.gitcraft.manifest.MinecraftLauncherManifest;
 import com.github.winplay02.gitcraft.mappings.FabricIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
@@ -16,41 +18,14 @@ import com.github.winplay02.gitcraft.pipeline.RemapStep;
 import com.github.winplay02.gitcraft.pipeline.ResetStep;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 
 public class GitCraft {
-
-	public static final Path CURRENT_WORKING_DIRECTORY;
-
-	static {
-		try {
-			CURRENT_WORKING_DIRECTORY = Paths.get(new File(".").getCanonicalPath());
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static final Path MAIN_ARTIFACT_STORE = CURRENT_WORKING_DIRECTORY.resolve("artifact-store");
-	public static final Path DECOMPILED_WORKINGS = MAIN_ARTIFACT_STORE.resolve("decompiled");
-	public static final Path MAPPINGS = MAIN_ARTIFACT_STORE.resolve("mappings");
-	public static final Path REPO = MAIN_ARTIFACT_STORE.getParent().resolve("minecraft-repo");
-	public static final Path MC_VERSION_STORE = MAIN_ARTIFACT_STORE.resolve("mc-versions");
-	public static final Path MC_VERSION_META_STORE = MAIN_ARTIFACT_STORE.resolve("mc-meta");
-	public static final Path MC_VERSION_META_DOWNLOADS = MAIN_ARTIFACT_STORE.resolve("mc-meta-download");
-	public static final Path LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve("libraries");
-	public static final Path REMAPPED = MAIN_ARTIFACT_STORE.resolve("remapped-mc");
-	public static final Path ASSETS_INDEX = MAIN_ARTIFACT_STORE.resolve("assets-index");
-	public static final Path ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve("assets-objects");
-
-	public static final Path SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
 	/// Every Mapping
 	public static final MojangMappings MOJANG_MAPPINGS = new MojangMappings();
 	public static final FabricIntermediaryMappings FABRIC_INTERMEDIARY_MAPPINGS = new FabricIntermediaryMappings();
@@ -58,46 +33,49 @@ public class GitCraft {
 	public static final Mapping MOJANG_PARCHMENT_MAPPINGS = new ParchmentMappings(MOJANG_MAPPINGS);
 
 	/// Every Step
-	public static final Step STEP_RESET = new ResetStep();
-	public static final Step STEP_FETCH_ARTIFACTS = new FetchArtifactsStep();
-	public static final Step STEP_FETCH_LIBRARIES = new FetchLibrariesStep();
-	public static final Step STEP_FETCH_ASSETS = new FetchAssetsStep();
-	public static final Step STEP_MERGE = new MergeStep();
-	public static final Step STEP_PREPARE_MAPPINGS = new PrepareMappingsStep();
-	public static final Step STEP_REMAP = new RemapStep();
-	public static final Step STEP_DECOMPILE = new DecompileStep();
-	public static final CommitStep STEP_COMMIT = new CommitStep();
+	public static Step STEP_RESET = null;
+	public static Step STEP_FETCH_ARTIFACTS = null;
+	public static Step STEP_FETCH_LIBRARIES = null;
+	public static Step STEP_FETCH_ASSETS = null;
+	public static Step STEP_MERGE = null;
+	public static Step STEP_PREPARE_MAPPINGS = null;
+	public static Step STEP_REMAP = null;
+	public static Step STEP_DECOMPILE = null;
+	public static CommitStep STEP_COMMIT = null;
 
 	/// Default Pipeline
-	public static final List<Step> DEFAULT_PIPELINE = List.of(STEP_RESET, STEP_FETCH_ARTIFACTS, STEP_FETCH_LIBRARIES, STEP_FETCH_ASSETS, STEP_MERGE, STEP_PREPARE_MAPPINGS, STEP_REMAP, STEP_DECOMPILE, STEP_COMMIT);
+	public static List<Step> DEFAULT_PIPELINE = null;
 
+	/// Other Information
 	public static GitCraftConfig config = null;
 	public static MinecraftVersionGraph versionGraph = null;
-	public static LinkedHashMap<String, OrderedVersion> mcMetadata;
-
-	static {
-		MAIN_ARTIFACT_STORE.toFile().mkdirs();
-		DECOMPILED_WORKINGS.toFile().mkdirs();
-		MAPPINGS.toFile().mkdirs();
-		MC_VERSION_STORE.toFile().mkdirs();
-		LIBRARY_STORE.toFile().mkdirs();
-		REMAPPED.toFile().mkdirs();
-		ASSETS_INDEX.toFile().mkdirs();
-		ASSETS_OBJECTS.toFile().mkdirs();
-		SOURCE_EXTRA_VERSIONS.toFile().mkdirs();
-	}
+	public static ManifestProvider manifestProvider = null;
 
 	public static void main(String[] args) throws Exception {
+		// TODO (check, if any repo path already exists (minecraft-repo**) and last executed version then print warning to user and stop;) create file (last executed version) that allows to continue execution
+		GitCraftPaths.initializePaths(GitCraftPaths.lookupCurrentWorkingDirectory());
 		GitCraft.config = GitCraftCli.handleCliArgs(args);
 		if (GitCraft.config == null) {
 			return;
 		}
 		MiscHelper.checkFabricLoaderVersion();
-		GitCraft.mcMetadata = MetadataBootstrap.initialize();
+		GitCraft.manifestProvider = new MinecraftLauncherManifest();
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
-		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(mcMetadata);
+		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.manifestProvider);
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
+		{
+			DEFAULT_PIPELINE = new ArrayList<>();
+			DEFAULT_PIPELINE.add(STEP_RESET = new ResetStep());
+			DEFAULT_PIPELINE.add(STEP_FETCH_ARTIFACTS = new FetchArtifactsStep());
+			DEFAULT_PIPELINE.add(STEP_FETCH_LIBRARIES = new FetchLibrariesStep());
+			DEFAULT_PIPELINE.add(STEP_FETCH_ASSETS = new FetchAssetsStep());
+			DEFAULT_PIPELINE.add(STEP_MERGE = new MergeStep());
+			DEFAULT_PIPELINE.add(STEP_PREPARE_MAPPINGS = new PrepareMappingsStep());
+			DEFAULT_PIPELINE.add(STEP_REMAP = new RemapStep());
+			DEFAULT_PIPELINE.add(STEP_DECOMPILE = new DecompileStep());
+			DEFAULT_PIPELINE.add(STEP_COMMIT = new CommitStep());
+		}
 		try (RepoWrapper repo = GitCraft.getRepository()) {
 			runMainPipeline(GitCraft.DEFAULT_PIPELINE, repo);
 			if (repo != null) {
@@ -120,14 +98,14 @@ public class GitCraft {
 			}
 			OrderedVersion[] mc_versions = new OrderedVersion[config.onlyVersion.length];
 			for (int i = 0; i < mc_versions.length; ++i) {
-				mc_versions[i] = graph.getMinecraftMainlineVersionByName(config.onlyVersion[i]);
+				mc_versions[i] = graph.getMinecraftVersionByName(config.onlyVersion[i]);
 				if (mc_versions[i] == null) {
 					MiscHelper.panic("%s is invalid", config.onlyVersion[i]);
 				}
 			}
 			graph = graph.filterOnlyVersion(mc_versions);
 		} else if (config.isMinVersion()) {
-			OrderedVersion mc_version = graph.getMinecraftMainlineVersionByName(config.minVersion);
+			OrderedVersion mc_version = graph.getMinecraftVersionByName(config.minVersion);
 			if (mc_version == null) {
 				MiscHelper.panic("%s is invalid", config.minVersion);
 			}
@@ -136,7 +114,7 @@ public class GitCraft {
 		if (config.isAnyVersionExcluded()) {
 			OrderedVersion[] mc_versions = new OrderedVersion[config.excludedVersion.length];
 			for (int i = 0; i < mc_versions.length; ++i) {
-				mc_versions[i] = graph.getMinecraftMainlineVersionByName(config.excludedVersion[i]);
+				mc_versions[i] = graph.getMinecraftVersionByName(config.excludedVersion[i]);
 				if (mc_versions[i] == null) {
 					MiscHelper.panic("%s is invalid", config.onlyVersion[i]);
 				}
@@ -155,10 +133,10 @@ public class GitCraft {
 		return graph;
 	}
 
-	private static RepoWrapper getRepository() throws Exception {
+	public static RepoWrapper getRepository() throws Exception {
 		if (!GitCraft.config.noRepo) {
 			String identifier = GitCraft.versionGraph.repoTagsIdentifier(GitCraft.config.usedMapping, GitCraft.config.fallbackMappings);
-			return new RepoWrapper(GitCraft.config.overrideRepositoryPath != null ? GitCraft.config.overrideRepositoryPath : (identifier.isEmpty() ? null : MAIN_ARTIFACT_STORE.getParent().resolve(String.format("minecraft-repo-%s", identifier))));
+			return new RepoWrapper(GitCraft.config.overrideRepositoryPath != null ? GitCraft.config.overrideRepositoryPath : (identifier.isEmpty() ? null : GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("minecraft-repo-%s", identifier))));
 		}
 		return null;
 	}

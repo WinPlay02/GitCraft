@@ -4,6 +4,7 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -22,7 +23,7 @@ public class RemapStep extends Step {
 	}
 
 	public RemapStep() {
-		this(GitCraft.REMAPPED);
+		this(GitCraftPaths.REMAPPED);
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FFNIODirectoryResultSaver;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
@@ -40,7 +41,7 @@ public class DecompileStep extends Step {
 	}
 
 	public DecompileStep() {
-		this(GitCraft.DECOMPILED_WORKINGS);
+		this(GitCraftPaths.DECOMPILED_WORKINGS);
 	}
 
 	@Override

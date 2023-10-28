@@ -7,6 +7,7 @@ import com.github.winplay02.gitcraft.meta.AssetsIndexMeta;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -23,7 +24,7 @@ public class FetchAssetsStep extends Step {
 	}
 
 	public FetchAssetsStep() {
-		this(GitCraft.ASSETS_INDEX, GitCraft.ASSETS_OBJECTS);
+		this(GitCraftPaths.ASSETS_INDEX, GitCraftPaths.ASSETS_OBJECTS);
 	}
 
 	@Override

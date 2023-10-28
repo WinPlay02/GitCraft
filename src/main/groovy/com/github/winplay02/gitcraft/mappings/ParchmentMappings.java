@@ -3,12 +3,11 @@ package com.github.winplay02.gitcraft.mappings;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
-import com.github.winplay02.gitcraft.GitCraft;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentTreeV1;
-import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.MappingWriter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -16,6 +15,8 @@ import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -57,10 +58,10 @@ public class ParchmentMappings extends Mapping {
 			return Step.StepResult.UP_TO_DATE;
 		}
 		String parchmentLatestReleaseVersionBuild = getLatestReleaseVersionParchmentBuild(mcVersion);
-		Path mappingsFileJson = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.json", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild));
+		Path mappingsFileJson = GitCraftPaths.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.json", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild));
 		Step.StepResult downloadResult = null;
 		if (!Files.exists(mappingsFileJson)) {
-			Path mappingsFileJar = GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.jar", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild));
+			Path mappingsFileJar = GitCraftPaths.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.jar", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild));
 			downloadResult = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(
 					String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild, mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild),
 					new RemoteHelper.LocalFileInfo(mappingsFileJar,
@@ -68,8 +69,8 @@ public class ParchmentMappings extends Mapping {
 							"parchment mapping",
 							mcVersion.launcherFriendlyVersionName())
 			);
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mappingsFileJar)) {
-				Path mappingsPathInJar = fs.get().getPath("parchment.json");
+			try (FileSystem fs = FileSystems.newFileSystem(mappingsFileJar)) {
+				Path mappingsPathInJar = fs.getPath("parchment.json");
 				Files.copy(mappingsPathInJar, mappingsFileJson, StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
 				Files.deleteIfExists(mappingsFileJar);
@@ -95,7 +96,7 @@ public class ParchmentMappings extends Mapping {
 
 	@Override
 	public Path getMappingsPathInternal(OrderedVersion mcVersion) {
-		return GitCraft.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.tiny", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), getLatestReleaseVersionParchmentBuild(mcVersion)));
+		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.tiny", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), getLatestReleaseVersionParchmentBuild(mcVersion)));
 	}
 
 	private final Map<String, String> parchmentBuilds = new HashMap<>();

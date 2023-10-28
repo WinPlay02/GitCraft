@@ -6,6 +6,7 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.meta.AssetsIndexMeta;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -15,8 +16,6 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,11 +23,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
 public class CommitStep extends Step {
@@ -84,6 +86,10 @@ public class CommitStep extends Step {
 	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
 		String target_branch;
 		if (repo.getGit().getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
+			NavigableSet<OrderedVersion> prev_version = new TreeSet<>(versionGraph.getPreviousNodes(mcVersion));
+			if (prev_version.isEmpty()) {
+				MiscHelper.panic("HEAD is not empty, but current version does not have any preceding versions");
+			}
 			target_branch = MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.launcherFriendlyVersionName() : GitCraft.config.gitMainlineLinearBranch;
 			checkoutVersionBranch(target_branch.replace(" ", "-"), mcVersion, versionGraph, repo);
 			if (findVersionRev(mcVersion, repo)) {
@@ -97,13 +103,17 @@ public class CommitStep extends Step {
 			if (tip_commit.isEmpty()) {
 				MiscHelper.panic("HEAD is not empty, but a root commit can not be found");
 			}
-			Optional<OrderedVersion> prev_version = versionGraph.getPreviousNode(mcVersion);
-			if (prev_version.isEmpty()) {
-				MiscHelper.panic("HEAD is not empty, but current version does not have a preceding version");
-			}
-			if (!Objects.equals(tip_commit.get().getFullMessage(), prev_version.get().toCommitMessage())) {
+			Optional<OrderedVersion> branchedPrevVersion = prev_version.stream().filter(anyPrevVersion -> Objects.equals(tip_commit.get().getFullMessage(), anyPrevVersion.toCommitMessage())).findAny();
+			if (branchedPrevVersion.isEmpty()) {
 				MiscHelper.panic("This repository is wrongly ordered. Please remove the unordered commits or delete the entire repository");
 			}
+			prev_version.remove(branchedPrevVersion.orElseThrow());
+			// Write MERGE_HEAD
+			HashSet<RevCommit> mergeHeadRevs = new HashSet<>();
+			for (OrderedVersion prevVersion : prev_version) {
+				mergeHeadRevs.add(findVersionObjectRev(prevVersion, repo));
+			}
+			writeMERGE_HEAD(mergeHeadRevs, repo);
 		} else {
 			if (!mcVersion.equals(versionGraph.getRootVersion())) {
 				MiscHelper.panic("A non-root version is committed as the root commit to the repository");
@@ -117,22 +127,27 @@ public class CommitStep extends Step {
 		if (!Objects.equals(repo.getGit().getRepository().getBranch(), target_branch)) {
 			Ref target_ref = repo.getGit().getRepository().getRefDatabase().findRef(target_branch);
 			if (target_ref == null) {
-				RevCommit branchPoint = findBaseForNonLinearVersion(mcVersion, versionGraph, repo);
-				if (branchPoint == null) {
-					MiscHelper.panic("Could not find branching point for non-linear version: %s (%s)", mcVersion.launcherFriendlyVersionName(), mcVersion.semanticVersion());
+				HashSet<RevCommit> branchPoint = findBaseForNonLinearVersion(mcVersion, versionGraph, repo);
+				if (branchPoint.isEmpty()) {
+					MiscHelper.panic("Could not find any branching point for non-linear version: %s (%s)", mcVersion.launcherFriendlyVersionName(), mcVersion.semanticVersion());
 				}
-				target_ref = repo.getGit().branchCreate().setStartPoint(branchPoint).setName(target_branch).call();
+				target_ref = repo.getGit().branchCreate().setStartPoint(branchPoint.stream().findFirst().orElseThrow()).setName(target_branch).call();
 			}
 			switchHEAD(target_ref, repo);
 		}
 	}
 
-	private RevCommit findBaseForNonLinearVersion(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
-		Optional<OrderedVersion> previousVersion = versionGraph.getPreviousNode(mcVersion);
+	private HashSet<RevCommit> findBaseForNonLinearVersion(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
+		NavigableSet<OrderedVersion> previousVersion = versionGraph.getPreviousNodes(mcVersion);
 		if (previousVersion.isEmpty()) {
-			MiscHelper.panic("Cannot commit non-linear version %s, as the base version was not found", mcVersion.launcherFriendlyVersionName());
+			MiscHelper.panic("Cannot commit non-linear version %s, no base version was not found", mcVersion.launcherFriendlyVersionName());
 		}
-		return findVersionObjectRev(previousVersion.get(), repo);
+
+		HashSet<RevCommit> resultRevs = new HashSet<>();
+		for (OrderedVersion prevVersion : previousVersion) {
+			resultRevs.add(findVersionObjectRev(prevVersion, repo));
+		}
+		return resultRevs;
 	}
 
 	private RevCommit findVersionObjectRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
@@ -151,6 +166,14 @@ public class CommitStep extends Step {
 		}
 	}
 
+	private void writeMERGE_HEAD(HashSet<RevCommit> commits, RepoWrapper repo) throws IOException {
+		if (commits.isEmpty()) {
+			repo.getGit().getRepository().writeMergeHeads(null);
+		} else {
+			repo.getGit().getRepository().writeMergeHeads(commits.stream().toList());
+		}
+	}
+
 	private void copyCode(PipelineCache pipelineCache, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
 		Path decompiledJarPath = pipelineCache.getForKey(Step.STEP_DECOMPILE);
 		if (decompiledJarPath == null) {
@@ -164,7 +187,7 @@ public class CommitStep extends Step {
 	private void copyAssets(PipelineCache pipelineCache, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
 		if (GitCraft.config.loadAssets || GitCraft.config.loadIntegratedDatapack) {
 			Path mergedJarPath = pipelineCache.getForKey(Step.STEP_MERGE);
-			if (mergedJarPath == null) { // Client JAR could also work
+			if (mergedJarPath == null) { // Client JAR could also work, if merge did not happen
 				MiscHelper.panic("A merged JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
 			}
 			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mergedJarPath)) {
@@ -187,16 +210,16 @@ public class CommitStep extends Step {
 			}
 			// Copy Assets
 			Path targetRoot = repo.getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
-			if (GitCraft.config.useHardlinks) {
+			if (GitCraft.config.useHardlinks && GitCraftPaths.ASSETS_OBJECTS.getFileSystem().equals(targetRoot.getFileSystem())) {
 				for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.assetsIndex().objects().entrySet()) {
-					Path sourcePath = GitCraft.ASSETS_OBJECTS.resolve(entry.getValue().hash());
+					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
 					Files.createDirectories(targetPath.getParent());
 					Files.createLink(targetPath, sourcePath);
 				}
 			} else {
 				for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.assetsIndex().objects().entrySet()) {
-					Path sourcePath = GitCraft.ASSETS_OBJECTS.resolve(entry.getValue().hash());
+					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
 					Files.createDirectories(targetPath.getParent());
 					Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);

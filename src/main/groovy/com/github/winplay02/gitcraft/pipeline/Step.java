@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
@@ -14,6 +15,7 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -136,6 +138,7 @@ public abstract class Step {
 		for (Step step : steps) {
 			Exception cachedException = null;
 			StepResult result;
+			long timeStart = System.nanoTime();
 			try {
 				if (step.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo)) {
 					if (step.ignoresMappings()) {
@@ -151,35 +154,45 @@ public abstract class Step {
 				cachedException = e;
 				result = StepResult.FAILED;
 			}
+			long timeEnd = System.nanoTime();
+			long delta = timeEnd - timeStart;
+			Duration deltaDuration = Duration.ofNanos(delta);
+			String timeInfo = String.format("elapsed: %dm %02ds", deltaDuration.toMinutes(), deltaDuration.toSecondsPart());
 			if (step.ignoresMappings()) {
 				switch (result) {
 					case SUCCESS ->
-							MiscHelper.println("\tStep '%s' for version %s \u001B[32msucceeded\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
+							MiscHelper.println("\tStep '%s' for version %s \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
 					case UP_TO_DATE ->
 							MiscHelper.println("\tStep '%s' for version %s was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
-					case NOT_RUN ->
+					case NOT_RUN -> {
+						if (GitCraft.config.printNotRunSteps) {
 							MiscHelper.println("Step '%s' for version %s was \u001B[36mnot run\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
+						}
+					}
 					case FAILED ->
-							MiscHelper.println("\tStep '%s' for version %s \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
+							MiscHelper.println("\tStep '%s' for version %s \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
 				}
 			} else {
 				switch (result) {
 					case SUCCESS ->
-							MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[32msucceeded\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+							MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
 					case UP_TO_DATE ->
 							MiscHelper.println("\tStep '%s' for version %s (%s mappings) was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
-					case NOT_RUN ->
+					case NOT_RUN -> {
+						if (GitCraft.config.printNotRunSteps) {
 							MiscHelper.println("Step '%s' for version %s (%s mappings) was \u001B[36mnot run\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+						}
+					}
 					case FAILED ->
-							MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+							MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
 				}
 			}
 			if (result == StepResult.FAILED) {
 				if (cachedException != null) {
 					if (step.ignoresMappings()) {
-						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
+						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
 					} else {
-						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
 					}
 				}
 			} else if (result != StepResult.NOT_RUN) {
@@ -188,10 +201,10 @@ public abstract class Step {
 		}
 	}
 
-	protected static final class CommitMsgFilter extends RevFilter {
+	public static final class CommitMsgFilter extends RevFilter {
 		String msg;
 
-		CommitMsgFilter(String msg) {
+		public CommitMsgFilter(String msg) {
 			this.msg = msg;
 		}
 
