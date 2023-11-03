@@ -18,6 +18,8 @@ class GitCraftCli {
 				'version', 'Specify the only version(s) to decompile. The repository be stored in minecraft-repo-<version>-<version>-.... The normal repository will not be touched. --only-version will take precedence over --min-version.');
 		cli_args._(longOpt: 'min-version', args: 1, argName:
 				'version', 'Specify the min. version to decompile. Each following version will be decompiled afterwards, non-linear versions are still committed to separate branches. The repository will be stored in minecraft-repo-min-<version>. The normal repository will not be touched.');
+		cli_args._(longOpt: 'max-version', args: 1, argName:
+				'version', 'Specify the max. version to decompile. Every version before (and including) the specified will be decompiled afterwards, non-linear versions are still committed to separate branches. The repository will be stored in minecraft-repo-max-<version>. The normal repository will not be touched.');
 		cli_args._(longOpt: 'exclude-version', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName:
 				'version', 'Specify version(s) to exclude from decompilation. The exclusion info will be added to the repository name. The normal repository will not be touched.');
 		cli_args._(longOpt: 'no-verify', 'Disables checksum verification');
@@ -62,6 +64,10 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("min-version")) {
 			String subjectVersion = cli_args_parsed.'min-version';
 			config.minVersion = subjectVersion;
+		}
+		if (cli_args_parsed.hasOption("max-version")) {
+			String subjectVersion = cli_args_parsed.'max-version';
+			config.maxVersion = subjectVersion;
 		}
 		if (cli_args_parsed.hasOption("exclude-version")) {
 			String[] subjectVersion = cli_args_parsed.'exclude-versions';

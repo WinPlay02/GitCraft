@@ -2,7 +2,6 @@ package com.github.winplay02.gitcraft;
 
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
-import net.fabricmc.loom.util.FileSystemUtil;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 

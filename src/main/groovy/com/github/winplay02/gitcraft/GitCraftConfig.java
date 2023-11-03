@@ -1,7 +1,6 @@
 package com.github.winplay02.gitcraft;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
@@ -39,6 +38,7 @@ public class GitCraftConfig {
 	/// Optional settings
 	public String[] onlyVersion = null;
 	public String minVersion = null;
+	public String maxVersion = null;
 	public String[] excludedVersion = null;
 
 	/// Other Settings
@@ -127,8 +127,12 @@ public class GitCraftConfig {
 		String excludedVersions = isAnyVersionExcluded() && this.excludedVersion.length > 0 ? String.format(" (excluding: %s)", String.join(", ", this.excludedVersion)) : "";
 		if (isOnlyVersion()) {
 			MiscHelper.println("Versions to decompile: %s%s%s", String.join(", ", onlyVersion), excludedBranches, excludedVersions);
+		} else if (isMinVersion() && isMaxVersion()) {
+			MiscHelper.println("Versions to decompile: Starting with %s up to %s%s%s", minVersion, maxVersion, excludedBranches, excludedVersions);
 		} else if (isMinVersion()) {
 			MiscHelper.println("Versions to decompile: Starting with %s%s%s", minVersion, excludedBranches, excludedVersions);
+		} else if (isMaxVersion()) {
+			MiscHelper.println("Versions to decompile: Up to %s%s%s", maxVersion, excludedBranches, excludedVersions);
 		} else {
 			MiscHelper.println("Versions to decompile: all%s%s", excludedBranches, excludedVersions);
 		}
@@ -147,6 +151,10 @@ public class GitCraftConfig {
 
 	public boolean isMinVersion() {
 		return minVersion != null;
+	}
+
+	public boolean isMaxVersion() {
+		return maxVersion != null;
 	}
 
 	public boolean isAnyVersionExcluded() {

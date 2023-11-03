@@ -104,12 +104,21 @@ public class GitCraft {
 				}
 			}
 			graph = graph.filterOnlyVersion(mc_versions);
-		} else if (config.isMinVersion()) {
-			OrderedVersion mc_version = graph.getMinecraftVersionByName(config.minVersion);
-			if (mc_version == null) {
-				MiscHelper.panic("%s is invalid", config.minVersion);
+		} else {
+			if (config.isMinVersion()) {
+				OrderedVersion mc_version = graph.getMinecraftVersionByName(config.minVersion);
+				if (mc_version == null) {
+					MiscHelper.panic("%s is invalid", config.minVersion);
+				}
+				graph = graph.filterMinVersion(mc_version);
 			}
-			graph = graph.filterMinVersion(mc_version);
+			if (config.isMaxVersion()) {
+				OrderedVersion mc_version = graph.getMinecraftVersionByName(config.maxVersion);
+				if (mc_version == null) {
+					MiscHelper.panic("%s is invalid", config.maxVersion);
+				}
+				graph = graph.filterMaxVersion(mc_version);
+			}
 		}
 		if (config.isAnyVersionExcluded()) {
 			OrderedVersion[] mc_versions = new OrderedVersion[config.excludedVersion.length];

@@ -12,7 +12,7 @@ Artifacts are stored in the current working directory:
 - The decompiled code is stored in separate JARs inside the `artifact-store/decompiled` directory, to not write thousands of files directly onto the file system
 - To decompile versions not provided by Mojang directly, put the meta files into `extra-versions` and they will be picked up
 
-If only a specific version should be decompiled and versioned or a version range should be decompiled, provide the `--only-version=<version>` or `--min-version=<version>` parameters. `<version>` should be a (human-readable) version name, e.g. `23w14a` or `1.20.1`.
+If only a specific version should be decompiled and versioned or a version range should be decompiled, provide the `--only-version=<version>`, `--min-version=<version>` or `--max-version=<version>` parameters. `<version>` should be a (human-readable) version name, e.g. `23w14a` or `1.20.1`.
 To exclude only a specific version (or multiple versions) use `--exclude-version`.
 
 To disabled versioning entirely (and only decompile), specify `--no-repo`.
@@ -57,6 +57,14 @@ Options:
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
                                fabric_intermediary, yarn, mojmap_parchment
+      --max-version=<version>
+                             Specify the max. version to decompile. Every
+                               version before (and including) the specified
+                               will be decompiled afterwards, non-linear
+                               versions are still committed to separate
+                               branches. The repository will be stored in
+                               minecraft-repo-max-<version>. The normal
+                               repository will not be touched.
       --min-version=<version>
                              Specify the min. version to decompile. Each
                                following version will be decompiled afterwards,
@@ -102,6 +110,11 @@ If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory
 ```
+
+## Version Manifest Source
+- The manifest provider source is changeable, `ManifestProvider` needs to be extended.
+- By default, the version manifest information is fetch from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
+- Known extra versions are fetched from mojang or other sources (like archive.org).
 
 ## Fork / Changes
 - This repository was originally forked from [dexman545/GitCraft](https://github.com/dexman545/GitCraft)

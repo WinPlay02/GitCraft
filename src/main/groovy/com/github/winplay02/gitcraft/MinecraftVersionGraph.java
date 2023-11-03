@@ -165,8 +165,11 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	}
 
 	public MinecraftVersionGraph filterMinVersion(OrderedVersion version) {
-		SemanticVersion subjectVersion = parseFromLoaderVersion(version.semanticVersion());
-		return new MinecraftVersionGraph(this, (entry -> entry.compareTo(subjectVersion) >= 0), String.format("min-%s", version.launcherFriendlyVersionName()));
+		return new MinecraftVersionGraph(this, (entry -> entry.compareTo(version) >= 0), String.format("min-%s", version.launcherFriendlyVersionName()));
+	}
+
+	public MinecraftVersionGraph filterMaxVersion(OrderedVersion version) {
+		return new MinecraftVersionGraph(this, (entry -> entry.compareTo(version) <= 0), String.format("max-%s", version.launcherFriendlyVersionName()));
 	}
 
 	public MinecraftVersionGraph filterOnlyVersion(OrderedVersion... version) {
