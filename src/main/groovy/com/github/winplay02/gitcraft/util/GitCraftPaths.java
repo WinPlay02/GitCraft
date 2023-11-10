@@ -1,10 +1,14 @@
 package com.github.winplay02.gitcraft.util;
 
+import com.github.winplay02.gitcraft.GitCraft;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 public class GitCraftPaths {
 	public static Path CURRENT_WORKING_DIRECTORY = null;
@@ -21,6 +25,7 @@ public class GitCraftPaths {
 	public static Path ASSETS_OBJECTS = null;
 	public static Path SOURCE_EXTRA_VERSIONS = null;
 	protected static Path LEGACY_METADATA_STORE = null;
+	protected static Path GITCRAFT_VERSION_INFO = null;
 
 	public static Path lookupCurrentWorkingDirectory() throws IOException {
 		return Paths.get(new File(".").getCanonicalPath());
@@ -44,18 +49,9 @@ public class GitCraftPaths {
 		ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve("assets-objects");
 		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
 		LEGACY_METADATA_STORE = MAIN_ARTIFACT_STORE.resolve("metadata.json");
+		GITCRAFT_VERSION_INFO = MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
 		// Warning for breaking changes (the only breaking changes for now)
-		if (Files.exists(LEGACY_METADATA_STORE)) {
-			Files.delete(LEGACY_METADATA_STORE);
-			MiscHelper.println("WARNING: There were breaking changes to existing repos");
-			MiscHelper.println("- More known versions are automatically downloaded (like experimental snapshots)");
-			MiscHelper.println("- Commits may now be merges of multiple previous versions");
-			MiscHelper.println("- Datagen is executed by default (registry reports, NBT -> SNBT)");
-			MiscHelper.println("- Comments are enabled for yarn generation");
-			MiscHelper.println("More information in --help");
-			MiscHelper.println("This warning will not show again");
-			System.exit(0);
-		}
+		upgradeExisting();
 		Files.createDirectories(MAIN_ARTIFACT_STORE);
 		Files.createDirectories(DECOMPILED_WORKINGS);
 		Files.createDirectories(MAPPINGS);
@@ -68,5 +64,40 @@ public class GitCraftPaths {
 		Files.createDirectories(ASSETS_OBJECTS);
 		Files.createDirectories(SOURCE_EXTRA_VERSIONS);
 		MiscHelper.tryJavaExecution();
+	}
+
+	protected static void upgradeExisting() throws IOException {
+		// Before gitcraft-version.txt exists
+		if (Files.exists(LEGACY_METADATA_STORE)) {
+			Files.delete(LEGACY_METADATA_STORE);
+			writeVersion();
+			MiscHelper.println("WARNING: There were breaking changes to existing repos");
+			MiscHelper.println("- More known versions are automatically downloaded (like experimental snapshots)");
+			MiscHelper.println("- Commits may now be merges of multiple previous versions");
+			MiscHelper.println("- Datagen is executed by default (registry reports, NBT -> SNBT)");
+			MiscHelper.println("- Comments are enabled for yarn generation");
+			MiscHelper.println("More information in --help");
+			MiscHelper.println("This warning will not show again");
+			System.exit(0);
+		}
+		if (!Files.exists(GITCRAFT_VERSION_INFO)) {
+			writeVersion();
+			return;
+		}
+		String lastGitCraftVersion = readVersion();
+		if (!lastGitCraftVersion.equalsIgnoreCase(GitCraft.VERSION)) {
+			MiscHelper.println("WARNING: Existing version is '%s'. This version is unknown. Upgrading anyway...", lastGitCraftVersion);
+			writeVersion();
+			System.exit(0);
+		}
+	}
+
+	protected static String readVersion() throws IOException {
+		return Files.readString(GITCRAFT_VERSION_INFO, StandardCharsets.UTF_8).trim();
+	}
+
+	protected static void writeVersion() throws IOException {
+		Files.writeString(GITCRAFT_VERSION_INFO, GitCraft.VERSION, StandardCharsets.UTF_8,
+			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.DSYNC);
 	}
 }

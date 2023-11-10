@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GitCraft {
+	public static final String VERSION = "0.2.0";
 	/// Every Mapping
 	public static final MojangMappings MOJANG_MAPPINGS = new MojangMappings();
 	public static final FabricIntermediaryMappings FABRIC_INTERMEDIARY_MAPPINGS = new FabricIntermediaryMappings();
