@@ -53,5 +53,6 @@ public class GitCraftPaths {
 		Files.createDirectories(ASSETS_INDEX);
 		Files.createDirectories(ASSETS_OBJECTS);
 		Files.createDirectories(SOURCE_EXTRA_VERSIONS);
+		MiscHelper.tryJavaExecution();
 	}
 }

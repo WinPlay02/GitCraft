@@ -199,6 +199,15 @@ public class CommitStep extends Step {
 				}
 			}
 		}
+		if (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) {
+			Path datagenRootPath = GitCraft.STEP_DATAGEN.getInternalArtifactPath(mcVersion, null);
+			if (GitCraft.config.loadDatagenRegistry) {
+				MiscHelper.copyLargeDir(GitCraft.STEP_DATAGEN.getDatagenReports(datagenRootPath), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
+			}
+			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack) {
+				MiscHelper.copyLargeDir(GitCraft.STEP_DATAGEN.getDatagenSNBTDestinationPathData(datagenRootPath), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
+			}
+		}
 	}
 
 	private void copyExternalAssets(PipelineCache pipelineCache, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {

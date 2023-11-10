@@ -35,15 +35,6 @@ public class RemoteHelper {
 
 	public static final IntegrityAlgorithm GIT_BLOB_SHA1 = new GitBlobSHA1Algorithm();
 
-
-	protected static void deleteFile(Path file) {
-		try {
-			Files.deleteIfExists(file);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	public static boolean checksumCheckFileIsValidAndExists(LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm, boolean useRemote) {
 		String fileVerbParticiple = useRemote ? "downloaded" : "read";
 		String fileVerbParticipleCap = useRemote ? "Downloaded" : "Read";
@@ -56,7 +47,7 @@ public class RemoteHelper {
 				if (!actualHash.equalsIgnoreCase(localFileInfo.checksum())) {
 					if (GitCraft.config.checksumRemoveInvalidFiles) {
 						MiscHelper.println("%s-Checksum of %s %s %s is %s, expected %s. The mismatching file will now be removed \u001B[31m(checksums mismatch)\u001B[0m", integrityAlgorithm.getAlgorithmName(), fileVerbParticiple, localFileInfo.outputFileKind(), localFileInfo.outputFileId(), actualHash, localFileInfo.checksum());
-						deleteFile(localFileInfo.targetFile());
+						MiscHelper.deleteFile(localFileInfo.targetFile());
 						integrityAlgorithm.invalidateFile(localFileInfo.targetFile());
 						return false;
 					} else {
@@ -134,11 +125,11 @@ public class RemoteHelper {
 				break;
 			} catch (FileNotFoundException | MalformedURLException e1) {
 				MiscHelper.println("\u001B[31mFailed to fetch URL: %s (%s)\u001B[0m", url, e1);
-				deleteFile(localFileInfo.targetFile());
+				MiscHelper.deleteFile(localFileInfo.targetFile());
 				throw new RuntimeException(e1);
 			} catch (Exception e1) {
 				MiscHelper.println("\u001B[31mFailed to fetch URL (retrying in %sms): %s (%s)\u001B[0m", GitCraft.config.failedFetchRetryInterval, url, e1);
-				deleteFile(localFileInfo.targetFile());
+				MiscHelper.deleteFile(localFileInfo.targetFile());
 				MiscHelper.sleep(GitCraft.config.failedFetchRetryInterval);
 			}
 		} while (!checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, true));

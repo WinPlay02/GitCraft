@@ -35,6 +35,8 @@ public abstract class Step {
 
 	protected static final String STEP_FETCH_LIBRARIES = "Fetch Libraries";
 
+	protected static final String STEP_DATAGEN = "Datagen";
+
 	protected static final String STEP_MERGE = "Merge";
 
 	protected static final String STEP_PREPARE_MAPPINGS = "Prepare Mappings";
@@ -146,7 +148,8 @@ public abstract class Step {
 					} else {
 						MiscHelper.println("Performing step '%s' for version %s (%s mappings)...", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
 					}
-					result = step.run(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo);
+					// If mappings are ignored, force step to not use mappings (pass null)
+					result = step.run(pipelineCache, mcVersion, step.ignoresMappings() ? null : mappingFlavour, versionGraph, repo);
 				} else {
 					result = StepResult.NOT_RUN;
 				}
@@ -161,30 +164,30 @@ public abstract class Step {
 			if (step.ignoresMappings()) {
 				switch (result) {
 					case SUCCESS ->
-							MiscHelper.println("\tStep '%s' for version %s \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
+						MiscHelper.println("\tStep '%s' for version %s \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
 					case UP_TO_DATE ->
-							MiscHelper.println("\tStep '%s' for version %s was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
+						MiscHelper.println("\tStep '%s' for version %s was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
 					case NOT_RUN -> {
 						if (GitCraft.config.printNotRunSteps) {
 							MiscHelper.println("Step '%s' for version %s was \u001B[36mnot run\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
 						}
 					}
 					case FAILED ->
-							MiscHelper.println("\tStep '%s' for version %s \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
+						MiscHelper.println("\tStep '%s' for version %s \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
 				}
 			} else {
 				switch (result) {
 					case SUCCESS ->
-							MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
+						MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
 					case UP_TO_DATE ->
-							MiscHelper.println("\tStep '%s' for version %s (%s mappings) was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+						MiscHelper.println("\tStep '%s' for version %s (%s mappings) was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
 					case NOT_RUN -> {
 						if (GitCraft.config.printNotRunSteps) {
 							MiscHelper.println("Step '%s' for version %s (%s mappings) was \u001B[36mnot run\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
 						}
 					}
 					case FAILED ->
-							MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
+						MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
 				}
 			}
 			if (result == StepResult.FAILED) {

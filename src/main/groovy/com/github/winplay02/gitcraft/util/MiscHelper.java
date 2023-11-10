@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,34 +54,44 @@ public class MiscHelper {
 		}
 	}
 
+	public static void deleteFile(Path file) {
+		try {
+			Files.deleteIfExists(file);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static void deleteDirectory(Path directory) throws IOException {
+		if (!Files.exists(directory)) {
+			return;
+		}
 		try (Stream<Path> walk = Files.walk(directory)) {
 			walk.sorted(Comparator.reverseOrder())
-					.map(Path::toFile)
-					.forEach(java.io.File::delete);
+				.forEach(MiscHelper::deleteFile);
 		}
 	}
 
 	public static List<Path> listDirectly(Path directory) throws IOException {
 		try (Stream<Path> walk = Files.walk(directory, 1)) {
 			return walk.sorted(Comparator.reverseOrder())
-					.filter(path -> !path.equals(directory))
-					.collect(Collectors.toList());
+				.filter(path -> !path.equals(directory))
+				.collect(Collectors.toList());
 		}
 	}
 
 	public static List<Path> listRecursively(Path directory) throws IOException {
 		try (Stream<Path> walk = Files.walk(directory)) {
 			return walk.sorted(Comparator.naturalOrder())
-					.collect(Collectors.toList());
+				.collect(Collectors.toList());
 		}
 	}
 
 	public static List<Path> listRecursivelyFilteredExtension(Path directory, String extension) throws IOException {
 		try (Stream<Path> walk = Files.walk(directory)) {
 			return walk.sorted(Comparator.naturalOrder())
-					.filter(path -> path.toString().endsWith(extension))
-					.collect(Collectors.toList());
+				.filter(path -> path.toString().endsWith(extension))
+				.collect(Collectors.toList());
 		}
 	}
 
@@ -111,6 +122,38 @@ public class MiscHelper {
 			}
 		} catch (VersionParsingException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	public static void createJavaCpSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+		List<String> processArgs = new ArrayList<>(List.of("java"));
+		processArgs.addAll(List.of(jvmArgs));
+		processArgs.add("-cp");
+		processArgs.add(jarFile.toFile().getAbsolutePath());
+		processArgs.addAll(List.of(args));
+		ProcessBuilder processBuilder = new ProcessBuilder(processArgs).directory(cwd.toFile()).inheritIO();
+		Process process = processBuilder.start();
+		process.waitFor();
+	}
+
+	public static void createJavaJarSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+		List<String> processArgs = new ArrayList<>(List.of("java"));
+		processArgs.addAll(List.of(jvmArgs));
+		processArgs.add("-jar");
+		processArgs.add(jarFile.toFile().getAbsolutePath());
+		processArgs.addAll(List.of(args));
+		ProcessBuilder processBuilder = new ProcessBuilder(processArgs).directory(cwd.toFile()).inheritIO();
+		Process process = processBuilder.start();
+		process.waitFor();
+	}
+
+	public static void tryJavaExecution() {
+		try {
+			ProcessBuilder processBuilder = new ProcessBuilder(List.of("java", "--version"));
+			Process process = processBuilder.start();
+			process.waitFor();
+		} catch (IOException | InterruptedException e) {
+			MiscHelper.panicBecause(e, "Could not execute java as subprocess. Make sure, java can be found in the path environment variable or current directory");
 		}
 	}
 }

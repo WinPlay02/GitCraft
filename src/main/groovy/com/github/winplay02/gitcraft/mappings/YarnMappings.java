@@ -54,6 +54,11 @@ public class YarnMappings extends Mapping {
 	}
 
 	@Override
+	public boolean supportsComments() {
+		return true;
+	}
+
+	@Override
 	public String getDestinationNS() {
 		return MappingsNamespace.NAMED.toString();
 	}
@@ -149,10 +154,10 @@ public class YarnMappings extends Mapping {
 
 	private static boolean isYarnBrokenVersion(OrderedVersion mcVersion) {
 		return GitCraftConfig.yarnBrokenVersions.contains(mcVersion.launcherFriendlyVersionName())
-				/* not really broken, but does not exist: */
-				|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.launcherFriendlyVersionName())
-				/* not broken, but does not exist, because of a re-upload */
-				|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
+			/* not really broken, but does not exist: */
+			|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.launcherFriendlyVersionName())
+			/* not broken, but does not exist, because of a re-upload */
+			|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
 	}
 
 	private static Tuple2<Path, Step.StepResult> mappingsPathYarnUnmerged(OrderedVersion mcVersion, FabricYarnVersionMeta yarnVersion) {

@@ -8,6 +8,7 @@ import com.github.winplay02.gitcraft.mappings.MojangMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
 import com.github.winplay02.gitcraft.mappings.YarnMappings;
 import com.github.winplay02.gitcraft.pipeline.CommitStep;
+import com.github.winplay02.gitcraft.pipeline.DatagenStep;
 import com.github.winplay02.gitcraft.pipeline.DecompileStep;
 import com.github.winplay02.gitcraft.pipeline.FetchArtifactsStep;
 import com.github.winplay02.gitcraft.pipeline.FetchAssetsStep;
@@ -38,6 +39,7 @@ public class GitCraft {
 	public static Step STEP_FETCH_LIBRARIES = null;
 	public static Step STEP_FETCH_ASSETS = null;
 	public static Step STEP_MERGE = null;
+	public static DatagenStep STEP_DATAGEN = null;
 	public static Step STEP_PREPARE_MAPPINGS = null;
 	public static Step STEP_REMAP = null;
 	public static Step STEP_DECOMPILE = null;
@@ -71,6 +73,7 @@ public class GitCraft {
 			DEFAULT_PIPELINE.add(STEP_FETCH_LIBRARIES = new FetchLibrariesStep());
 			DEFAULT_PIPELINE.add(STEP_FETCH_ASSETS = new FetchAssetsStep());
 			DEFAULT_PIPELINE.add(STEP_MERGE = new MergeStep());
+			DEFAULT_PIPELINE.add(STEP_DATAGEN = new DatagenStep());
 			DEFAULT_PIPELINE.add(STEP_PREPARE_MAPPINGS = new PrepareMappingsStep());
 			DEFAULT_PIPELINE.add(STEP_REMAP = new RemapStep());
 			DEFAULT_PIPELINE.add(STEP_DECOMPILE = new DecompileStep());

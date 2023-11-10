@@ -18,6 +18,8 @@ public class GitCraftConfig {
 	public boolean loadIntegratedDatapack = true;
 	public boolean loadAssets = true;
 	public boolean loadAssetsExtern = true;
+	public boolean readableNbt = true;
+	public boolean loadDatagenRegistry = true;
 	public boolean verifyChecksums = true;
 	public boolean checksumRemoveInvalidFiles = true;
 	public boolean skipNonLinear = false;
