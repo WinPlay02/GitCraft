@@ -20,6 +20,7 @@ public class GitCraftPaths {
 	public static Path ASSETS_INDEX = null;
 	public static Path ASSETS_OBJECTS = null;
 	public static Path SOURCE_EXTRA_VERSIONS = null;
+	protected static Path LEGACY_METADATA_STORE = null;
 
 	public static Path lookupCurrentWorkingDirectory() throws IOException {
 		return Paths.get(new File(".").getCanonicalPath());
@@ -42,6 +43,19 @@ public class GitCraftPaths {
 		ASSETS_INDEX = MAIN_ARTIFACT_STORE.resolve("assets-index");
 		ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve("assets-objects");
 		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
+		LEGACY_METADATA_STORE = MAIN_ARTIFACT_STORE.resolve("metadata.json");
+		// Warning for breaking changes (the only breaking changes for now)
+		if (Files.exists(LEGACY_METADATA_STORE)) {
+			Files.delete(LEGACY_METADATA_STORE);
+			MiscHelper.println("WARNING: There were breaking changes to existing repos");
+			MiscHelper.println("- More known versions are automatically downloaded (like experimental snapshots)");
+			MiscHelper.println("- Commits may now be merges of multiple previous versions");
+			MiscHelper.println("- Datagen is executed by default (registry reports, NBT -> SNBT)");
+			MiscHelper.println("- Comments are enabled for yarn generation");
+			MiscHelper.println("More information in --help");
+			MiscHelper.println("This warning will not show again");
+			System.exit(0);
+		}
 		Files.createDirectories(MAIN_ARTIFACT_STORE);
 		Files.createDirectories(DECOMPILED_WORKINGS);
 		Files.createDirectories(MAPPINGS);

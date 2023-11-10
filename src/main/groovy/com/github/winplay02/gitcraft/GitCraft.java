@@ -54,9 +54,8 @@ public class GitCraft {
 	public static ManifestProvider manifestProvider = null;
 
 	public static void main(String[] args) throws Exception {
-		// TODO (check, if any repo path already exists (minecraft-repo**) and last executed version then print warning to user and stop;) create file (last executed version) that allows to continue execution
-		GitCraftPaths.initializePaths(GitCraftPaths.lookupCurrentWorkingDirectory());
 		GitCraft.config = GitCraftCli.handleCliArgs(args);
+		GitCraftPaths.initializePaths(GitCraftPaths.lookupCurrentWorkingDirectory());
 		if (GitCraft.config == null) {
 			return;
 		}
