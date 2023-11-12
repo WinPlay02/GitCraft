@@ -146,6 +146,8 @@ public class DatagenStep extends Step {
 					"--input", getDatagenNBTSourcePath(datagenDirectory).toAbsolutePath().toString(),
 					"--output", datagenSnbtOutput.toAbsolutePath().toString()
 			);
+			// Delete input files, as they are no longer needed
+			MiscHelper.deleteDirectory(getDatagenNBTSourcePath(datagenDirectory));
 			if (!Files.exists(datagenSnbtOutput) || !Files.isDirectory(datagenSnbtOutput)) {
 				MiscHelper.panic("Datagen step was required, but SNBT files were not generated");
 			}
@@ -157,9 +159,10 @@ public class DatagenStep extends Step {
 				result = worldgenPack.getV2().fetchArtifact(GitCraft.STEP_FETCH_ARTIFACTS.getInternalArtifactPath(worldgenPack.getV1(), null), "worldgen datapack");
 			}
 			// Datagen
+			Path datagenReportsOutput = getDatagenReports(datagenDirectory);
+			MiscHelper.deleteDirectory(datagenReportsOutput);
 			executeDatagen(mcVersion, datagenDirectory, executablePath, "--reports");
-			Path datagenReports = getDatagenReports(datagenDirectory);
-			if (!Files.exists(datagenReports) || !Files.isDirectory(datagenReports)) {
+			if (!Files.exists(datagenReportsOutput) || !Files.isDirectory(datagenReportsOutput)) {
 				MiscHelper.panic("Datagen step was required, but reports were not generated");
 			}
 			return result != null ? result : StepResult.SUCCESS;
