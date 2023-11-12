@@ -14,9 +14,11 @@ import java.util.jar.Manifest;
 
 public class FFNIODirectoryResultSaver implements IResultSaver {
 	private final Path root;
+	private final AutoCloseable closeable;
 
-	public FFNIODirectoryResultSaver(Path root) {
+	public FFNIODirectoryResultSaver(Path root, AutoCloseable closeable) {
 		this.root = root;
+		this.closeable = closeable;
 	}
 
 	@Override
@@ -98,5 +100,17 @@ public class FFNIODirectoryResultSaver implements IResultSaver {
 	@Override
 	public void closeArchive(String path, String archiveName) {
 
+	}
+
+	@Override
+	public void close() throws IOException {
+		IResultSaver.super.close();
+		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
+		}
 	}
 }

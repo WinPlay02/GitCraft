@@ -33,7 +33,16 @@ class GitCraftCli {
 		cli_args._(longOpt:
 			'no-repo', 'Prevents the creation/modification of a repository for versioning, only decompiles the provided (or all) version(s)');
 		cli_args._(longOpt:
-			'refresh', 'Refreshes the decompilation by deleting old decompiled artifacts and restarting. This will not be useful, if the decompiler has not been updated. The repository has to be deleted manually.');
+			'refresh', 'Refreshes the decompilation by deleting old decompiled artifacts and restarting. This may be useful, if the decompiler has been updated or new mappings exist. The repository will get updated (existing commits will get deleted, and new ones will be inserted). This will cause local branches to diverge from remote branches, if any exist.');
+		cli_args._(longOpt:
+			'refresh-only-version', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName:
+				'version', 'Restricts the refreshed versions to the ones provided. This options will cause the git repository to refresh.');
+		cli_args._(longOpt:
+			'refresh-min-version', args: 1, argName:
+				'version', 'Restricts the min. refreshed version to the one provided. This options will cause the git repository to refresh.');
+		cli_args._(longOpt:
+			'refresh-max-version', args: 1, argName:
+				'version', 'Restricts the max. refreshed version to the one provided. This options will cause the git repository to refresh.');
 		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour, argName: "mapping", defaultValue: "mojmap");
 		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
 		cli_args._(longOpt: 'only-stable', 'Only decompiles stable releases.');
@@ -60,6 +69,21 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("help")) {
 			cli_args.usage();
 			return null;
+		}
+		if (cli_args_parsed.hasOption("refresh-only-version")) {
+			String[] subjectVersion = cli_args_parsed.'refresh-only-versions';
+			config.refreshOnlyVersion = subjectVersion;
+		}
+		if (cli_args_parsed.hasOption("refresh-min-version")) {
+			String subjectVersion = cli_args_parsed.'refresh-min-version';
+			config.refreshMinVersion = subjectVersion;
+		}
+		if (cli_args_parsed.hasOption("refresh-max-version")) {
+			String subjectVersion = cli_args_parsed.'refresh-max-version';
+			config.refreshMaxVersion = subjectVersion;
+		}
+		if (cli_args_parsed.hasOption("refresh-only-version") || cli_args_parsed.hasOption("refresh-min-version") || cli_args_parsed.hasOption("refresh-max-version")) {
+			config.refreshDecompilation = true;
 		}
 		if (cli_args_parsed.hasOption("only-version")) {
 			String[] subjectVersion = cli_args_parsed.'only-versions';

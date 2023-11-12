@@ -51,8 +51,8 @@ public class GitCraftPaths {
 		LEGACY_METADATA_STORE = MAIN_ARTIFACT_STORE.resolve("metadata.json");
 		GITCRAFT_VERSION_INFO = MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
 		// Warning for breaking changes (the only breaking changes for now)
-		upgradeExisting();
 		Files.createDirectories(MAIN_ARTIFACT_STORE);
+		upgradeExisting();
 		Files.createDirectories(DECOMPILED_WORKINGS);
 		Files.createDirectories(MAPPINGS);
 		Files.createDirectories(MC_VERSION_STORE);
@@ -67,7 +67,7 @@ public class GitCraftPaths {
 	}
 
 	protected static void upgradeExisting() throws IOException {
-		// Before gitcraft-version.txt exists
+		// Before gitcraft-version.txt exists; The latest commit this would work on, is cb1e7917b67d91a4319355a79d1eb9f9f75d9f78
 		if (Files.exists(LEGACY_METADATA_STORE)) {
 			Files.delete(LEGACY_METADATA_STORE);
 			writeVersion();

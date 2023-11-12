@@ -4,11 +4,13 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.meta.AssetsIndexMeta;
+import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
+import groovy.lang.Tuple2;
 import net.fabricmc.loom.util.FileSystemUtil;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
@@ -83,6 +85,10 @@ public class CommitStep extends Step {
 		}
 	}
 
+	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
+		return (MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.launcherFriendlyVersionName() : GitCraft.config.gitMainlineLinearBranch).replace(" ", "-");
+	}
+
 	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
 		String target_branch;
 		if (repo.getGit().getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
@@ -90,8 +96,8 @@ public class CommitStep extends Step {
 			if (prev_version.isEmpty()) {
 				MiscHelper.panic("HEAD is not empty, but current version does not have any preceding versions");
 			}
-			target_branch = MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.launcherFriendlyVersionName() : GitCraft.config.gitMainlineLinearBranch;
-			checkoutVersionBranch(target_branch.replace(" ", "-"), mcVersion, versionGraph, repo);
+			target_branch = getBranchNameForVersion(mcVersion);
+			checkoutVersionBranch(target_branch, mcVersion, versionGraph, repo);
 			if (findVersionRev(mcVersion, repo)) {
 				MiscHelper.println("Version %s already exists in repo, skipping", mcVersion.launcherFriendlyVersionName());
 				return Optional.empty();
@@ -150,7 +156,7 @@ public class CommitStep extends Step {
 		return resultRevs;
 	}
 
-	private RevCommit findVersionObjectRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
+	protected RevCommit findVersionObjectRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
 		Iterator<RevCommit> iterator = repo.getGit().log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
 		if (iterator.hasNext()) {
 			return iterator.next();
@@ -158,7 +164,7 @@ public class CommitStep extends Step {
 		return null;
 	}
 
-	private void switchHEAD(Ref ref, RepoWrapper repo) throws IOException {
+	protected void switchHEAD(Ref ref, RepoWrapper repo) throws IOException {
 		RefUpdate refUpdate = repo.getGit().getRepository().getRefDatabase().newUpdate(Constants.HEAD, false);
 		RefUpdate.Result result = refUpdate.link(ref.getName());
 		if (result != RefUpdate.Result.FORCED) {
@@ -203,6 +209,13 @@ public class CommitStep extends Step {
 			Path datagenRootPath = GitCraft.STEP_DATAGEN.getInternalArtifactPath(mcVersion, null);
 			if (GitCraft.config.loadDatagenRegistry) {
 				MiscHelper.copyLargeDir(GitCraft.STEP_DATAGEN.getDatagenReports(datagenRootPath), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
+				Tuple2<OrderedVersion, Artifact> experimentalWorldgenPack = GitCraft.STEP_DATAGEN.getExtVanillaWorldgenPack(mcVersion);
+				if (experimentalWorldgenPack != null) {
+					Path expWorldgenPackPath = experimentalWorldgenPack.getV2().resolve(GitCraft.STEP_FETCH_ARTIFACTS.getInternalArtifactPath(experimentalWorldgenPack.getV1(), null));
+					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(expWorldgenPackPath)) {
+						MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("exp-vanilla-worldgen"));
+					}
+				}
 			}
 			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack) {
 				MiscHelper.copyLargeDir(GitCraft.STEP_DATAGEN.getDatagenSNBTDestinationPathData(datagenRootPath), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));

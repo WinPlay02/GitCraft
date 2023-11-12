@@ -9,6 +9,7 @@ import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
@@ -218,12 +219,35 @@ public abstract class Step {
 
 		@Override
 		public RevFilter clone() {
-			return this;
+			return new CommitMsgFilter(this.msg);
 		}
 
 		@Override
 		public String toString() {
-			return "MSG FILTER";
+			return "MSG_FILTER";
+		}
+	}
+
+	public static final class CommitRevFilter extends RevFilter {
+		ObjectId revId;
+
+		public CommitRevFilter(ObjectId revId) {
+			this.revId = revId;
+		}
+
+		@Override
+		public boolean include(RevWalk walker, RevCommit c) {
+			return Objects.equals(c.getId(), this.revId);
+		}
+
+		@Override
+		public RevFilter clone() {
+			return new CommitRevFilter(this.revId);
+		}
+
+		@Override
+		public String toString() {
+			return "MSG_FILTER";
 		}
 	}
 }

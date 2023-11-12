@@ -15,45 +15,52 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class GitCraftConfig {
+
+	/// Additional Data import settings
 	public boolean loadIntegratedDatapack = true;
 	public boolean loadAssets = true;
 	public boolean loadAssetsExtern = true;
 	public boolean readableNbt = true;
 	public boolean loadDatagenRegistry = true;
+
+	/// Internal options
 	public boolean verifyChecksums = true;
 	public boolean checksumRemoveInvalidFiles = true;
-	public boolean skipNonLinear = false;
-	public boolean noRepo = false;
 	public boolean printExistingFileChecksumMatching = false;
 	public boolean printExistingFileChecksumMatchingSkipped = false;
 	public boolean printNotRunSteps = false;
-	public boolean refreshDecompilation = false;
 	public int failedFetchRetryInterval = 500;
 	public int remappingThreads = Runtime.getRuntime().availableProcessors() - 3;
 	public int decompilingThreads = Runtime.getRuntime().availableProcessors() - 3;
+	public boolean useHardlinks = true;
+
+	/// Repository settings
+	public boolean noRepo = false;
+	public Path overrideRepositoryPath = null;
+	public String gitUser = "Mojang";
+	public String gitMail = "gitcraft@decompiled.mc";
+	public String gitMainlineLinearBranch = "master";
+
+	/// Refresh settings
+	public boolean refreshDecompilation = false;
+	public String[] refreshOnlyVersion = null;
+	public String refreshMinVersion = null;
+	public String refreshMaxVersion = null;
+
+	/// Mapping settings
 	public MappingFlavour usedMapping = MappingFlavour.MOJMAP;
 	public MappingFlavour[] fallbackMappings = null;
+
+	/// Version settings
 	public boolean onlyStableReleases = false;
 	public boolean onlySnapshots = false;
-	public Path overrideRepositoryPath = null;
-
-	/// Optional settings
+	public boolean skipNonLinear = false;
 	public String[] onlyVersion = null;
 	public String minVersion = null;
 	public String maxVersion = null;
 	public String[] excludedVersion = null;
 
-	/// Other Settings
-	public String gitUser = "Mojang";
-	public String gitMail = "gitcraft@decompiled.mc";
-	public String gitMainlineLinearBranch = "master";
-
-	/// Experimental Settings
-	public boolean useHardlinks = true;
-
-	/// Remote Settings
-
-	/// Mapping Settings
+	/// Mapping quirks
 	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.14.23";
 
 	public static final SemanticVersion INTERMEDIARY_MAPPINGS_START_VERSION, YARN_MAPPINGS_START_VERSION, YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION, PARCHMENT_START_VERSION;
@@ -101,7 +108,7 @@ public class GitCraftConfig {
 	);
 
 	// There are no releases for these parchment versions (yet)
-	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.2", "1.20.3");
+	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.3");
 
 	// Version Override
 	public static Map<String, String> minecraftVersionSemVerOverride = Map.of(
@@ -124,7 +131,19 @@ public class GitCraftConfig {
 		MiscHelper.println("Checksum verification is %s", verifyChecksums ? "enabled" : "disabled");
 		MiscHelper.println("Non-Linear version are %s", skipNonLinear ? "skipped" : "included");
 		MiscHelper.println("Repository creation and versioning is %s", noRepo ? "skipped" : "enabled");
-		MiscHelper.println("All / specified version(s) will be %s", refreshDecompilation ? "deleted and decompiled again" : "reused if existing");
+		if (refreshDecompilation && !isRefreshOnlyVersion() && !isRefreshMinVersion() && !isRefreshMaxVersion()) {
+			MiscHelper.println("All / specified version(s) will be %s", refreshDecompilation ? "deleted and decompiled again" : "reused if existing");
+		} else {
+			if (isRefreshOnlyVersion()) {
+				MiscHelper.println("Versions to refresh artifacts: %s", String.join(", ", refreshOnlyVersion));
+			} else if (isRefreshMinVersion() && isRefreshMaxVersion()) {
+				MiscHelper.println("Versions to refresh artifacts: from %s to %s", refreshMinVersion, refreshMaxVersion);
+			} else if (isRefreshMinVersion()) {
+				MiscHelper.println("Versions to refresh artifacts: all from %s", refreshMinVersion);
+			} else if (isRefreshMaxVersion()) {
+				MiscHelper.println("Versions to refresh artifacts: all up to %s", refreshMaxVersion);
+			}
+		}
 		String excludedBranches = onlyStableReleases ? " (only stable releases)" : (onlySnapshots ? " (only snapshots)" : "");
 		String excludedVersions = isAnyVersionExcluded() && this.excludedVersion.length > 0 ? String.format(" (excluding: %s)", String.join(", ", this.excludedVersion)) : "";
 		if (isOnlyVersion()) {
@@ -161,6 +180,18 @@ public class GitCraftConfig {
 
 	public boolean isAnyVersionExcluded() {
 		return excludedVersion != null;
+	}
+
+	public boolean isRefreshOnlyVersion() {
+		return refreshOnlyVersion != null;
+	}
+
+	public boolean isRefreshMinVersion() {
+		return refreshMinVersion != null;
+	}
+
+	public boolean isRefreshMaxVersion() {
+		return refreshMaxVersion != null;
 	}
 
 	public Optional<MappingFlavour> getMappingsForMinecraftVersion(OrderedVersion mcVersion) {

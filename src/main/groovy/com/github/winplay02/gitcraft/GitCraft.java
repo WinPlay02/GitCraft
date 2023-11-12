@@ -51,7 +51,9 @@ public class GitCraft {
 
 	/// Other Information
 	public static GitCraftConfig config = null;
+
 	public static MinecraftVersionGraph versionGraph = null;
+	public static MinecraftVersionGraph resetVersionGraph = null;
 	public static ManifestProvider manifestProvider = null;
 
 	public static void main(String[] args) throws Exception {
@@ -66,6 +68,7 @@ public class GitCraft {
 		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.manifestProvider);
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
+		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);
 		{
 			DEFAULT_PIPELINE = new ArrayList<>();
 			DEFAULT_PIPELINE.add(STEP_RESET = new ResetStep());
@@ -141,6 +144,38 @@ public class GitCraft {
 		}
 		if (config.skipNonLinear) {
 			graph = graph.filterMainlineVersions();
+		}
+		return graph;
+	}
+
+	private static MinecraftVersionGraph doVersionGraphOperationsForReset(MinecraftVersionGraph graph) {
+		if (config.isRefreshOnlyVersion()) {
+			if (config.refreshOnlyVersion.length == 0) {
+				MiscHelper.panic("No version to refresh provided");
+			}
+			OrderedVersion[] mc_versions = new OrderedVersion[config.refreshOnlyVersion.length];
+			for (int i = 0; i < mc_versions.length; ++i) {
+				mc_versions[i] = graph.getMinecraftVersionByName(config.refreshOnlyVersion[i]);
+				if (mc_versions[i] == null) {
+					MiscHelper.panic("%s is invalid", config.refreshOnlyVersion[i]);
+				}
+			}
+			graph = graph.filterOnlyVersion(mc_versions);
+		} else {
+			if (config.isRefreshMinVersion()) {
+				OrderedVersion mc_version = graph.getMinecraftVersionByName(config.refreshMinVersion);
+				if (mc_version == null) {
+					MiscHelper.panic("%s is invalid", config.refreshMinVersion);
+				}
+				graph = graph.filterMinVersion(mc_version);
+			}
+			if (config.isRefreshMaxVersion()) {
+				OrderedVersion mc_version = graph.getMinecraftVersionByName(config.refreshMaxVersion);
+				if (mc_version == null) {
+					MiscHelper.panic("%s is invalid", config.refreshMaxVersion);
+				}
+				graph = graph.filterMaxVersion(mc_version);
+			}
 		}
 		return graph;
 	}

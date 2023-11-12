@@ -11,7 +11,9 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
@@ -28,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith({GitCraftTestingFs.class})
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class GitCraftTest {
 
 	@Test
@@ -278,6 +281,44 @@ public class GitCraftTest {
 			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-reports", targetCommit.getTree())) {
 				assertNotNull(walk);
 			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/exp-vanilla-worldgen", targetCommit.getTree())) {
+				assertNotNull(walk); // Exists for this version
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/src", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
+		}
+	}
+
+	@Test
+	public void pipelineReset() throws Exception {
+		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime", "--refresh", "--refresh-min-version=1.18"});
+		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
+			assertNotNull(repoWrapper);
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.config.gitMainlineLinearBranch));
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("1.18_experimental-snapshot-1"));
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("22w13oneblockatatime"));
+			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("22w13oneblockatatime"))).getParentCount());
+			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18"))).getParentCount());
+			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("21w37a"))).getParentCount());
+			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18_experimental-snapshot-1"))).getParentCount());
+			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1"))).getParentCount());
+			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1")));
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/external-resources", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/data", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-snbt", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-reports", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
 			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/src", targetCommit.getTree())) {
 				assertNotNull(walk);
 			}
@@ -345,6 +386,27 @@ public class GitCraftTest {
 	}
 
 	@Test
+	public void pipelineDatapackReset() throws Exception {
+		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		metadataBootstrap = new MinecraftLauncherManifest();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
+		//
+		GitCraft.main(new String[]{"--only-version=1.18", "--no-datapack", "--refresh"});
+		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
+			assertNotNull(repoWrapper);
+			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18"))).getParentCount());
+			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18")));
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/data", targetCommit.getTree())) {
+				assertNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-snbt", targetCommit.getTree())) {
+				assertNull(walk);
+			}
+		}
+	}
+
+	@Test
 	public void pipelineMinMaxExclude() throws Exception {
 		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
@@ -373,6 +435,9 @@ public class GitCraftTest {
 			}
 			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/src", targetCommit.getTree())) {
 				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/exp-vanilla-worldgen", targetCommit.getTree())) {
+				assertNull(walk); // Does not exist for this version
 			}
 		}
 	}

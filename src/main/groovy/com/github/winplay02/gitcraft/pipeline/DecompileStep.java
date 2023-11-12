@@ -22,7 +22,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -94,26 +93,23 @@ public class DecompileStep extends Step {
 			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappingFlavour.getMappingImpl().getMappingsPath(mcVersion).orElseThrow().toFile()));
 		}
 
-		List<FileSystemUtil.Delegate> openFileSystems = new ArrayList<>();
 		FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath, true);
-		openFileSystems.add(decompiledJar);
 		Iterator<Path> resultFsIt = decompiledJar.get().getRootDirectories().iterator();
 		if (!resultFsIt.hasNext()) {
 			throw new RuntimeException("Zip FileSystem does not have any root directories");
 		}
 		Path targetJarRootPath = resultFsIt.next();
 
-		Fernflower ff = new Fernflower(new FFNIODirectoryResultSaver(targetJarRootPath), options, new PrintStreamLogger(NULL_IS)); // System.out
+		Fernflower ff = new Fernflower(new FFNIODirectoryResultSaver(targetJarRootPath, decompiledJar), options, new PrintStreamLogger(NULL_IS)); // System.out
 
 		MiscHelper.println("Adding libraries...");
 		for (Artifact library : mcVersion.libraries()) {
 			Path lib_file = library.resolve(libraryPath);
-			openFileSystems.add(FileSystemUtil.getJarFileSystem(lib_file, false));
+			// TODO add library via NIO
 			ff.addLibrary(lib_file.toFile());
 		}
 
-
-		openFileSystems.add(FileSystemUtil.getJarFileSystem(remappedPath, false));
+		// TODO add source via NIO
 		ff.addSource(remappedPath.toFile());
 
 		MiscHelper.executeTimedStep("Decompiling...", ff::decompileContext);
@@ -121,10 +117,8 @@ public class DecompileStep extends Step {
 		MiscHelper.println("Writing dependencies file...");
 		writeLibraries(targetJarRootPath, mcVersion);
 
-		MiscHelper.println("Closing temporary FileSystems delayed...");
-		for (FileSystemUtil.Delegate fs : openFileSystems) {
-			fs.close();
-		}
+		// Should release file handles, if exists
+		ff.clearContext();
 		return StepResult.SUCCESS;
 	}
 
