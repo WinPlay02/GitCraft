@@ -88,6 +88,7 @@ public class GitCraftTest {
 		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.MOJANG_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.size(mappingsPath) > 0);
 		assertFalse(GitCraft.MOJANG_MAPPINGS.supportsComments());
+		assertFalse(GitCraft.MOJANG_MAPPINGS.supportsConstantUnpicking());
 		assertNotNull(GitCraft.MOJANG_MAPPINGS.getMappingsProvider(versionGraph.getMinecraftVersionByName("1.20")));
 		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_MAPPINGS.getSourceNS());
 		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_MAPPINGS.getDestinationNS());
@@ -110,6 +111,7 @@ public class GitCraftTest {
 		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.MOJANG_PARCHMENT_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20.1")));
 		assertTrue(Files.size(mappingsPath) > 0);
 		assertTrue(GitCraft.MOJANG_PARCHMENT_MAPPINGS.supportsComments());
+		assertFalse(GitCraft.MOJANG_PARCHMENT_MAPPINGS.supportsConstantUnpicking());
 		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_PARCHMENT_MAPPINGS.getSourceNS());
 		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_PARCHMENT_MAPPINGS.getDestinationNS());
 	}
@@ -131,6 +133,7 @@ public class GitCraftTest {
 		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.size(mappingsPath) > 0);
 		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.supportsComments());
+		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.supportsConstantUnpicking());
 		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.getSourceNS());
 		assertEquals(MappingsNamespace.INTERMEDIARY.toString(), GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.getDestinationNS());
 	}
@@ -234,7 +237,8 @@ public class GitCraftTest {
 			assertTrue(Files.exists(mappingsPathTest));
 			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")));
 		}
-		assertFalse(GitCraft.YARN_MAPPINGS.supportsComments());
+		assertTrue(GitCraft.YARN_MAPPINGS.supportsComments());
+		assertTrue(GitCraft.YARN_MAPPINGS.supportsConstantUnpicking());
 		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.YARN_MAPPINGS.getSourceNS());
 		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.YARN_MAPPINGS.getDestinationNS());
 	}
