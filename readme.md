@@ -75,6 +75,11 @@ Options:
                                repository will not be touched.
       --no-assets            Disables assets versioning (includes external
                                assets)
+      --no-datagen-report    Disables datagen for versioning reports (like
+                               blocks, and other registries)
+      --no-datagen-snbt      Disables datagen for converting NBT files (like
+                               structures) to SNBT files. If "no-datapack" is
+                               set, this flag is automatically set.
       --no-datapack          Disables data (integrated datapack) versioning
       --no-external-assets   Disables assets versioning for assets not included
                                inside "minecraft".jar (e.g. other languages).
@@ -101,10 +106,25 @@ Options:
                                straight up refuse to work as some versions in
                                the target repository may be missing.
       --refresh              Refreshes the decompilation by deleting old
-                               decompiled artifacts and restarting. This will
-                               not be useful, if the decompiler has not been
-                               updated. The repository has to be deleted
-                               manually.
+                               decompiled artifacts and restarting. This may be
+                               useful, if the decompiler has been updated or
+                               new mappings exist. The repository will get
+                               updated (existing commits will get deleted, and
+                               new ones will be inserted). This will cause
+                               local branches to diverge from remote branches,
+                               if any exist.
+      --refresh-max-version=<version>
+                             Restricts the max. refreshed version to the one
+                               provided. This options will cause the git
+                               repository to refresh.
+      --refresh-min-version=<version>
+                             Restricts the min. refreshed version to the one
+                               provided. This options will cause the git
+                               repository to refresh.
+      --refresh-only-version[=<version>[,<version>]...]
+                             Restricts the refreshed versions to the ones
+                               provided. This options will cause the git
+                               repository to refresh.
       --skip-nonlinear       Skips non-linear (e.g. April Fools, Combat
                                Snapshots, ...) versions completely
 If you want to decompile versions which are not part of the default minecraft
@@ -114,7 +134,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 
 ## Version Manifest Source
 - The manifest provider source is changeable, `ManifestProvider` needs to be extended.
-- By default, the version manifest information is fetch from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
+- By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
 - Known extra versions are fetched from mojang or other sources (like archive.org).
 
 ## Fork / Changes
@@ -123,10 +143,11 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 - Assets versioning is supported
 - Dynamic loading of meta files
 - complex version graphs
+- Datagen information is included
 - Most of the code was rewritten to allow these changes
 
 ## Notes about Yarn
-- Yarn support is experimental as some versions can not (yet) be remapped with yarn
+- Some versions can not (yet) be remapped with yarn
   - Some versions of yarn are completely broken, so they are skipped. Affected versions: `19w13a`, `19w13b`, `19w14a`, `19w14b`
 - Other quirks, which were successfully worked around:
   - Some build of yarn are broken, so older ones are used instead. Affected versions: `19w04b`, `19w08a`, `19w12b`
@@ -143,6 +164,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 - Supported minecraft versions start at `1.16.5`, but not every release version since then is available
 - Only "release"-builds of parchment are supported at this time. No nightlies/snapshots are used.
 
-## Cleanup
+## Helpful git commands
 
 - To remove everything except generated repositories and extra-versions `git clean -d -f -e extra-versions -x`. Cleans meta files and artifacts. If a decompilation is needed, it needs to be done again.
+- To bundle a repository, use `git bundle create repo.bundle --all` inside the repository working directory
