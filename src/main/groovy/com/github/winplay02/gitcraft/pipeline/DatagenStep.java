@@ -120,12 +120,27 @@ public class DatagenStep extends Step {
 		return null;
 	}
 
+	protected Path getDatagenSNBTArchive(Path rootPath) {
+		return rootPath.resolve("datagen-snbt.jar");
+	}
+
+	protected Path getDatagenReportsArchive(Path rootPath) {
+		return rootPath.resolve("datagen-reports.jar");
+	}
+
 	@Override
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
 		if (!mcVersion.hasServerCode()) {
 			MiscHelper.panic("Cannot execute datagen, no jar available");
 		}
-		Path executablePath = mcVersion.serverJar().resolve(GitCraft.STEP_FETCH_ARTIFACTS.getInternalArtifactPath(mcVersion, mappingFlavour));
+		Path artifactsRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
+		Path artifactSnbtArchive = getDatagenSNBTArchive(artifactsRootPath);
+		Path artifactReportsArchive = getDatagenReportsArchive(artifactsRootPath);
+		if ((!GitCraft.config.readableNbt || Files.exists(artifactSnbtArchive)) &&
+				(!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
+			return StepResult.UP_TO_DATE;
+		}
+		Path executablePath = mcVersion.serverJar().resolve(artifactsRootPath);
 		Path datagenDirectory = getInternalArtifactPath(mcVersion, mappingFlavour);
 		Files.createDirectories(datagenDirectory);
 		if (GitCraft.config.readableNbt) {
@@ -151,6 +166,11 @@ public class DatagenStep extends Step {
 			if (!Files.exists(datagenSnbtOutput) || !Files.isDirectory(datagenSnbtOutput)) {
 				MiscHelper.panic("Datagen step was required, but SNBT files were not generated");
 			}
+			// Copy to artifact jar
+			try (FileSystemUtil.Delegate snbtArchive = FileSystemUtil.getJarFileSystem(artifactSnbtArchive, true)) {
+				MiscHelper.copyLargeDir(getDatagenSNBTDestinationPathData(datagenDirectory), snbtArchive.getPath("data"));
+			}
+			MiscHelper.deleteDirectory(datagenSnbtOutput);
 		}
 		if (GitCraft.config.loadDatagenRegistry) {
 			StepResult result = null;
@@ -165,8 +185,15 @@ public class DatagenStep extends Step {
 			if (!Files.exists(datagenReportsOutput) || !Files.isDirectory(datagenReportsOutput)) {
 				MiscHelper.panic("Datagen step was required, but reports were not generated");
 			}
+			// Copy to artifact jar
+			try (FileSystemUtil.Delegate reportsArchive = FileSystemUtil.getJarFileSystem(artifactReportsArchive, true)) {
+				MiscHelper.copyLargeDir(datagenReportsOutput, reportsArchive.getPath("reports"));
+			}
+			MiscHelper.deleteDirectory(datagenReportsOutput);
+			MiscHelper.deleteDirectory(datagenDirectory);
 			return result != null ? result : StepResult.SUCCESS;
 		}
+		MiscHelper.deleteDirectory(datagenDirectory);
 		return StepResult.SUCCESS;
 	}
 

@@ -206,9 +206,11 @@ public class CommitStep extends Step {
 			}
 		}
 		if (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) {
-			Path datagenRootPath = GitCraft.STEP_DATAGEN.getInternalArtifactPath(mcVersion, null);
+			Path artifactsRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
 			if (GitCraft.config.loadDatagenRegistry) {
-				MiscHelper.copyLargeDir(GitCraft.STEP_DATAGEN.getDatagenReports(datagenRootPath), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(GitCraft.STEP_DATAGEN.getDatagenReportsArchive(artifactsRootPath))) {
+					MiscHelper.copyLargeDir(fs.getPath("reports"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
+				}
 				Tuple2<OrderedVersion, Artifact> experimentalWorldgenPack = GitCraft.STEP_DATAGEN.getExtVanillaWorldgenPack(mcVersion);
 				if (experimentalWorldgenPack != null) {
 					Path expWorldgenPackPath = experimentalWorldgenPack.getV2().resolve(GitCraft.STEP_FETCH_ARTIFACTS.getInternalArtifactPath(experimentalWorldgenPack.getV1(), null));
@@ -218,7 +220,9 @@ public class CommitStep extends Step {
 				}
 			}
 			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack) {
-				MiscHelper.copyLargeDir(GitCraft.STEP_DATAGEN.getDatagenSNBTDestinationPathData(datagenRootPath), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(GitCraft.STEP_DATAGEN.getDatagenSNBTArchive(artifactsRootPath))) {
+					MiscHelper.copyLargeDir(fs.getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
+				}
 			}
 		}
 	}

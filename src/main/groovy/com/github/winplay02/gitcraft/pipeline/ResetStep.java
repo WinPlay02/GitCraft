@@ -40,6 +40,18 @@ public class ResetStep extends Step {
 			Path remappedPath = GitCraft.STEP_REMAP.getInternalArtifactPath(mcVersion, mappingFlavour);
 			Path unpickedPath = GitCraft.STEP_UNPICK.getInternalArtifactPath(mcVersion, mappingFlavour);
 			Path decompiledPath = GitCraft.STEP_DECOMPILE.getInternalArtifactPath(mcVersion, mappingFlavour);
+			// Datagen does not really need to be reset; The results should never change
+			//Path artifactsRoot = GitCraft.STEP_FETCH_ARTIFACTS.getInternalArtifactPath(mcVersion, mappingFlavour);
+			//Path datagenSnbtPath = GitCraft.STEP_DATAGEN.getDatagenSNBTArchive(artifactsRoot);
+			//Path datagenReportsPath = GitCraft.STEP_DATAGEN.getDatagenReportsArchive(artifactsRoot);
+			/*if (Files.exists(datagenSnbtPath)) {
+				Files.delete(datagenSnbtPath);
+				MiscHelper.println("%s (%s, %s, datagen SNBT) has been deleted", datagenSnbtPath, mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+			}
+			if (Files.exists(datagenReportsPath)) {
+				Files.delete(datagenReportsPath);
+				MiscHelper.println("%s (%s, %s, datagen registry reports) has been deleted", datagenReportsPath, mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+			}*/
 			if (Files.exists(remappedPath)) {
 				Files.delete(remappedPath);
 				MiscHelper.println("%s (%s, %s, remapped) has been deleted", remappedPath, mcVersion.launcherFriendlyVersionName(), mappingFlavour);
@@ -60,11 +72,6 @@ public class ResetStep extends Step {
 			return StepResult.SUCCESS;
 		}
 		// Always refresh repo, if any refresh flag is set
-		//String targetBranch = GitCraft.STEP_COMMIT.getBranchNameForVersion(mcVersion);
-		//if (!targetBranch.equals(GitCraft.config.gitMainlineLinearBranch)) { // delete any target branch >= root node of refresh graph
-		//	checkoutBranch(repo, GitCraft.config.gitMainlineLinearBranch);
-		//	deleteRef(repo, targetBranch);
-		//}
 		// delete all non-main refs that contain this commit (including remotes, tags, ...)
 		RevCommit commitToRemove = GitCraft.STEP_COMMIT.findVersionObjectRev(mcVersion, repo);
 		if (commitToRemove != null) {
