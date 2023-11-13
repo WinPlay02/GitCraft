@@ -38,10 +38,15 @@ public class ResetStep extends Step {
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
 		if (GitCraft.resetVersionGraph.containsVersion(mcVersion)) { // only reset version artifacts of versions which are specified
 			Path remappedPath = GitCraft.STEP_REMAP.getInternalArtifactPath(mcVersion, mappingFlavour);
+			Path unpickedPath = GitCraft.STEP_UNPICK.getInternalArtifactPath(mcVersion, mappingFlavour);
 			Path decompiledPath = GitCraft.STEP_DECOMPILE.getInternalArtifactPath(mcVersion, mappingFlavour);
 			if (Files.exists(remappedPath)) {
 				Files.delete(remappedPath);
 				MiscHelper.println("%s (%s, %s, remapped) has been deleted", remappedPath, mcVersion.launcherFriendlyVersionName(), mappingFlavour);
+			}
+			if (Files.exists(unpickedPath)) {
+				Files.delete(unpickedPath);
+				MiscHelper.println("%s (%s, %s, unpicked) has been deleted", unpickedPath, mcVersion.launcherFriendlyVersionName(), mappingFlavour);
 			}
 			if (Files.exists(decompiledPath)) {
 				Files.delete(decompiledPath);

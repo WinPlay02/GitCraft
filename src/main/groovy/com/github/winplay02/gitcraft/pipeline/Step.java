@@ -44,6 +44,8 @@ public abstract class Step {
 
 	protected static final String STEP_REMAP = "Remap";
 
+	protected static final String STEP_UNPICK = "Unpick";
+
 	protected static final String STEP_DECOMPILE = "Decompile";
 
 	protected static final String STEP_COMMIT = "Commit";

@@ -24,4 +24,9 @@ public record FabricYarnVersionMeta(String gameVersion, String separator, int bu
 		int build = GitCraftConfig.yarnBrokenBuildOverride.getOrDefault(Tuple2.tuple(this.gameVersion(), this.build()), this.build());
 		return String.format("https://maven.fabricmc.net/net/fabricmc/yarn/%s%s%s/yarn-%s%s%s.jar", gameVersion(), separator(), build, gameVersion(), separator(), build);
 	}
+
+	public String makeMavenURLConstants() {
+		int build = GitCraftConfig.yarnBrokenBuildOverride.getOrDefault(Tuple2.tuple(this.gameVersion(), this.build()), this.build());
+		return String.format("https://maven.fabricmc.net/net/fabricmc/yarn/%s%s%s/yarn-%s%s%s-constants.jar", gameVersion(), separator(), build, gameVersion(), separator(), build);
+	}
 }

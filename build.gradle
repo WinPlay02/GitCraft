@@ -46,6 +46,7 @@ dependencies {
 	implementation "net.fabricmc:access-widener:${access_widener_version}"
 	implementation "net.fabricmc:mapping-io:${mappingio_version}"
 	implementation "net.fabricmc:fabric-loom:${loom_version}"
+	implementation "net.fabricmc.unpick:unpick-cli:${unpick_version}"
 
 	implementation("net.fabricmc:lorenz-tiny:${lorenz_tiny_version}") {
 		transitive = false

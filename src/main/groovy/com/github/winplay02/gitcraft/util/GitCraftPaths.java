@@ -75,7 +75,9 @@ public class GitCraftPaths {
 			MiscHelper.println("- More known versions are automatically downloaded (like experimental snapshots)");
 			MiscHelper.println("- Commits may now be merges of multiple previous versions");
 			MiscHelper.println("- Datagen is executed by default (registry reports, NBT -> SNBT)");
+			MiscHelper.println("- Vanilla worldgen datapack is now downloaded for versions, where there are no other ways of obtaining these files");
 			MiscHelper.println("- Comments are enabled for yarn generation");
+			MiscHelper.println("- Constant unpicking is now done for yarn generation");
 			MiscHelper.println("More information in --help");
 			MiscHelper.println("This warning will not show again");
 			System.exit(0);

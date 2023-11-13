@@ -18,6 +18,7 @@ import com.github.winplay02.gitcraft.pipeline.PrepareMappingsStep;
 import com.github.winplay02.gitcraft.pipeline.RemapStep;
 import com.github.winplay02.gitcraft.pipeline.ResetStep;
 import com.github.winplay02.gitcraft.pipeline.Step;
+import com.github.winplay02.gitcraft.pipeline.UnpickStep;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -43,6 +44,7 @@ public class GitCraft {
 	public static DatagenStep STEP_DATAGEN = null;
 	public static Step STEP_PREPARE_MAPPINGS = null;
 	public static Step STEP_REMAP = null;
+	public static Step STEP_UNPICK = null;
 	public static Step STEP_DECOMPILE = null;
 	public static CommitStep STEP_COMMIT = null;
 
@@ -79,6 +81,7 @@ public class GitCraft {
 			DEFAULT_PIPELINE.add(STEP_DATAGEN = new DatagenStep());
 			DEFAULT_PIPELINE.add(STEP_PREPARE_MAPPINGS = new PrepareMappingsStep());
 			DEFAULT_PIPELINE.add(STEP_REMAP = new RemapStep());
+			DEFAULT_PIPELINE.add(STEP_UNPICK = new UnpickStep());
 			DEFAULT_PIPELINE.add(STEP_DECOMPILE = new DecompileStep());
 			DEFAULT_PIPELINE.add(STEP_COMMIT = new CommitStep());
 		}

@@ -59,6 +59,11 @@ public class YarnMappings extends Mapping {
 	}
 
 	@Override
+	public boolean supportsConstantUnpicking() {
+		return true;
+	}
+
+	@Override
 	public String getDestinationNS() {
 		return MappingsNamespace.NAMED.toString();
 	}
@@ -71,9 +76,26 @@ public class YarnMappings extends Mapping {
 		return mcVersion.compareTo(GitCraftConfig.YARN_MAPPINGS_START_VERSION) >= 0;
 	}
 
+	private Step.StepResult fetchUnpickArtifacts(OrderedVersion mcVersion) throws IOException {
+		// Try constants JAR for unpicking
+		Path unpickingConstantsJar = getUnpickConstantsPath(mcVersion);
+		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		if (yarnVersion == null) {
+			return Step.StepResult.FAILED;
+		}
+		try {
+			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLConstants(), new RemoteHelper.LocalFileInfo(unpickingConstantsJar, null, "yarn unpicking constants", mcVersion.launcherFriendlyVersionName()));
+		} catch (RuntimeException ignored) {
+			Files.deleteIfExists(unpickingConstantsJar);
+		}
+		MiscHelper.println("Yarn unpicking constants do not exist for %s, skipping download...", mcVersion.launcherFriendlyVersionName());
+		return Step.StepResult.FAILED;
+	}
+
 	@Override
 	public Step.StepResult prepareMappings(OrderedVersion mcVersion) throws IOException {
 		Path mappingsFile = getMappingsPathInternal(mcVersion);
+		Path unpickDefinitionsFile = getUnpickDefinitionsPath(mcVersion);
 		// Try existing
 		if (Files.exists(mappingsFile)) {
 			return Step.StepResult.UP_TO_DATE;
@@ -91,7 +113,12 @@ public class YarnMappings extends Mapping {
 				Step.StepResult result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLMergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileJar, null, "yarn mapping", mcVersion.launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileJar)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
+					Path unpickDefinitions = fs.getPath("extras", "definitions.unpick");
 					Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
+					if (Files.exists(unpickDefinitions) && unpickDefinitionsFile != null) {
+						Files.copy(unpickDefinitions, unpickDefinitionsFile, StandardCopyOption.REPLACE_EXISTING);
+						fetchUnpickArtifacts(mcVersion); // ignore result for now
+					}
 				}
 				return Step.StepResult.merge(result, Step.StepResult.SUCCESS);
 			} catch (IOException | RuntimeException ignored) {
@@ -128,8 +155,7 @@ public class YarnMappings extends Mapping {
 		}
 	}
 
-	@Override
-	protected Path getMappingsPathInternal(OrderedVersion mcVersion) {
+	private FabricYarnVersionMeta getTargetYarnBuild(OrderedVersion mcVersion) {
 		if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
 			return null;
 		}
@@ -137,7 +163,42 @@ public class YarnMappings extends Mapping {
 		if (yarnVersion == null) {
 			yarnVersion = new FabricYarnVersionMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
 		}
+		return yarnVersion;
+	}
+
+	@Override
+	protected Path getMappingsPathInternal(OrderedVersion mcVersion) {
+		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		if (yarnVersion == null) {
+			return null;
+		}
 		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+	}
+
+	@Override
+	public Map<String, Path> getAdditionalMappingInformation(OrderedVersion mcVersion) {
+		Path unpickConstants = getUnpickConstantsPath(mcVersion);
+		Path unpickDefinitions = getUnpickDefinitionsPath(mcVersion);
+		if (Files.exists(unpickConstants) && Files.exists(unpickDefinitions)) {
+			return Map.of(KEY_UNPICK_CONSTANTS, unpickConstants, KEY_UNPICK_DEFINITIONS, unpickDefinitions);
+		}
+		return super.getAdditionalMappingInformation(mcVersion);
+	}
+
+	protected Path getUnpickDefinitionsPath(OrderedVersion mcVersion) {
+		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		if (yarnVersion == null) {
+			return null;
+		}
+		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s-unpick-definitions.unpick", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+	}
+
+	protected Path getUnpickConstantsPath(OrderedVersion mcVersion) {
+		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		if (yarnVersion == null) {
+			return null;
+		}
+		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s-constants.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	private FabricYarnVersionMeta getYarnLatestBuild(OrderedVersion mcVersion) {

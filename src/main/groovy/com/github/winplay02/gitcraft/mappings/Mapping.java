@@ -10,12 +10,21 @@ import net.fabricmc.tinyremapper.TinyUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 public abstract class Mapping {
+	public static final String KEY_UNPICK_DEFINITIONS = "unpick_definitions";
+	public static final String KEY_UNPICK_CONSTANTS = "unpick_constants";
+
 	public abstract String getName();
 
 	public boolean supportsComments() {
+		return false;
+	}
+
+	public boolean supportsConstantUnpicking() {
 		return false;
 	}
 
@@ -42,8 +51,20 @@ public abstract class Mapping {
 	 * @param mcVersion Version
 	 * @return path to tinyv2 mappings file
 	 */
-	public Optional<Path> getMappingsPath(OrderedVersion mcVersion) {
+	public final Optional<Path> getMappingsPath(OrderedVersion mcVersion) {
 		return Optional.ofNullable(getMappingsPathInternal(mcVersion));
+	}
+
+	/**
+	 * Should return a path to further information that may be additionally contained in a mappings-distribution.
+	 * These values will be populated by calling {@link #prepareMappings(OrderedVersion)} first.
+	 * Examples for additional files are unpick definitions for yarn.
+	 *
+	 * @param mcVersion Version
+	 * @return Map containing paths to additional files
+	 */
+	public Map<String, Path> getAdditionalMappingInformation(OrderedVersion mcVersion) {
+		return Collections.emptyMap();
 	}
 
 	protected abstract Path getMappingsPathInternal(OrderedVersion mcVersion);

@@ -31,6 +31,7 @@ Powered by:
 - [Fabric Loader](https://github.com/FabricMC/fabric-loader)
 - [Mapping-IO](https://github.com/FabricMC/mapping-io)
 - [Tiny Remapper](https://github.com/FabricMC/tiny-remapper)
+- [Fabric Unpick](https://github.com/FabricMC/unpick)
 - Mojang's generous mapping files (Mojmap)
 - [Loom](https://github.com/FabricMC/fabric-loom)
 - [Yarn](https://github.com/FabricMC/yarn)
@@ -135,6 +136,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
   - One version of yarn exists in maven, but does not exist in meta.fabricmc.net. Affected version: `1.14.2 Pre-Release 1`
   - Some combat snapshots are located in a non-standard-path (on maven.fabricmc.net and on meta.fabricmc.net). Affected versions: `1.15_combat-6`, `1.16_combat-0`
 - Version `1.16_combat-1`, `1.16_combat-2`, `1.16_combat-4`, `1.16_combat-5`, `1.16_combat-6` do not exist at all
+- Javadoc comments and constant unpicking is supported
 
 ## Notes about Parchment
 - Parchment supports only release versions of minecraft

@@ -64,13 +64,15 @@ public class DecompileStep extends Step {
 		if (Files.exists(decompiledPath)) {
 			Files.delete(decompiledPath);
 		}
-
-		Path remappedPath = pipelineCache.getForKey(Step.STEP_REMAP);
-		// TODO if remapping did not happen, do something useful; Maybe decompile raw?
+		Path remappedPath = pipelineCache.getForKey(Step.STEP_UNPICK);
 		if (remappedPath == null) {
-			MiscHelper.panic("A remapped JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
+			// if no unpicking happened, use remapped
+			remappedPath = pipelineCache.getForKey(Step.STEP_REMAP);
+			// TODO if remapping did not happen, do something useful; Maybe decompile raw?
+			if (remappedPath == null) {
+				MiscHelper.panic("Both an unpicked JAR and a remapped JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
+			}
 		}
-
 		Path libraryPath = pipelineCache.getForKey(Step.STEP_FETCH_LIBRARIES);
 		if (libraryPath == null) {
 			MiscHelper.panic("Libraries for version %s do not exist", mcVersion.launcherFriendlyVersionName());
