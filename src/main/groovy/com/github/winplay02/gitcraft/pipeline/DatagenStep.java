@@ -135,7 +135,13 @@ public class DatagenStep extends Step {
 		}
 		Path artifactsRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
 		Path artifactSnbtArchive = getDatagenSNBTArchive(artifactsRootPath);
+		if (Files.exists(artifactSnbtArchive) && Files.size(artifactSnbtArchive) <= 22 /* empty jar */) {
+			Files.delete(artifactSnbtArchive);
+		}
 		Path artifactReportsArchive = getDatagenReportsArchive(artifactsRootPath);
+		if (Files.exists(artifactReportsArchive) && Files.size(artifactReportsArchive) <= 22 /* empty jar */) {
+			Files.delete(artifactReportsArchive);
+		}
 		if ((!GitCraft.config.readableNbt || Files.exists(artifactSnbtArchive)) &&
 				(!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
 			return StepResult.UP_TO_DATE;
