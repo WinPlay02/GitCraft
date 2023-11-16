@@ -95,9 +95,11 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 		McVersion lookedUpVersion = null;
 		try {
 			lookedUpVersion = McVersionLookup.getVersion(/*clientJarPath != null ? List.of(clientJarPath) : */Collections.emptyList(), versionMeta.mainClass(), null);
+			SemanticVersion.parse(lookedUpVersion.getNormalized());
 		} catch (Exception | AssertionError ignored1) {
 			try {
 				lookedUpVersion = McVersionLookup.getVersion(/*clientJarPath != null ? List.of(clientJarPath) : */Collections.emptyList(), null, versionMeta.id());
+				SemanticVersion.parse(lookedUpVersion.getNormalized());
 			} catch (Exception | AssertionError ignored2) {
 				Path clientJarPath = null;
 				if (clientJar != null) {
@@ -105,6 +107,11 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 					clientJarPath = clientJar.resolve(clientJarArtifactParentPath(versionMeta));
 				}
 				lookedUpVersion = McVersionLookup.getVersion(clientJarPath != null ? List.of(clientJarPath) : Collections.emptyList(), versionMeta.mainClass(), null);
+				try {
+					SemanticVersion.parse(lookedUpVersion.getNormalized());
+				} catch (VersionParsingException e) {
+					MiscHelper.panicBecause(e, "Exhausted every option of getting a semantic version from %s. It seems like this version needs a manual override. Please report if this issue occurrs.", versionMeta.id());
+				}
 			}
 		}
 		String lookedUpSemver = fixupSemver(Objects.equals(lookedUpVersion.getNormalized(), "client") ? versionMeta.id() : lookedUpVersion.getNormalized());

@@ -134,7 +134,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 
 ## Performance
 - Windows filesystem implementation degrades performance very much (especially the commit step is affected by this)
-- Windows defender will also intercept every file I/O, which causes additional slowdown
+- Windows defender will also intercept every file I/O operation, which causes additional slowdown
 
 ## Version Manifest Source
 - The manifest provider source is changeable, `ManifestProvider` needs to be extended.
