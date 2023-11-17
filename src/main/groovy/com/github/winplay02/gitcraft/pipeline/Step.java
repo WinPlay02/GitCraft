@@ -28,6 +28,7 @@ import java.util.Optional;
 
 public abstract class Step {
 
+	/// Default Workflow
 	protected static final String STEP_RESET = "Reset";
 
 	protected static final String STEP_FETCH_ARTIFACTS = "Fetch Artifacts";
@@ -49,6 +50,11 @@ public abstract class Step {
 	protected static final String STEP_DECOMPILE = "Decompile";
 
 	protected static final String STEP_COMMIT = "Commit";
+
+	/// Launch Workflow
+	protected static final String STEP_HARDLINK_ASSETS = "Hardlink Assets";
+
+	protected static final String STEP_LAUNCH = "Launch Minecraft";
 
 	public enum StepResult implements Comparator<StepResult> {
 
@@ -96,7 +102,7 @@ public abstract class Step {
 			this.assetsIndexMeta = assetsIndexMeta;
 		}
 
-		protected AssetsIndex getAssetsIndex() {
+		public AssetsIndex getAssetsIndex() {
 			return this.assetsIndexMeta;
 		}
 	}

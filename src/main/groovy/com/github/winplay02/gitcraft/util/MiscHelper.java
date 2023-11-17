@@ -125,26 +125,28 @@ public class MiscHelper {
 		}
 	}
 
-	public static void createJavaCpSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+	public static void createJavaSubprocess(Path cwd, List<String> args) throws IOException, InterruptedException {
 		List<String> processArgs = new ArrayList<>(List.of("java"));
-		processArgs.addAll(List.of(jvmArgs));
-		processArgs.add("-cp");
-		processArgs.add(jarFile.toFile().getAbsolutePath());
-		processArgs.addAll(List.of(args));
+		processArgs.addAll(args);
 		ProcessBuilder processBuilder = new ProcessBuilder(processArgs).directory(cwd.toFile()).inheritIO();
 		Process process = processBuilder.start();
 		process.waitFor();
 	}
 
+	public static void createJavaCpSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+		List<String> processArgs = new ArrayList<>(List.of(jvmArgs));
+		processArgs.add("-cp");
+		processArgs.add(jarFile.toFile().getAbsolutePath());
+		processArgs.addAll(List.of(args));
+		createJavaSubprocess(cwd, processArgs);
+	}
+
 	public static void createJavaJarSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
-		List<String> processArgs = new ArrayList<>(List.of("java"));
-		processArgs.addAll(List.of(jvmArgs));
+		List<String> processArgs = new ArrayList<>(List.of(jvmArgs));
 		processArgs.add("-jar");
 		processArgs.add(jarFile.toFile().getAbsolutePath());
 		processArgs.addAll(List.of(args));
-		ProcessBuilder processBuilder = new ProcessBuilder(processArgs).directory(cwd.toFile()).inheritIO();
-		Process process = processBuilder.start();
-		process.waitFor();
+		createJavaSubprocess(cwd, processArgs);
 	}
 
 	public static void tryJavaExecution() {
