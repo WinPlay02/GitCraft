@@ -43,9 +43,10 @@ public class FabricIntermediaryMappings extends Mapping {
 	@Override
 	public Step.StepResult prepareMappings(OrderedVersion mcVersion) throws IOException {
 		Path mappingsFile = getMappingsPathInternal(mcVersion);
-		if (Files.exists(mappingsFile)) {
+		if (Files.exists(mappingsFile) && validateMappings(mappingsFile)) {
 			return Step.StepResult.UP_TO_DATE;
 		}
+		Files.deleteIfExists(mappingsFile);
 		Path mappingsV1 = getMappingsPathInternalV1(mcVersion);
 		Step.StepResult downloadResult = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub("FabricMC/intermediary", "master", String.format("mappings/%s.tiny", mappingsIntermediaryPathQuirkVersion(mcVersion.launcherFriendlyVersionName())), new RemoteHelper.LocalFileInfo(mappingsV1, null, "intermediary mapping", mcVersion.launcherFriendlyVersionName()));
 		MemoryMappingTree mappingTree = new MemoryMappingTree();

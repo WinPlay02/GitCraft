@@ -97,9 +97,10 @@ public class YarnMappings extends Mapping {
 		Path mappingsFile = getMappingsPathInternal(mcVersion);
 		Path unpickDefinitionsFile = getUnpickDefinitionsPath(mcVersion);
 		// Try existing
-		if (Files.exists(mappingsFile)) {
+		if (Files.exists(mappingsFile) && validateMappings(mappingsFile)) {
 			return Step.StepResult.UP_TO_DATE;
 		}
+		Files.deleteIfExists(mappingsFile);
 		// Get latest build info
 		FabricYarnVersionMeta yarnVersion = getYarnLatestBuild(mcVersion);
 		if (yarnVersion == null) {
@@ -114,11 +115,11 @@ public class YarnMappings extends Mapping {
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileJar)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 					Path unpickDefinitions = fs.getPath("extras", "definitions.unpick");
-					Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
 					if (Files.exists(unpickDefinitions) && unpickDefinitionsFile != null) {
 						Files.copy(unpickDefinitions, unpickDefinitionsFile, StandardCopyOption.REPLACE_EXISTING);
 						fetchUnpickArtifacts(mcVersion); // ignore result for now
 					}
+					Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
 				}
 				return Step.StepResult.merge(result, Step.StepResult.SUCCESS);
 			} catch (IOException | RuntimeException ignored) {
@@ -224,7 +225,7 @@ public class YarnMappings extends Mapping {
 	private static Tuple2<Path, Step.StepResult> mappingsPathYarnUnmerged(OrderedVersion mcVersion, FabricYarnVersionMeta yarnVersion) {
 		try {
 			Path mappingsFileUnmerged = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
-			if (Files.exists(mappingsFileUnmerged)) {
+			if (Files.exists(mappingsFileUnmerged) && validateMappings(mappingsFileUnmerged)) {
 				return Tuple2.tuple(mappingsFileUnmerged, Step.StepResult.UP_TO_DATE);
 			}
 			Path mappingsFileUnmergedJar = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
@@ -238,7 +239,7 @@ public class YarnMappings extends Mapping {
 			MiscHelper.println("Yarn mappings in tiny-v2 format do not exist for %s, falling back to tiny-v1 mappings...", mcVersion.launcherFriendlyVersionName());
 			try {
 				Path mappingsFileUnmergedv1 = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
-				if (Files.exists(mappingsFileUnmergedv1)) {
+				if (Files.exists(mappingsFileUnmergedv1) && validateMappings(mappingsFileUnmergedv1)) {
 					return Tuple2.tuple(mappingsFileUnmergedv1, Step.StepResult.UP_TO_DATE);
 				}
 				Path mappingsFileUnmergedJarv1 = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));

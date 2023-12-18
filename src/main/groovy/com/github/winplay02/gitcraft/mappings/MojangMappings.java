@@ -36,9 +36,10 @@ public class MojangMappings extends Mapping {
 	public Step.StepResult prepareMappings(OrderedVersion mcVersion) throws IOException {
 		Path mojmapPath = getMappingsPathInternal(mcVersion);
 		Path artifactTargetPath = GitCraftPaths.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName());
-		if (Files.exists(mojmapPath)) {
+		if (Files.exists(mojmapPath) && validateMappings(mojmapPath)) {
 			return Step.StepResult.UP_TO_DATE;
 		}
+		Files.deleteIfExists(mojmapPath);
 		Step.StepResult clientMappings = null;
 		Step.StepResult serverMappings = null;
 		if (mcVersion.hasClientMojMaps()) {
