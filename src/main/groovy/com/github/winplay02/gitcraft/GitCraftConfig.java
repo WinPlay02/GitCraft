@@ -40,6 +40,7 @@ public class GitCraftConfig {
 	public String gitUser = "Mojang";
 	public String gitMail = "gitcraft@decompiled.mc";
 	public String gitMainlineLinearBranch = "master";
+    public boolean createVersionBranches = false;
 
 	/// Refresh settings
 	public boolean refreshDecompilation = false;
@@ -164,6 +165,9 @@ public class GitCraftConfig {
 		if (overrideRepositoryPath != null) {
 			MiscHelper.println("Repository path is overridden. This may lead to various errors (see help). Proceed with caution. Target: %s", overrideRepositoryPath);
 		}
+        if (createVersionBranches) {
+            MiscHelper.println("A seperate branch will be created for each version.");
+        }
 	}
 
 	public boolean isOnlyVersion() {

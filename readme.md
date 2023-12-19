@@ -43,6 +43,10 @@ Powered by:
 ```
 Usage: gradlew run --args="[Options]"
 Options:
+      --create-version-branches 
+                             Creates a separate branch for each version,
+                               including linear versions. This may be useful 
+                               for quickly switching between multiple versions.   
       --exclude-version[=<version>[,<version>]...]
                              Specify version(s) to exclude from decompilation.
                                The exclusion info will be added to the
