@@ -43,10 +43,10 @@ Powered by:
 ```
 Usage: gradlew run --args="[Options]"
 Options:
-      --create-version-branches 
+      --create-version-branches
                              Creates a separate branch for each version,
-                               including linear versions. This may be useful 
-                               for quickly switching between multiple versions.   
+                               including linear versions. This may be useful
+                               for quickly switching between multiple versions.
       --exclude-version[=<version>[,<version>]...]
                              Specify version(s) to exclude from decompilation.
                                The exclusion info will be added to the
@@ -131,6 +131,10 @@ Options:
                                repository to refresh.
       --skip-nonlinear       Skips non-linear (e.g. April Fools, Combat
                                Snapshots, ...) versions completely
+      --sort-json            Sorts JSON objects contained in JSON files (e.g.
+                               models, language files, ...) in natural order.
+                               This is disabled by default as it modifies
+                               original data.
 If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory

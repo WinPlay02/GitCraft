@@ -4,6 +4,9 @@ import com.github.winplay02.gitcraft.meta.FabricYarnVersionMeta;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
@@ -21,7 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 import java.util.TreeMap;
 
 public class SerializationHelper {
@@ -92,5 +99,27 @@ public class SerializationHelper {
 			inStream.transferTo(outStream);
 		}
 		return outStream.toString(StandardCharsets.UTF_8);
+	}
+
+	private static JsonElement sortJsonElement(JsonElement element) {
+		Queue<JsonElement> queue = new LinkedList<>();
+		queue.add(element);
+		while (!queue.isEmpty()) {
+			JsonElement subject = queue.poll();
+			if (subject instanceof final JsonObject object) {
+				Map<String, JsonElement> mappings = new HashMap<>(object.asMap());
+				object.asMap().clear();
+				mappings.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach((entry) -> object.add(entry.getKey(), entry.getValue()));
+				mappings.values().stream().filter(entry -> entry instanceof JsonObject || entry instanceof JsonArray).forEach(queue::add);
+			}
+			if (subject instanceof final JsonArray array) {
+				array.asList().stream().filter(entry -> entry instanceof JsonObject || entry instanceof JsonArray).forEach(queue::add);
+			}
+		}
+		return element;
+	}
+
+	public static void sortJSONFile(Path path) throws IOException {
+		writeAllToPath(path, serialize(sortJsonElement(gson.fromJson(fetchAllFromPath(path), JsonElement.class))));
 	}
 }

@@ -22,6 +22,7 @@ public class GitCraftConfig {
 	public boolean loadAssetsExtern = true;
 	public boolean readableNbt = true;
 	public boolean loadDatagenRegistry = true;
+	public boolean sortJsonObjects = false;
 
 	/// Internal options
 	public boolean verifyChecksums = true;
@@ -168,6 +169,9 @@ public class GitCraftConfig {
         if (createVersionBranches) {
             MiscHelper.println("A seperate branch will be created for each version.");
         }
+		if (sortJsonObjects) {
+			MiscHelper.println("JSON files (JSON objects) will be sorted in natural order.");
+		}
 	}
 
 	public boolean isOnlyVersion() {
