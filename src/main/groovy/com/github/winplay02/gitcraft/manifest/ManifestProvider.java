@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.manifest;
 
-import com.github.winplay02.gitcraft.meta.LauncherMeta;
+import com.github.winplay02.gitcraft.meta.ILauncherMeta;
+import com.github.winplay02.gitcraft.meta.ILauncherMetaVersionEntry;
 import com.github.winplay02.gitcraft.meta.VersionMeta;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -26,24 +27,23 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public abstract class ManifestProvider {
-	protected record DescribedURL(String url, String description) {
-	}
-
+public abstract class ManifestProvider<T extends ILauncherMeta<M>, M extends ILauncherMetaVersionEntry> {
 	protected final Path rootPath;
 	protected List<DescribedURL> manifestSourceUrls;
 	protected List<Artifact> singleMetaUrls;
+	protected Class<T> metaClass;
 	protected TreeMap<String, String> semverCache = null;
 	protected LinkedHashMap<String, OrderedVersion> versionMeta = null;
 
-	protected ManifestProvider(DescribedURL[] manifestSourceUrls) {
-		this(manifestSourceUrls, new Artifact[0]);
+	protected ManifestProvider(DescribedURL[] manifestSourceUrls, Class<T> metaClass) {
+		this(manifestSourceUrls, new Artifact[0], metaClass);
 	}
 
-	protected ManifestProvider(DescribedURL[] manifestSourceUrls, Artifact[] singleMetaUrls) {
+	protected ManifestProvider(DescribedURL[] manifestSourceUrls, Artifact[] singleMetaUrls, Class<T> metaClass) {
 		this.rootPath = GitCraftPaths.MC_VERSION_META_STORE.resolve(getInternalName());
 		this.manifestSourceUrls = new ArrayList<>(List.of(manifestSourceUrls));
 		this.singleMetaUrls = new ArrayList<>(List.of(singleMetaUrls));
+		this.metaClass = metaClass;
 		this.loadSemverCache();
 	}
 
@@ -113,7 +113,7 @@ public abstract class ManifestProvider {
 		// Read all meta entries for each source
 		for (DescribedURL metaEntry : this.manifestSourceUrls) {
 			MiscHelper.println("Reading %s from %s...", metaEntry.description(), metaEntry.url());
-			LauncherMeta launcherMeta = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(metaEntry.url())), LauncherMeta.class);
+			T launcherMeta = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(metaEntry.url())), metaClass);
 			// Load version corresponding to each meta entry
 			unpackLauncherMeta(launcherMeta);
 		}
@@ -157,13 +157,29 @@ public abstract class ManifestProvider {
 		return Collections.unmodifiableMap(this.versionMeta);
 	}
 
-	protected final void unpackLauncherMeta(LauncherMeta launcherMeta) throws IOException {
-		for (LauncherMeta.LauncherVersionEntry version : launcherMeta.versions()) {
-			Path versionMetaPath = this.rootPath.resolve(version.id() + ".json");
+	/**
+	 * Fetch an {@link OrderedVersion} from a version entry contained in the launcher meta.
+	 *
+	 * @param launcherMetaEntry Launcher Meta Version Entry
+	 * @return Ordered Version
+	 * @throws IOException on failure
+	 */
+	protected abstract OrderedVersion fetchVersionMeta(M launcherMetaEntry) throws IOException;
+
+	/**
+	 * Check whether an existing (cached) version meta file is valid. This file was read previously from another meta source or a single file.
+	 *
+	 * @param launcherMetaEntry Launcher Meta Version Entry
+	 * @return True if the read file is compatible with the new source provided by the passed launcher meta version entry, otherwise false.
+	 */
+	protected abstract boolean isExistingVersionMetaValid(M launcherMetaEntry) throws IOException;
+
+	protected final void unpackLauncherMeta(T launcherMeta) throws IOException {
+		for (M version : launcherMeta.versions()) {
 			if (!versionMeta.containsKey(version.id())) {
-				versionMeta.put(version.id(), loadVersionData(versionMetaPath, version.id(), version.url(), version.sha1()));
+				versionMeta.put(version.id(), fetchVersionMeta(version));
 			} else {
-				if (RemoteHelper.SHA1.fileMatchesChecksum(versionMetaPath, version.sha1())) {
+				if (isExistingVersionMetaValid(version)) {
 					MiscHelper.println("WARNING: Found duplicate version meta for version: %s (Matches previous entry)", version.id());
 				} else {
 					MiscHelper.panic("Found duplicate version meta for version: %s (Differs from previous)", version.id());
@@ -207,4 +223,13 @@ public abstract class ManifestProvider {
 	 * @return List of parent versions, or an empty list, if the provided version is the root version. {@code null} is returned, if the default ordering should be used (specified by {@link OrderedVersion})
 	 */
 	public abstract List<String> getParentVersion(OrderedVersion mcVersion);
+
+	public final OrderedVersion getVersionByVersionID(String versionId) {
+		try {
+			return this.getVersionMeta().get(versionId);
+		} catch (IOException e) {
+			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
+			return null;
+		}
+	}
 }

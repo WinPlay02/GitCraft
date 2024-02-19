@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.manifest;
 
 import com.github.winplay02.gitcraft.GitCraftTestingFs;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,12 +1,12 @@
 package com.github.winplay02.gitcraft;
 
-import com.github.winplay02.gitcraft.manifest.ManifestProvider;
-import com.github.winplay02.gitcraft.manifest.MinecraftLauncherManifest;
-import com.github.winplay02.gitcraft.mappings.FabricIntermediaryMappings;
+import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingManifest;
+import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
-import com.github.winplay02.gitcraft.mappings.YarnMappings;
+import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
+import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.pipeline.CommitStep;
 import com.github.winplay02.gitcraft.pipeline.DatagenStep;
 import com.github.winplay02.gitcraft.pipeline.DecompileStep;
@@ -21,6 +21,7 @@ import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.pipeline.UnpickStep;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
@@ -29,6 +30,9 @@ import java.util.List;
 
 public class GitCraft {
 	public static final String VERSION = "0.2.0";
+	/// Every Manifest Source
+	public static final LazyValue<MinecraftLauncherManifest> MANIFEST_SOURCE_MOJANG_MINECRAFT_LAUNCHER = LazyValue.of(MinecraftLauncherManifest::new);
+	public static final LazyValue<SkyrisingManifest> MANIFEST_SKYRISING = LazyValue.of(SkyrisingManifest::new);
 	/// Every Mapping
 	public static final MojangMappings MOJANG_MAPPINGS = new MojangMappings();
 	public static final FabricIntermediaryMappings FABRIC_INTERMEDIARY_MAPPINGS = new FabricIntermediaryMappings();
@@ -56,7 +60,6 @@ public class GitCraft {
 
 	public static MinecraftVersionGraph versionGraph = null;
 	public static MinecraftVersionGraph resetVersionGraph = null;
-	public static ManifestProvider manifestProvider = null;
 
 	public static void main(String[] args) throws Exception {
 		GitCraft.config = GitCraftCli.handleCliArgs(args);
@@ -65,9 +68,8 @@ public class GitCraft {
 			return;
 		}
 		MiscHelper.checkFabricLoaderVersion();
-		GitCraft.manifestProvider = new MinecraftLauncherManifest();
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
-		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.manifestProvider);
+		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.config.manifestSource.getManifestSourceImpl());
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);

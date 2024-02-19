@@ -1,7 +1,8 @@
-package com.github.winplay02.gitcraft.mappings;
+package com.github.winplay02.gitcraft.mappings.yarn;
 
+import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
-import com.github.winplay02.gitcraft.meta.FabricYarnVersionMeta;
+import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
@@ -73,7 +74,7 @@ public class YarnMappings extends Mapping {
 		if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
 			return false;
 		}
-		return mcVersion.compareTo(GitCraftConfig.YARN_MAPPINGS_START_VERSION) >= 0;
+		return mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(GitCraftConfig.YARN_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	private Step.StepResult fetchUnpickArtifacts(OrderedVersion mcVersion) throws IOException {
@@ -138,7 +139,7 @@ public class YarnMappings extends Mapping {
 			// Then named yarn
 			MappingSourceNsSwitch nsSwitchYarn = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString());
 			// unmerged yarn mappings (1.14 - 1.14.3 (exclusive)) seem to have their mappings backwards
-			if (mcVersion.compareTo(GitCraftConfig.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION) < 0) {
+			if (mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(GitCraftConfig.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID)) < 0) {
 				MiscHelper.println("Yarn mappings for version %s are known to have switched namespaces", mcVersion.launcherFriendlyVersionName());
 				MappingReader.read(mappingsFileUnmerged.getV1(), new MappingNsRenamer(nsSwitchYarn, Map.of(MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())));
 			} else {

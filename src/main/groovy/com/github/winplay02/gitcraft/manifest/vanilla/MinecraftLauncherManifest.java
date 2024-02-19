@@ -1,25 +1,30 @@
-package com.github.winplay02.gitcraft.manifest;
+package com.github.winplay02.gitcraft.manifest.vanilla;
 
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.manifest.DescribedURL;
+import com.github.winplay02.gitcraft.manifest.ManifestProvider;
 import com.github.winplay02.gitcraft.meta.VersionMeta;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RemoteHelper;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.impl.game.minecraft.McVersion;
 import net.fabricmc.loader.impl.game.minecraft.McVersionLookup;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public class MinecraftLauncherManifest extends ManifestProvider {
+public class MinecraftLauncherManifest extends ManifestProvider<MinecraftLauncherMeta, MinecraftLauncherMeta.LauncherVersionEntry> {
 
 	public MinecraftLauncherManifest() {
-		super(new DescribedURL[]{new DescribedURL("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", "Launcher Meta")},
+		super(
+			new DescribedURL[]{new DescribedURL("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", "Launcher Meta")},
 				new Artifact[]{
 						// 1.14.3 - Combat Test
 						Artifact.fromURL("https://piston-data.mojang.com/experiments/combat/610f5c9874ba8926d5ae1bcce647e5f0e6e7c889/1_14_combat-212796.zip", "610f5c9874ba8926d5ae1bcce647e5f0e6e7c889"),
@@ -63,7 +68,8 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 						Artifact.fromURL("https://piston-data.mojang.com/v1/objects/b1e589c1d6ed73519797214bc796e53f5429ac46/1_19_deep_dark_experimental_snapshot-1.zip", "b1e589c1d6ed73519797214bc796e53f5429ac46"),
 						// Before Reupload of 23w13a_or_b: 23w13a_or_b_original
 						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/23w13a_or_b_original.json", "469f0d1416f2b25a8829d7991c11be3411813bf1")
-				}
+				},
+			MinecraftLauncherMeta.class
 		);
 	}
 
@@ -76,11 +82,21 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 		return "mojang-launcher";
 	}
 
+	// Version Override
+	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
+		// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be to rc1 versions)
+		"1.16-rc1", "1.16-rc.9",
+		// support extra original for 23w13a_or_b
+		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original"
+		// FIX until fabric-loader is updated
+		// END FIX
+	);
+
 	@Override
 	protected String lookupSemanticVersion(VersionMeta versionMeta) {
 		{
-			if (GitCraftConfig.minecraftVersionSemVerOverride.containsKey(versionMeta.id())) {
-				return GitCraftConfig.minecraftVersionSemVerOverride.get(versionMeta.id());
+			if (minecraftVersionSemVerOverride.containsKey(versionMeta.id())) {
+				return minecraftVersionSemVerOverride.get(versionMeta.id());
 			}
 		}
 		if (semverCache.containsKey(versionMeta.id())) {
@@ -117,6 +133,20 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 		}
 		MiscHelper.println("Semver mapped for: %s as %s", lookedUpVersion.getRaw(), lookedUpSemver);
 		return lookedUpSemver;
+	}
+
+	private Path getPathOfVersionMeta(MinecraftLauncherMeta.LauncherVersionEntry launcherMetaEntry) {
+		return this.rootPath.resolve(launcherMetaEntry.id() + ".json");
+	}
+
+	@Override
+	protected OrderedVersion fetchVersionMeta(MinecraftLauncherMeta.LauncherVersionEntry launcherMetaEntry) throws IOException {
+		return loadVersionData(getPathOfVersionMeta(launcherMetaEntry), launcherMetaEntry.id(), launcherMetaEntry.url(), launcherMetaEntry.sha1());
+	}
+
+	@Override
+	protected boolean isExistingVersionMetaValid(MinecraftLauncherMeta.LauncherVersionEntry launcherMetaEntry) {
+		return RemoteHelper.SHA1.fileMatchesChecksum(getPathOfVersionMeta(launcherMetaEntry), launcherMetaEntry.sha1());
 	}
 
 	private Path clientJarArtifactParentPath(VersionMeta versionMeta) {

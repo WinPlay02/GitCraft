@@ -1,11 +1,10 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.VersionParsingException;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -15,6 +14,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class GitCraftConfig {
+
+	/// Manifest Source option
+	public ManifestSource manifestSource = ManifestSource.MOJANG_MINECRAFT_LAUNCHER;
 
 	/// Additional Data import settings
 	public boolean loadIntegratedDatapack = true;
@@ -41,7 +43,7 @@ public class GitCraftConfig {
 	public String gitUser = "Mojang";
 	public String gitMail = "gitcraft@decompiled.mc";
 	public String gitMainlineLinearBranch = "master";
-    public boolean createVersionBranches = false;
+	public boolean createVersionBranches = false;
 
 	/// Refresh settings
 	public boolean refreshDecompilation = false;
@@ -65,18 +67,10 @@ public class GitCraftConfig {
 	/// Mapping quirks
 	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.15.6";
 
-	public static final SemanticVersion INTERMEDIARY_MAPPINGS_START_VERSION, YARN_MAPPINGS_START_VERSION, YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION, PARCHMENT_START_VERSION;
-
-	static {
-		try {
-			INTERMEDIARY_MAPPINGS_START_VERSION = SemanticVersion.parse("1.14-alpha.18.43.b");
-			YARN_MAPPINGS_START_VERSION = SemanticVersion.parse("1.14-alpha.18.49.a");
-			YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION = SemanticVersion.parse("1.14.3");
-			PARCHMENT_START_VERSION = SemanticVersion.parse("1.16.5");
-		} catch (VersionParsingException e) {
-			throw new RuntimeException(e);
-		}
-	}
+	public static final String INTERMEDIARY_MAPPINGS_START_VERSION_ID = "18w43b"; // 1.14 snapshot
+	public static final String YARN_MAPPINGS_START_VERSION_ID = "18w49a"; // 1.14 snapshot
+	public static final String YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID = "1.14.3";
+	public static final String PARCHMENT_START_VERSION_ID = "1.16.5";
 
 	public static List<String> intermediaryMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
 
@@ -111,16 +105,6 @@ public class GitCraftConfig {
 
 	// There are no releases for these parchment versions (yet)
 	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.3");
-
-	// Version Override
-	public static Map<String, String> minecraftVersionSemVerOverride = Map.of(
-			// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be to rc1 versions)
-			"1.16-rc1", "1.16-rc.9",
-			// support extra original for 23w13a_or_b
-			"23w13a_or_b_original", "1.20-alpha.23.13.ab.original"
-			// FIX until fabric-loader is updated
-			// END FIX
-	);
 
 	public static GitCraftConfig defaultConfig() {
 		return new GitCraftConfig();
@@ -166,9 +150,9 @@ public class GitCraftConfig {
 		if (overrideRepositoryPath != null) {
 			MiscHelper.println("Repository path is overridden. This may lead to various errors (see help). Proceed with caution. Target: %s", overrideRepositoryPath);
 		}
-        if (createVersionBranches) {
-            MiscHelper.println("A seperate branch will be created for each version.");
-        }
+		if (createVersionBranches) {
+			MiscHelper.println("A seperate branch will be created for each version.");
+		}
 		if (sortJsonObjects) {
 			MiscHelper.println("JSON files (JSON objects) will be sorted in natural order.");
 		}

@@ -4,8 +4,6 @@ import com.github.winplay02.gitcraft.manifest.ManifestProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.VersionParsingException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -122,15 +120,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesBack = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesFw = new HashMap<>();
 
-	protected static SemanticVersion parseFromLoaderVersion(String loaderVersion) {
-		try {
-			return SemanticVersion.parse(loaderVersion);
-		} catch (VersionParsingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static MinecraftVersionGraph createFromMetadata(ManifestProvider provider) throws IOException {
+	public static MinecraftVersionGraph createFromMetadata(ManifestProvider<?, ?> provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
 		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersionMeta().values());
 		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(metaVersions.stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());

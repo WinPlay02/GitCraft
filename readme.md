@@ -58,6 +58,13 @@ Options:
                                as a fallback. Possible values are: mojmap,
                                fabric_intermediary, yarn, mojmap_parchment
   -h, --help                 Displays this help screen
+      --manifest-source=<mapping>
+                             Specifies the manifest source used to fetch the
+                               available versions, the mapping to semantic
+                               versions and the dependencies between versions.
+                               The Minecraft Launcher Meta (from Mojang) is
+                               selected by default. Possible values are:
+                               mojang_minecraft_launcher, skyrising
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,

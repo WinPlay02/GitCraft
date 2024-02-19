@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.meta.FabricYarnVersionMeta;
+import com.github.winplay02.gitcraft.mappings.yarn.FabricYarnVersionMeta;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -23,6 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -60,6 +63,32 @@ public class SerializationHelper {
 					return null;
 				} else {
 					return Path.of(in.nextString());
+				}
+			}
+		}).registerTypeHierarchyAdapter(ZonedDateTime.class, new TypeAdapter<ZonedDateTime>() {
+			static final DateTimeFormatter RFC_3339_DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
+				.append(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+				.optionalStart()
+				.appendOffset("+HH:MM", "Z")
+				.optionalEnd()
+				.toFormatter();
+
+			@Override
+			public void write(JsonWriter out, ZonedDateTime value) throws IOException {
+				if (value == null) {
+					out.nullValue();
+				} else {
+					out.value(RFC_3339_DATE_TIME_FORMATTER.format(value));
+				}
+			}
+
+			@Override
+			public ZonedDateTime read(JsonReader in) throws IOException {
+				if (in.peek() == JsonToken.NULL) {
+					in.nextNull();
+					return null;
+				} else {
+					return ZonedDateTime.parse(in.nextString(), RFC_3339_DATE_TIME_FORMATTER);
 				}
 			}
 		}).setPrettyPrinting().create();

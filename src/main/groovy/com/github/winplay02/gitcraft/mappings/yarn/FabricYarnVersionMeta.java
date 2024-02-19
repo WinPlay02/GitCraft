@@ -1,4 +1,4 @@
-package com.github.winplay02.gitcraft.meta;
+package com.github.winplay02.gitcraft.mappings.yarn;
 
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import groovy.lang.Tuple2;

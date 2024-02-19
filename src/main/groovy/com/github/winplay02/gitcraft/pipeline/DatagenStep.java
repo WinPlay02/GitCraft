@@ -8,8 +8,6 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import groovy.lang.Tuple2;
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 import java.io.IOException;
@@ -22,10 +20,10 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class DatagenStep extends Step {
-	private static final SemanticVersion DATAGEN_AVAILABLE;
-	private static final SemanticVersion DATAGEN_BUNDLER;
-	protected static final SemanticVersion EXT_VANILLA_WORLDGEN_PACK_START;
-	protected static final SemanticVersion EXT_VANILLA_WORLDGEN_PACK_END;
+	private static final String DATAGEN_AVAILABLE_ID = "18w01a";
+	private static final String DATAGEN_BUNDLER_ID = "21w39a";
+	protected static final String EXT_VANILLA_WORLDGEN_PACK_START_ID = "20w28a";
+	protected static final String EXT_VANILLA_WORLDGEN_PACK_END_ID = "21w44a";
 	protected static final Map<String, Artifact> EXT_VANILLA_WORLDGEN_PACK;
 	private TreeMap<OrderedVersion, Artifact> orderedExtVanillaWorldgen = null;
 
@@ -68,14 +66,6 @@ public class DatagenStep extends Step {
 		EXT_VANILLA_WORLDGEN_PACK.put("21w42a", Artifact.fromURL("https://raw.githubusercontent.com/slicedlime/examples/a25b894f099cd95cb95ef63d3fd1b93e6010491b/vanilla_worldgen.zip", "2e0bf6e130edab90083990f476c2ef9b9e4dedd8"));
 		EXT_VANILLA_WORLDGEN_PACK.put("21w43a", Artifact.fromURL("https://raw.githubusercontent.com/slicedlime/examples/462d8e7fc256cace54c95a04325c9c8f2ed8af8d/vanilla_worldgen.zip", "841f115ae352181f3ad595ea2bb80252f88b9844"));
 		EXT_VANILLA_WORLDGEN_PACK.put("21w44a", Artifact.fromURL("https://raw.githubusercontent.com/slicedlime/examples/d26b977501c38fdf4a03e262b859ffa32eb7badf/vanilla_worldgen.zip", "1547489f34a989b20b5a83a022d885020fd76f14"));
-		try {
-			DATAGEN_AVAILABLE = SemanticVersion.parse("1.13-alpha.18.1.a");
-			DATAGEN_BUNDLER = SemanticVersion.parse("1.18-alpha.21.39.a");
-			EXT_VANILLA_WORLDGEN_PACK_START = SemanticVersion.parse("1.16.2-alpha.20.28.a");
-			EXT_VANILLA_WORLDGEN_PACK_END = SemanticVersion.parse("1.18-alpha.21.44.a");
-		} catch (VersionParsingException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	@Override
@@ -95,13 +85,13 @@ public class DatagenStep extends Step {
 
 	@Override
 	public boolean preconditionsShouldRun(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
-		return mcVersion.compareTo(DATAGEN_AVAILABLE) >= 0 && (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) && super.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo);
+		return mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(DATAGEN_AVAILABLE_ID)) >= 0 && (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) && super.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo);
 	}
 
 	private TreeMap<OrderedVersion, Artifact> getExtVanillaWorldgenPackOrderedVersions() {
 		if (orderedExtVanillaWorldgen == null) {
 			try {
-				Map<String, OrderedVersion> manifestVersionMetaMap = GitCraft.manifestProvider.getVersionMeta();
+				Map<String, OrderedVersion> manifestVersionMetaMap = GitCraft.config.manifestSource.getManifestSourceImpl().getVersionMeta();
 				orderedExtVanillaWorldgen = new TreeMap<>(EXT_VANILLA_WORLDGEN_PACK.entrySet().stream().map((entry) -> Tuple2.tuple(manifestVersionMetaMap.get(entry.getKey()), entry.getValue())).collect(Collectors.toMap(Tuple2::getV1, Tuple2::getV2)));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -111,7 +101,7 @@ public class DatagenStep extends Step {
 	}
 
 	protected Tuple2<OrderedVersion, Artifact> getExtVanillaWorldgenPack(OrderedVersion mcVersion) {
-		if (mcVersion.compareTo(EXT_VANILLA_WORLDGEN_PACK_START) >= 0 && mcVersion.compareTo(EXT_VANILLA_WORLDGEN_PACK_END) <= 0) {
+		if (mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START_ID)) >= 0 && mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END_ID)) <= 0) {
 			Map.Entry<OrderedVersion, Artifact> entry = getExtVanillaWorldgenPackOrderedVersions().floorEntry(mcVersion);
 			if (entry != null) {
 				return Tuple2.tuple(entry.getKey(), entry.getValue());
@@ -204,7 +194,7 @@ public class DatagenStep extends Step {
 	}
 
 	private void executeDatagen(OrderedVersion mcVersion, Path cwd, Path executable, String... args) throws IOException, InterruptedException {
-		if (mcVersion.compareTo(DATAGEN_BUNDLER) >= 0) {
+		if (mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(DATAGEN_BUNDLER_ID)) >= 0) {
 			// >= DATAGEN_BUNDLER: java -DbundlerMainClass=net.minecraft.data.Main -jar minecraft_server.jar
 			MiscHelper.createJavaJarSubprocess(executable, cwd, new String[]{"-DbundlerMainClass=net.minecraft.data.Main"}, args);
 		} else {

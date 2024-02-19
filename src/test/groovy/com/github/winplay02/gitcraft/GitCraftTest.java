@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft;
 
-import com.github.winplay02.gitcraft.manifest.MinecraftLauncherManifest;
+import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;

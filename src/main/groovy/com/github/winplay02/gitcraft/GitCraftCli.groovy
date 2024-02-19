@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft
 
+import com.github.winplay02.gitcraft.manifest.ManifestSource
 import com.github.winplay02.gitcraft.mappings.MappingFlavour
 import com.github.winplay02.gitcraft.util.MiscHelper
 import groovy.cli.picocli.CliBuilder
@@ -49,8 +50,9 @@ class GitCraftCli {
 		cli_args._(longOpt: 'only-snapshot', 'Only decompiles snapshots (includes pending and non-linear, if not otherwise specified).');
 		cli_args._(longOpt: 'override-repo-target', args: 1, argName: 'path', type: Path,
 			'Changes the location of the target repository, as repo names may get quite long and unintuitive. If not used carefully, this can lead to repositories with unwanted mixed mappings or straight up refuse to work as some versions in the target repository may be missing.');
-        cli_args._(longOpt: 'create-version-branches', 'Creates a separate branch for each version, including linear versions. This may be useful for quickly switching between multiple versions.')
+		cli_args._(longOpt: 'create-version-branches', 'Creates a separate branch for each version, including linear versions. This may be useful for quickly switching between multiple versions.')
 		cli_args._(longOpt: 'sort-json', 'Sorts JSON objects contained in JSON files (e.g. models, language files, ...) in natural order. This is disabled by default as it modifies original data.')
+		cli_args._(longOpt: 'manifest-source', "Specifies the manifest source used to fetch the available versions, the mapping to semantic versions and the dependencies between versions. The Minecraft Launcher Meta (from Mojang) is selected by default. Possible values are: ${Arrays.stream(ManifestSource.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ManifestSource, argName: "mapping", defaultValue: "mojang_minecraft_launcher");
 		cli_args.h(longOpt: 'help', 'Displays this help screen');
 		return cli_args;
 	}
@@ -68,7 +70,7 @@ class GitCraftCli {
 		config.readableNbt = !cli_args_parsed.hasOption("no-datagen-snbt");
 		config.loadDatagenRegistry = !cli_args_parsed.hasOption("no-datagen-report");
 		config.refreshDecompilation = cli_args_parsed.hasOption("refresh");
-        config.createVersionBranches = cli_args_parsed.hasOption("create-version-branches");
+		config.createVersionBranches = cli_args_parsed.hasOption("create-version-branches");
 		config.sortJsonObjects = cli_args_parsed.hasOption("sort-json");
 		if (cli_args_parsed.hasOption("help")) {
 			cli_args.usage();

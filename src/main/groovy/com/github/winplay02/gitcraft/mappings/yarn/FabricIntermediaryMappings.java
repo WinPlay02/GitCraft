@@ -1,6 +1,8 @@
-package com.github.winplay02.gitcraft.mappings;
+package com.github.winplay02.gitcraft.mappings.yarn;
 
+import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
@@ -33,7 +35,7 @@ public class FabricIntermediaryMappings extends Mapping {
 		if (GitCraftConfig.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
 			return false;
 		}
-		return mcVersion.compareTo(GitCraftConfig.INTERMEDIARY_MAPPINGS_START_VERSION) >= 0;
+		return mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(GitCraftConfig.INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	protected static String mappingsIntermediaryPathQuirkVersion(String version) {
