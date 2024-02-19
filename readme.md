@@ -37,6 +37,7 @@ Powered by:
 - [Yarn](https://github.com/FabricMC/yarn)
 - [Fabric Intermediary Mappings](https://github.com/FabricMC/intermediary)
 - [Parchment](https://github.com/ParchmentMC/Parchment)
+- [Skyrising Minecraft Version Manifest Collection](https://skyrising.github.io/mc-versions)
 
 ## Help / Usage
 
@@ -157,6 +158,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 - The manifest provider source is changeable, `ManifestProvider` needs to be extended.
 - By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
 - Known extra versions are fetched from mojang or other sources (like archive.org).
+- For more accurate asset versioning and a more complete set of versions, the [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) can be used
 
 ## Fork / Changes
 - This repository was originally forked from [dexman545/GitCraft](https://github.com/dexman545/GitCraft)
