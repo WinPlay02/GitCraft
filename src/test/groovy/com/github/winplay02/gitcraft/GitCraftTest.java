@@ -57,10 +57,10 @@ public class GitCraftTest {
 		assertNull(vgSnapshots.getMinecraftVersionByName("1.20"));
 		assertTrue(vgSnapshots.containsVersion(versionGraphComplete.getMinecraftVersionBySemanticVersion("1.20-rc.1")));
 		assertNotNull(versionGraphComplete.getMinecraftVersionBySemanticVersion("1.20-rc.1"));
-		assertEquals("1.14.4", versionGraphComplete.filterMapping(MappingFlavour.MOJMAP, new MappingFlavour[0]).getRootVersion().launcherFriendlyVersionName());
-		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.filterMinVersion(versionGraphComplete.getMinecraftVersionByName("1.20")).getRootVersion());
+		assertEquals("1.14.4", versionGraphComplete.filterMapping(MappingFlavour.MOJMAP, new MappingFlavour[0]).getRootVersions().get(0).launcherFriendlyVersionName());
+		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.filterMinVersion(versionGraphComplete.getMinecraftVersionByName("1.20")).getRootVersions().get(0));
 		MinecraftVersionGraph onlyVersionGraph = versionGraphComplete.filterOnlyVersion(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.getMinecraftVersionByName("1.19"));
-		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.19"), onlyVersionGraph.getRootVersion());
+		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.19"), onlyVersionGraph.getRootVersions().get(0));
 		assertEquals(2L, onlyVersionGraph.stream().count());
 		MinecraftVersionGraph excludeVersionGraph = versionGraphComplete.filterExcludeVersion(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.getMinecraftVersionByName("1.19"));
 		assertFalse(excludeVersionGraph.containsVersion(versionGraphComplete.getMinecraftVersionByName("1.19")));

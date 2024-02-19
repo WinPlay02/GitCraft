@@ -120,7 +120,7 @@ public class DatagenStep extends Step {
 
 	@Override
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
-		if (!mcVersion.hasServerCode()) {
+		if (!mcVersion.hasServerCode() || !mcVersion.hasServerJar()) {
 			MiscHelper.panic("Cannot execute datagen, no jar available");
 		}
 		Path artifactsRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
@@ -136,7 +136,7 @@ public class DatagenStep extends Step {
 				(!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
 			return StepResult.UP_TO_DATE;
 		}
-		Path executablePath = mcVersion.serverJar().resolve(artifactsRootPath);
+		Path executablePath = mcVersion.serverDist().serverJar().resolve(artifactsRootPath);
 		Path datagenDirectory = getInternalArtifactPath(mcVersion, mappingFlavour);
 		Files.createDirectories(datagenDirectory);
 		if (GitCraft.config.readableNbt) {

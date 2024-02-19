@@ -4,6 +4,7 @@ import com.github.winplay02.gitcraft.manifest.ManifestProvider;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.io.IOException;
@@ -17,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -106,6 +106,10 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		}
 		long amountRootNodes = this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).count();
 		if (amountRootNodes != 1) {
+			List<OrderedVersion> rootVersions = this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).map(Map.Entry::getKey).toList();
+			if (rootVersions.size() == 2 && rootVersions.get(0).hasClientCode() != rootVersions.get(1).hasClientCode() && rootVersions.get(0).hasServerCode() != rootVersions.get(1).hasServerCode()) {
+				return;
+			}
 			MiscHelper.panic(amountRootNodes < 1 ? "There is no root node. This either means, that the version graph is empty, or that it contains a cycle." : "There are multiple root nodes. A connected git history would not be guaranteed");
 		}
 	}
@@ -123,13 +127,13 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 
 	public static MinecraftVersionGraph createFromMetadata(ManifestSource manifestSource, ManifestProvider<?, ?> provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
-		if(manifestSource != ManifestSource.MOJANG_MINECRAFT_LAUNCHER) {
+		if (manifestSource != ManifestSource.MOJANG_MINECRAFT_LAUNCHER) {
 			graph.repoTags.add(String.format("manifest_%s", manifestSource.toString()));
 		}
-		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersionMeta().values());
-		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(metaVersions.stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());
-		Map<String, OrderedVersion> semverMetaVersions = metaVersions.stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
-		for (OrderedVersion version : metaVersions) {
+		//TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersionMeta().values());
+		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersionMeta().values().stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());
+		Map<String, OrderedVersion> semverMetaVersions = provider.getVersionMeta().values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
+		for (OrderedVersion version : provider.getVersionMeta().values()) {
 			graph.edgesFw.computeIfAbsent(version, value -> new TreeSet<>());
 			List<String> previousVersion = provider.getParentVersion(version);
 			if (previousVersion == null) {
@@ -187,12 +191,14 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		return new MinecraftVersionGraph(this, OrderedVersion::isSnapshotOrPending, "snapshot");
 	}
 
-	public OrderedVersion getRootVersion() {
-		Optional<OrderedVersion> rootVersion = stream().findFirst();
-		if (rootVersion.isEmpty()) {
+	private final LazyValue<List<OrderedVersion>> rootVersions = LazyValue.of(() -> this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).map(Map.Entry::getKey).toList());
+
+	public List<OrderedVersion> getRootVersions() {
+		List<OrderedVersion> rootVersions = this.rootVersions.get();
+		if (rootVersions.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
 		}
-		return rootVersion.get();
+		return rootVersions;
 	}
 
 	public NavigableSet<OrderedVersion> getPreviousNodes(OrderedVersion version) {

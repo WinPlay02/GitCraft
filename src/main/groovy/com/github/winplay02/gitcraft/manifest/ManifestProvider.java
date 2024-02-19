@@ -128,29 +128,31 @@ public abstract class ManifestProvider<T extends ILauncherMeta<M>, M extends ILa
 			this.versionMeta.put(extra_version_object.launcherFriendlyVersionName(), extra_version_object);
 			MiscHelper.println("Applied extra version '%s'", extra_version_object.launcherFriendlyVersionName());
 		}
-		MiscHelper.println("Applying extra version from remote...");
-		Path metaExtraDownloadPaths = GitCraftPaths.MC_VERSION_META_DOWNLOADS.resolve(getInternalName());
-		Files.createDirectories(metaExtraDownloadPaths);
-		for (Artifact metaEntryExtra : this.singleMetaUrls) {
-			Path srcPath = metaEntryExtra.resolve(metaExtraDownloadPaths);
-			metaEntryExtra.fetchArtifact(metaExtraDownloadPaths);
-			// Try ZIP
-			try (FileSystem fs = FileSystems.newFileSystem(srcPath)) {
-				for (Path potentialMetaFile : MiscHelper.listRecursivelyFilteredExtension(fs.getPath("."), ".json")) {
-					OrderedVersion extra_version_object = loadVersionDataExtra(potentialMetaFile, true);
+		if (!this.singleMetaUrls.isEmpty()) {
+			MiscHelper.println("Applying extra version from remote...");
+			Path metaExtraDownloadPaths = GitCraftPaths.MC_VERSION_META_DOWNLOADS.resolve(getInternalName());
+			Files.createDirectories(metaExtraDownloadPaths);
+			for (Artifact metaEntryExtra : this.singleMetaUrls) {
+				Path srcPath = metaEntryExtra.resolve(metaExtraDownloadPaths);
+				metaEntryExtra.fetchArtifact(metaExtraDownloadPaths);
+				// Try ZIP
+				try (FileSystem fs = FileSystems.newFileSystem(srcPath)) {
+					for (Path potentialMetaFile : MiscHelper.listRecursivelyFilteredExtension(fs.getPath("."), ".json")) {
+						OrderedVersion extra_version_object = loadVersionDataExtra(potentialMetaFile, true);
+						this.versionMeta.put(extra_version_object.launcherFriendlyVersionName(), extra_version_object);
+						MiscHelper.println("Applied version '%s'", extra_version_object.launcherFriendlyVersionName());
+					}
+					continue;
+				} catch (IOException | ProviderNotFoundException ignored) {
+				}
+				// Try JSON
+				try {
+					OrderedVersion extra_version_object = loadVersionDataExtra(srcPath, true);
 					this.versionMeta.put(extra_version_object.launcherFriendlyVersionName(), extra_version_object);
 					MiscHelper.println("Applied version '%s'", extra_version_object.launcherFriendlyVersionName());
+				} catch (JsonSyntaxException exception) {
+					MiscHelper.println("Extra version at %s is neither a zip file nor a json file", metaEntryExtra.url());
 				}
-				continue;
-			} catch (IOException | ProviderNotFoundException ignored) {
-			}
-			// Try JSON
-			try {
-				OrderedVersion extra_version_object = loadVersionDataExtra(srcPath, true);
-				this.versionMeta.put(extra_version_object.launcherFriendlyVersionName(), extra_version_object);
-				MiscHelper.println("Applied version '%s'", extra_version_object.launcherFriendlyVersionName());
-			} catch (JsonSyntaxException exception) {
-				MiscHelper.println("Extra version at %s is neither a zip file nor a json file", metaEntryExtra.url());
 			}
 		}
 		writeSemverCache();

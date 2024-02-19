@@ -13,8 +13,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -155,5 +158,25 @@ public class MiscHelper {
 		} catch (IOException | InterruptedException e) {
 			MiscHelper.panicBecause(e, "Could not execute java as subprocess. Make sure, java can be found in the path environment variable or current directory");
 		}
+	}
+
+	public static <Source, T> T mergeEqualOrNull(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
+		List<T> values = sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().toList();
+		if (values.size() > 1) {
+			MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value");
+		}
+		return values.size() == 1 ? values.get(0) : null;
+	}
+
+	public static <Source, T extends Comparable<T>> T mergeMaxOrNull(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
+		return sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().max(Comparator.naturalOrder()).orElse(null);
+	}
+
+	public static <Source, T> List<T> mergeListDistinctValues(Collection<Source> sourceCollection, Function<Source, List<T>> valueProducer) {
+		return sourceCollection.stream().map(valueProducer).flatMap(List::stream).filter(Objects::nonNull).distinct().toList();
+	}
+
+	public static <S, I, T> Function<S, T> chain(Function<S, I> sourceIntermediaryFunction, Function<I, T> intermediaryTargetFunction) {
+		return sourceIntermediaryFunction.andThen(intermediaryTargetFunction);
 	}
 }

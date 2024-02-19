@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -105,24 +104,31 @@ public class CommitStep extends Step {
 	}
 
 	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
-		return (MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.launcherFriendlyVersionName() : GitCraft.config.gitMainlineLinearBranch).replace(" ", "-");
+		return (MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.launcherFriendlyVersionName() : !mcVersion.hasClientCode() ? GitCraft.config.gitOldServerLinearBranch : GitCraft.config.gitMainlineLinearBranch).replace(" ", "-");
+	}
+
+	private void checkoutNewOrphanBranch(RepoWrapper repo, String target_branch) throws GitAPIException {
+		repo.getGit().checkout().setOrphan(true).setName(target_branch).call();
 	}
 
 	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
 		String target_branch;
 		if (repo.getGit().getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
 			NavigableSet<OrderedVersion> prev_version = new TreeSet<>(versionGraph.getPreviousNodes(mcVersion));
-			if (prev_version.isEmpty()) {
-				MiscHelper.panic("HEAD is not empty, but current version does not have any preceding versions");
-			}
 			target_branch = getBranchNameForVersion(mcVersion);
-			checkoutVersionBranch(target_branch, mcVersion, versionGraph, repo);
+			if (versionGraph.getRootVersions().contains(mcVersion)) {
+				if (doesBranchExist(target_branch, repo)) {
+					MiscHelper.panic("HEAD is not empty and the target branch already exists, but the current version is the root version, and should be one initial commit");
+				}
+				checkoutNewOrphanBranch(repo, target_branch);
+			} else if (prev_version.isEmpty()) {
+				MiscHelper.panic("HEAD is not empty, but current version does not have any preceding versions and is not a root version");
+			} else {
+				checkoutVersionBranch(target_branch, mcVersion, versionGraph, repo);
+			}
 			if (findVersionRev(mcVersion, repo)) {
 				MiscHelper.println("Version %s already exists in repo, skipping", mcVersion.launcherFriendlyVersionName());
 				return Optional.empty();
-			}
-			if (mcVersion.equals(versionGraph.getRootVersion())) {
-				MiscHelper.panic("HEAD is not empty, but the current version is the root version, and should be the initial commit");
 			}
 			Optional<RevCommit> tip_commit = StreamSupport.stream(repo.getGit().log().setMaxCount(1).call().spliterator(), false).findFirst();
 			if (tip_commit.isEmpty()) {
@@ -140,12 +146,17 @@ public class CommitStep extends Step {
 			}
 			writeMERGE_HEAD(mergeHeadRevs, repo);
 		} else {
-			if (!mcVersion.equals(versionGraph.getRootVersion())) {
+			if (!versionGraph.getRootVersions().contains(mcVersion)) {
 				MiscHelper.panic("A non-root version is committed as the root commit to the repository");
 			}
 			target_branch = GitCraft.config.gitMainlineLinearBranch;
 		}
 		return Optional.of(target_branch);
+	}
+
+	private boolean doesBranchExist(String target_branch, RepoWrapper repo) throws IOException {
+		Ref target_ref = repo.getGit().getRepository().getRefDatabase().findRef(target_branch);
+		return target_ref != null;
 	}
 
 	private void checkoutVersionBranch(String target_branch, OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {

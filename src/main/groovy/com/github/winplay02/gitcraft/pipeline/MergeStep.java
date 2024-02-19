@@ -45,7 +45,9 @@ public class MergeStep extends Step {
 
 	@Override
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException {
-		// TODO do not run for (ancient) versions, where this does not make sense
+		if (!mcVersion.hasClientCode() || !mcVersion.hasServerJar()) {
+			return StepResult.NOT_RUN;
+		}
 		Path mergedPath = getInternalArtifactPath(mcVersion, mappingFlavour);
 		if (Files.exists(mergedPath)) {
 			return StepResult.UP_TO_DATE;
@@ -57,7 +59,7 @@ public class MergeStep extends Step {
 		}
 
 		Path client = mcVersion.clientJar().resolve(artifactRootPath);
-		Path server2merge = mcVersion.serverJar().resolve(artifactRootPath);
+		Path server2merge = mcVersion.serverDist().serverJar().resolve(artifactRootPath);
 		BundleMetadata sbm = BundleMetadata.fromJar(server2merge);
 		if (sbm != null) {
 			Path minecraftExtractedServerJar = GitCraftPaths.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName()).resolve("extracted-server.jar");

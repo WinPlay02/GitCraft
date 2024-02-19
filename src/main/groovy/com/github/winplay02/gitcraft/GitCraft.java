@@ -24,8 +24,10 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,7 +73,18 @@ public class GitCraft {
 		}
 		MiscHelper.checkFabricLoaderVersion();
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
+		// Maven startup
+		RemoteHelper.loadMavenCache();
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			try {
+				RemoteHelper.saveMavenCache();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}, "Shutdown-Hook-Maven-Cache-Saver"));
+		// Create Graph
 		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.config.manifestSource, GitCraft.config.manifestSource.getManifestSourceImpl());
+		RemoteHelper.saveMavenCache();
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);

@@ -44,6 +44,9 @@ public class FetchAssetsStep extends Step {
 
 	@Override
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
+		if (mcVersion.assetsIndex() == null) {
+			return StepResult.NOT_RUN;
+		}
 		Path assetsIndexPath = mcVersion.assetsIndex().resolve(this.rootPathAssetsIndex);
 		StepResult assetsIndexResult = mcVersion.assetsIndex().fetchArtifact(this.rootPathAssetsIndex, "assets index");
 		AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMeta.class));

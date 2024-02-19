@@ -40,12 +40,22 @@ public class FetchArtifactsStep extends Step {
 		Path rootPath = getInternalArtifactPath(mcVersion, mappingFlavour);
 		StepResult clientJar = null;
 		StepResult serverJar = null;
+		StepResult serverWindows = null;
+		StepResult serverZip = null;
 		if (mcVersion.hasClientCode()) {
 			clientJar = mcVersion.clientJar().fetchArtifact(rootPath, "client jar");
 		}
 		if (mcVersion.hasServerCode()) {
-			serverJar = mcVersion.serverJar().fetchArtifact(rootPath, "server jar");
+			if (mcVersion.hasServerJar()) {
+				serverJar = mcVersion.serverDist().serverJar().fetchArtifact(rootPath, "server jar");
+			}
+			if (mcVersion.hasServerWindows()) {
+				serverWindows = mcVersion.serverDist().windowsServer().fetchArtifact(rootPath, "windows server");
+			}
+			if (mcVersion.hasServerZip()) {
+				serverZip = mcVersion.serverDist().serverZip().fetchArtifact(rootPath, "server zip");
+			}
 		}
-		return StepResult.merge(clientJar, serverJar);
+		return StepResult.merge(clientJar, serverJar, serverWindows, serverZip);
 	}
 }

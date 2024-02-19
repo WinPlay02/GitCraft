@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public class ResetStep extends Step {
 
 	@Override
 	public boolean preconditionsShouldRun(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
-		return GitCraft.config.refreshDecompilation && mcVersion.compareTo(GitCraft.resetVersionGraph.getRootVersion()) >= 0;
+		return GitCraft.config.refreshDecompilation && GitCraft.resetVersionGraph.getRootVersions().stream().map(mcVersion::compareTo).max(Comparator.naturalOrder()).orElseThrow() >= 0;
 	}
 
 	@Override
@@ -82,13 +83,13 @@ public class ResetStep extends Step {
 				}
 			}
 		}
-		if (mcVersion.compareTo(versionGraph.getRootVersion()) == 0) { // if root node is about to be refreshed, delete main branch and HEAD
+		if (versionGraph.getRootVersions().contains(mcVersion)) { // if root node is about to be refreshed, delete main branch and HEAD
 			deleteRef(repo, Constants.HEAD);
 			deleteRef(repo, GitCraft.config.gitMainlineLinearBranch);
 			createSymbolicHEAD(Constants.R_HEADS + GitCraft.config.gitMainlineLinearBranch, repo);
 			return StepResult.SUCCESS;
 		}
-		if (mcVersion.compareTo(GitCraft.resetVersionGraph.getRootVersion()) == 0) { // Min-Version reached
+		if (GitCraft.resetVersionGraph.getRootVersions().contains(mcVersion)) { // Min-Version reached
 			NavigableSet<OrderedVersion> previousVersions = versionGraph.getPreviousNodes(mcVersion);
 			if (previousVersions.isEmpty() || previousVersions.stream().allMatch(MinecraftVersionGraph::isVersionNonLinearSnapshot)) {
 				MiscHelper.panic("Previous mainline version for '%s' does not exist, but it is not a root node. This should never happen", mcVersion);

@@ -43,6 +43,7 @@ public class GitCraftConfig {
 	public String gitUser = "Mojang";
 	public String gitMail = "gitcraft@decompiled.mc";
 	public String gitMainlineLinearBranch = "master";
+	public String gitOldServerLinearBranch = "classic-alpha-server";
 	public boolean createVersionBranches = false;
 
 	/// Refresh settings

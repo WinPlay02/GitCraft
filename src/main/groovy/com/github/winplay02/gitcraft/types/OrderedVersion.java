@@ -20,7 +20,7 @@ import java.util.Set;
  * @param semanticVersion Semantic Version. This field is used to order versions.
  * @param clientJar       Client JAR Artifact, if exists
  * @param clientMappings  Client Mappings Artifact (mojmaps), if exists
- * @param serverJar       Server JAR Artifact, if exists
+ * @param serverDist      Server Distribution, if any exists (e.g. JAR Artifact, Windows Server or ZIP)
  * @param serverMappings  Server Mappings Artifact (mojmaps), if exists
  * @param libraries       Libraries needed for this version
  * @param assetsIndex     Assets Index, containing assets for this version
@@ -30,7 +30,7 @@ public record OrderedVersion(
 		String semanticVersion,
 		Artifact clientJar,
 		Artifact clientMappings,
-		Artifact serverJar,
+		ServerDistribution serverDist,
 		Artifact serverMappings,
 		Set<Artifact> libraries,
 		Artifact assetsIndex
@@ -50,6 +50,20 @@ public record OrderedVersion(
 		return null;
 	}
 
+	public static Artifact getServerWindowsFromMeta(VersionMeta versionMeta) {
+		if (versionMeta.downloads().windows_server() != null) {
+			return Artifact.fromURL(versionMeta.downloads().windows_server().url(), versionMeta.downloads().windows_server().sha1());
+		}
+		return null;
+	}
+
+	public static Artifact getServerZipFromMeta(VersionMeta versionMeta) {
+		if (versionMeta.downloads().server_zip() != null) {
+			return Artifact.fromURL(versionMeta.downloads().server_zip().url(), versionMeta.downloads().server_zip().sha1());
+		}
+		return null;
+	}
+
 	public static OrderedVersion from(VersionMeta versionMeta, String semanticVersion) {
 		Artifact clientJar = getClientJarFromMeta(versionMeta);
 		Artifact clientMappings = null;
@@ -57,6 +71,8 @@ public record OrderedVersion(
 			clientMappings = Artifact.fromURL(versionMeta.downloads().client_mappings().url(), versionMeta.downloads().client_mappings().sha1());
 		}
 		Artifact serverJar = getServerJarFromMeta(versionMeta);
+		Artifact serverWindows = getServerWindowsFromMeta(versionMeta);
+		Artifact serverZip = getServerZipFromMeta(versionMeta);
 		Artifact serverMappings = null;
 		if (versionMeta.downloads().server_mappings() != null) {
 			serverMappings = Artifact.fromURL(versionMeta.downloads().server_mappings().url(), versionMeta.downloads().server_mappings().sha1());
@@ -64,14 +80,14 @@ public record OrderedVersion(
 		// Ignores natives, not needed as we don't have a runtime
 		Set<Artifact> libs = new HashSet<>();
 		for (LibraryMeta library : versionMeta.libraries()) {
-			ArtifactMeta artifactMeta = library.downloads().artifact();
+			ArtifactMeta artifactMeta = library.getArtifactDownload();
 			if (artifactMeta != null) {
 				libs.add(Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1()));
 			}
 		}
 		String assetsIndexId = versionMeta.id() + "_" + versionMeta.assets();
-		Artifact assetsIndex = new Artifact(versionMeta.assetIndex().url(), assetsIndexId, versionMeta.assetIndex().sha1());
-		return new OrderedVersion(versionMeta, semanticVersion, clientJar, clientMappings, serverJar, serverMappings, libs, assetsIndex);
+		Artifact assetsIndex = versionMeta.assetIndex() != null ? new Artifact(versionMeta.assetIndex().url(), assetsIndexId, versionMeta.assetIndex().sha1()) : null;
+		return new OrderedVersion(versionMeta, semanticVersion, clientJar, clientMappings, new ServerDistribution(serverJar, serverWindows, serverZip), serverMappings, libs, assetsIndex);
 	}
 
 	public String launcherFriendlyVersionName() {
@@ -99,7 +115,19 @@ public record OrderedVersion(
 	}
 
 	public boolean hasServerCode() {
-		return this.serverJar() != null;
+		return this.serverDist().hasServerCode();
+	}
+
+	public boolean hasServerJar() {
+		return this.serverDist().serverJar() != null;
+	}
+
+	public boolean hasServerWindows() {
+		return this.serverDist().windowsServer() != null;
+	}
+
+	public boolean hasServerZip() {
+		return this.serverDist().serverZip() != null;
 	}
 
 	public boolean hasClientMojMaps() {

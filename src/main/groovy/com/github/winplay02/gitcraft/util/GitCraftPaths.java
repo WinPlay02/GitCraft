@@ -26,6 +26,7 @@ public class GitCraftPaths {
 	public static Path SOURCE_EXTRA_VERSIONS = null;
 	protected static Path LEGACY_METADATA_STORE = null;
 	protected static Path GITCRAFT_VERSION_INFO = null;
+	protected static Path MAVEN_CACHE = null;
 
 	public static Path lookupCurrentWorkingDirectory() throws IOException {
 		return Paths.get(new File(".").getCanonicalPath());
@@ -50,6 +51,7 @@ public class GitCraftPaths {
 		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
 		LEGACY_METADATA_STORE = MAIN_ARTIFACT_STORE.resolve("metadata.json");
 		GITCRAFT_VERSION_INFO = MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
+		MAVEN_CACHE = MAIN_ARTIFACT_STORE.resolve("maven-cache.json");
 		// Warning for breaking changes (the only breaking changes for now)
 		Files.createDirectories(MAIN_ARTIFACT_STORE);
 		upgradeExisting();
