@@ -28,6 +28,17 @@ public abstract class Mapping {
 		return false;
 	}
 
+	/**
+	 * Whether this mapping implementation requires mapping files.
+	 * This should be overridden if no mapping files are needed.
+	 * If this is the case, a custom remapping implementation should be provided by overriding {@link #executeCustomRemappingLogic(Path, OrderedVersion)}.
+	 *
+	 * @return True by default as mapping files are required, otherwise false
+	 */
+	public boolean isMappingFileRequired() {
+		return true;
+	}
+
 	public String getSourceNS() {
 		return MappingsNamespace.OFFICIAL.toString();
 	}
@@ -74,9 +85,23 @@ public abstract class Mapping {
 			MiscHelper.panic("Tried to use %s-mappings for version %s. These mappings do not exist for this version.", this, mcVersion.launcherFriendlyVersionName());
 		}
 		Optional<Path> mappingsPath = getMappingsPath(mcVersion);
+		if (mappingsPath.isEmpty() && !this.isMappingFileRequired()) {
+			return null;
+		}
 		if (mappingsPath.isEmpty() || !Files.exists(mappingsPath.orElseThrow())) {
 			MiscHelper.panic("An error occurred while getting mapping information for %s (version %s)", this, mcVersion.launcherFriendlyVersionName());
 		}
 		return TinyUtils.createTinyMappingProvider(mappingsPath.get(), getSourceNS(), getDestinationNS());
+	}
+
+	/**
+	 * A custom remapping logic, that is executed if no mapping file exists.
+	 *
+	 * @param previousFile Either a merged file (if exists) or an unmerged jar (either client or server side).
+	 * @param mcVersion    Version that the provided jar belongs to.
+	 * @return Path that contains the remapped jar.
+	 */
+	public Path executeCustomRemappingLogic(Path previousFile, OrderedVersion mcVersion) {
+		return null;
 	}
 }

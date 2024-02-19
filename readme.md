@@ -56,7 +56,8 @@ Options:
                              If the primary mapping fails, these mappings are
                                tried (in given order). By default none is tried
                                as a fallback. Possible values are: mojmap,
-                               fabric_intermediary, yarn, mojmap_parchment
+                               fabric_intermediary, yarn, mojmap_parchment,
+                               identity_unmapped
   -h, --help                 Displays this help screen
       --manifest-source=<mapping>
                              Specifies the manifest source used to fetch the
@@ -68,7 +69,8 @@ Options:
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
-                               fabric_intermediary, yarn, mojmap_parchment
+                               fabric_intermediary, yarn, mojmap_parchment,
+                               identity_unmapped
       --max-version=<version>
                              Specify the max. version to decompile. Every
                                version before (and including) the specified

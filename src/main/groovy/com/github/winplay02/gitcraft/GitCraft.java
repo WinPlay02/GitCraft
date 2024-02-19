@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft;
 
 import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingManifest;
 import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
+import com.github.winplay02.gitcraft.mappings.IdentityMappings;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
@@ -34,10 +35,11 @@ public class GitCraft {
 	public static final LazyValue<MinecraftLauncherManifest> MANIFEST_SOURCE_MOJANG_MINECRAFT_LAUNCHER = LazyValue.of(MinecraftLauncherManifest::new);
 	public static final LazyValue<SkyrisingManifest> MANIFEST_SKYRISING = LazyValue.of(SkyrisingManifest::new);
 	/// Every Mapping
-	public static final MojangMappings MOJANG_MAPPINGS = new MojangMappings();
-	public static final FabricIntermediaryMappings FABRIC_INTERMEDIARY_MAPPINGS = new FabricIntermediaryMappings();
-	public static final Mapping YARN_MAPPINGS = new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS);
-	public static final Mapping MOJANG_PARCHMENT_MAPPINGS = new ParchmentMappings(MOJANG_MAPPINGS);
+	public static final LazyValue<MojangMappings> MOJANG_MAPPINGS = LazyValue.of(MojangMappings::new);
+	public static final LazyValue<FabricIntermediaryMappings> FABRIC_INTERMEDIARY_MAPPINGS = LazyValue.of(FabricIntermediaryMappings::new);
+	public static final LazyValue<Mapping> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
+	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
+	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
 
 	/// Every Step
 	public static Step STEP_RESET = null;

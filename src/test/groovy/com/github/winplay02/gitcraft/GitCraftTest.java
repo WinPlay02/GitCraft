@@ -78,20 +78,20 @@ public class GitCraftTest {
 		metadataBootstrap = new MinecraftLauncherManifest();
 		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
-		Path mappingsPath = GitCraft.MOJANG_MAPPINGS.getMappingsPathInternal(versionGraph.getMinecraftVersionByName("1.20"));
+		Path mappingsPath = GitCraft.MOJANG_MAPPINGS.get().getMappingsPathInternal(versionGraph.getMinecraftVersionByName("1.20"));
 		Files.deleteIfExists(mappingsPath);
 		assertFalse(Files.exists(mappingsPath));
-		assertTrue(GitCraft.MOJANG_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionByName("1.14.4")));
-		assertFalse(GitCraft.MOJANG_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionByName("1.12")));
-		assertEquals(Step.StepResult.SUCCESS, GitCraft.MOJANG_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
+		assertTrue(GitCraft.MOJANG_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionByName("1.14.4")));
+		assertFalse(GitCraft.MOJANG_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionByName("1.12")));
+		assertEquals(Step.StepResult.SUCCESS, GitCraft.MOJANG_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.exists(mappingsPath));
-		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.MOJANG_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
+		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.MOJANG_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.size(mappingsPath) > 0);
-		assertFalse(GitCraft.MOJANG_MAPPINGS.supportsComments());
-		assertFalse(GitCraft.MOJANG_MAPPINGS.supportsConstantUnpicking());
-		assertNotNull(GitCraft.MOJANG_MAPPINGS.getMappingsProvider(versionGraph.getMinecraftVersionByName("1.20")));
-		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_MAPPINGS.getSourceNS());
-		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_MAPPINGS.getDestinationNS());
+		assertFalse(GitCraft.MOJANG_MAPPINGS.get().supportsComments());
+		assertFalse(GitCraft.MOJANG_MAPPINGS.get().supportsConstantUnpicking());
+		assertNotNull(GitCraft.MOJANG_MAPPINGS.get().getMappingsProvider(versionGraph.getMinecraftVersionByName("1.20")));
+		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_MAPPINGS.get().getSourceNS());
+		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_MAPPINGS.get().getDestinationNS());
 	}
 
 	@Test
@@ -101,19 +101,19 @@ public class GitCraftTest {
 		metadataBootstrap = new MinecraftLauncherManifest();
 		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
-		Path mappingsPath = GitCraft.MOJANG_PARCHMENT_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.20.1")).orElse(null);
+		Path mappingsPath = GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.20.1")).orElse(null);
 		assertNotNull(mappingsPath);
 		assertFalse(Files.exists(mappingsPath));
-		assertTrue(GitCraft.MOJANG_PARCHMENT_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionByName("1.16.5")));
-		assertFalse(GitCraft.MOJANG_PARCHMENT_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionByName("1.14.4")));
-		assertEquals(Step.StepResult.SUCCESS, GitCraft.MOJANG_PARCHMENT_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20.1")));
+		assertTrue(GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionByName("1.16.5")));
+		assertFalse(GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionByName("1.14.4")));
+		assertEquals(Step.StepResult.SUCCESS, GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20.1")));
 		assertTrue(Files.exists(mappingsPath));
-		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.MOJANG_PARCHMENT_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20.1")));
+		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20.1")));
 		assertTrue(Files.size(mappingsPath) > 0);
-		assertTrue(GitCraft.MOJANG_PARCHMENT_MAPPINGS.supportsComments());
-		assertFalse(GitCraft.MOJANG_PARCHMENT_MAPPINGS.supportsConstantUnpicking());
-		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_PARCHMENT_MAPPINGS.getSourceNS());
-		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_PARCHMENT_MAPPINGS.getDestinationNS());
+		assertTrue(GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().supportsComments());
+		assertFalse(GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().supportsConstantUnpicking());
+		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().getSourceNS());
+		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().getDestinationNS());
 	}
 
 	@Test
@@ -123,19 +123,19 @@ public class GitCraftTest {
 		metadataBootstrap = new MinecraftLauncherManifest();
 		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
-		Path mappingsPath = GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.20")).orElse(null);
+		Path mappingsPath = GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.20")).orElse(null);
 		assertNotNull(mappingsPath);
 		assertFalse(Files.exists(mappingsPath));
-		assertTrue(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.43.b")));
-		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.43.a")));
-		assertEquals(Step.StepResult.SUCCESS, GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
+		assertTrue(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.43.b")));
+		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.43.a")));
+		assertEquals(Step.StepResult.SUCCESS, GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.exists(mappingsPath));
-		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
+		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.size(mappingsPath) > 0);
-		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.supportsComments());
-		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.supportsConstantUnpicking());
-		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.getSourceNS());
-		assertEquals(MappingsNamespace.INTERMEDIARY.toString(), GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.getDestinationNS());
+		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().supportsComments());
+		assertFalse(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().supportsConstantUnpicking());
+		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().getSourceNS());
+		assertEquals(MappingsNamespace.INTERMEDIARY.toString(), GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().getDestinationNS());
 	}
 
 	@Test
@@ -145,102 +145,102 @@ public class GitCraftTest {
 		metadataBootstrap = new MinecraftLauncherManifest();
 		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
-		Path mappingsPath = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.20")).orElse(null);
+		Path mappingsPath = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.20")).orElse(null);
 		assertNotNull(mappingsPath);
 		assertFalse(Files.exists(mappingsPath));
-		assertTrue(GitCraft.YARN_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.49.a")));
-		assertFalse(GitCraft.YARN_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.48.b")));
-		assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
+		assertTrue(GitCraft.YARN_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.49.a")));
+		assertFalse(GitCraft.YARN_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.48.b")));
+		assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.exists(mappingsPath));
-		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
+		assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.20")));
 		assertTrue(Files.size(mappingsPath) > 0);
 		// Broken Versions
-		assertFalse(GitCraft.YARN_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.13.a")));
-		assertFalse(GitCraft.YARN_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.13.b")));
-		assertFalse(GitCraft.YARN_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.14.a")));
-		assertFalse(GitCraft.YARN_MAPPINGS.doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.14.b")));
+		assertFalse(GitCraft.YARN_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.13.a")));
+		assertFalse(GitCraft.YARN_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.13.b")));
+		assertFalse(GitCraft.YARN_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.14.a")));
+		assertFalse(GitCraft.YARN_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.19.14.b")));
 		//
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.14.2")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.14.2")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.14.2")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.14.2")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.14.2")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.14.2")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.14.3")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.14.3")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.14.3")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.14.3")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.14.3")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.14.3")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.14.4")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.14.4")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.14.4")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.14.4")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.14.4")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.14.4")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("1.19")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.19")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.19")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.19")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("1.19")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("1.19")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("19w04b")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("19w04b")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("19w04b")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("19w04b")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("19w04b")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("19w04b")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("19w08a")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("19w08a")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("19w08a")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("19w08a")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("19w08a")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("19w08a")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionByName("19w12b")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("19w12b")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("19w12b")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("19w12b")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionByName("19w12b")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionByName("19w12b")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6")));
 		}
 		{
-			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")).orElse(null);
+			Path mappingsPathTest = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")).orElse(null);
 			assertNotNull(mappingsPathTest);
-			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")));
+			assertEquals(Step.StepResult.SUCCESS, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")));
 			assertTrue(Files.exists(mappingsPathTest));
-			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")));
+			assertEquals(Step.StepResult.UP_TO_DATE, GitCraft.YARN_MAPPINGS.get().prepareMappings(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2")));
 		}
-		assertTrue(GitCraft.YARN_MAPPINGS.supportsComments());
-		assertTrue(GitCraft.YARN_MAPPINGS.supportsConstantUnpicking());
-		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.YARN_MAPPINGS.getSourceNS());
-		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.YARN_MAPPINGS.getDestinationNS());
+		assertTrue(GitCraft.YARN_MAPPINGS.get().supportsComments());
+		assertTrue(GitCraft.YARN_MAPPINGS.get().supportsConstantUnpicking());
+		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.YARN_MAPPINGS.get().getSourceNS());
+		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.YARN_MAPPINGS.get().getDestinationNS());
 	}
 
 	protected static RevCommit findCommit(RepoWrapper repoWrapper, OrderedVersion mcVersion) throws IOException, GitAPIException {
