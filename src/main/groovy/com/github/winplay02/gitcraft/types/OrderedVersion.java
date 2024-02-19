@@ -8,6 +8,7 @@ import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -117,7 +118,7 @@ public record OrderedVersion(
 		return this.versionMeta().mainClass();
 	}
 
-	public String timestamp() {
+	public ZonedDateTime timestamp() {
 		return this.versionMeta().time();
 	}
 

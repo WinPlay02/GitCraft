@@ -289,8 +289,8 @@ public class CommitStep extends Step {
 		repo.getGit().add().addFilepattern(".").setRenormalize(false).setUpdate(true).call();
 		// Stage new files
 		repo.getGit().add().addFilepattern(".").setRenormalize(false).call();
-		Date version_date = new Date(OffsetDateTime.parse(mcVersion.timestamp()).toInstant().toEpochMilli());
-		PersonIdent author = new PersonIdent(GitCraft.config.gitUser, GitCraft.config.gitMail, version_date, TimeZone.getTimeZone("UTC"));
+		Date version_date = new Date(mcVersion.timestamp().toInstant().toEpochMilli());
+		PersonIdent author = new PersonIdent(GitCraft.config.gitUser, GitCraft.config.gitMail, version_date, TimeZone.getTimeZone(mcVersion.timestamp().getZone()));
 		repo.getGit().commit().setMessage(mcVersion.toCommitMessage()).setAuthor(author).setCommitter(author).setSign(false).call();
 	}
 

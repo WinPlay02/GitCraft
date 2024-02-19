@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.manifest.skyrising;
 import com.github.winplay02.gitcraft.meta.ILauncherMeta;
 import com.github.winplay02.gitcraft.meta.ILauncherMetaVersionEntry;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 
 public record SkyrisingMeta(SkyrisingLatestInformation latest,
@@ -12,7 +13,8 @@ public record SkyrisingMeta(SkyrisingLatestInformation latest,
 											 String old_beta, String release, String snapshot, String pending) {
 	}
 
-	public record SkyrisingVersionEntry(String id, String type, String url, String time, String releaseTime,
+	public record SkyrisingVersionEntry(String id, String type, String url, ZonedDateTime time,
+										ZonedDateTime releaseTime,
 										String details) implements ILauncherMetaVersionEntry {
 
 	}
