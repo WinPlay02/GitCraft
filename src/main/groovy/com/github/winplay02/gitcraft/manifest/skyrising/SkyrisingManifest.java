@@ -9,6 +9,8 @@ import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -56,7 +58,9 @@ public class SkyrisingManifest extends ManifestProvider<SkyrisingMeta, Skyrising
 
 	private SkyrisingVersionDetails getVersionDetailsForVersion(SkyrisingMeta.SkyrisingVersionEntry launcherMetaEntry) throws IOException {
 		Path detailsPath = getPathOfVersionDetailsMeta(launcherMetaEntry);
-		RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub("skyrising/mc-versions", "main", String.format("data/version/%s", launcherMetaEntry.id()), new RemoteHelper.LocalFileInfo(detailsPath, null, "skyrising details file", launcherMetaEntry.id()));
+		// API rate limit may be a problem here for access with checksum verification
+		// RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub("skyrising/mc-versions", "main", String.format("data/version/%s.json", launcherMetaEntry.id()), new RemoteHelper.LocalFileInfo(detailsPath, null, "skyrising details file", launcherMetaEntry.id()));
+		RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetry(launcherMetaEntry.details(), new RemoteHelper.LocalFileInfo(detailsPath, null, "skyrising details file", launcherMetaEntry.id()), null);
 		SkyrisingVersionDetails versionDetails = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(detailsPath), SkyrisingVersionDetails.class);
 		this.versionDetailsMap.put(launcherMetaEntry.id(), versionDetails);
 		return versionDetails;
@@ -67,8 +71,15 @@ public class SkyrisingManifest extends ManifestProvider<SkyrisingMeta, Skyrising
 		SkyrisingVersionDetails versionDetails = getVersionDetailsForVersion(launcherMetaEntry);
 		SkyrisingVersionDetails.SkyrisingVersionDetailsManifest oldestManifest = versionDetails.getOldestManifest();
 		Path versionManifestPath = getPathOfVersionMeta(versionDetails, oldestManifest);
-		RemoteHelper.downloadToFileWithChecksumIfNotExists(oldestManifest.url(), new RemoteHelper.LocalFileInfo(versionManifestPath, oldestManifest.hash(), "version meta", versionDetails.id()), RemoteHelper.SHA1);
+		URI targetURI = null;
+		try {
+			targetURI = new URI("https://skyrising.github.io/mc-versions/manifest/").resolve(oldestManifest.url());
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+		RemoteHelper.downloadToFileWithChecksumIfNotExists(targetURI.toString(), new RemoteHelper.LocalFileInfo(versionManifestPath, oldestManifest.hash(), "version meta", versionDetails.id()), RemoteHelper.SHA1);
 		VersionMeta meta = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(versionManifestPath), VersionMeta.class);
+		this.versionDetailsMap.put(meta.id(), versionDetails);
 		String semver = lookupSemanticVersion(meta);
 		return OrderedVersion.from(meta, semver);
 	}

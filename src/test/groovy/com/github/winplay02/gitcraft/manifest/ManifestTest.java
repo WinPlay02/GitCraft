@@ -43,7 +43,7 @@ public class ManifestTest {
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), metadataBootstrap.getSemverCachePath(), StandardCopyOption.REPLACE_EXISTING);
 		metadataBootstrap = new MinecraftLauncherManifest();
 		metadataBootstrap.loadSemverCache();
-		MinecraftVersionGraph versionGraphComplete = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
+		MinecraftVersionGraph versionGraphComplete = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
 		assertNotNull(versionGraphComplete);
 	}
 }

@@ -71,7 +71,7 @@ public class GitCraft {
 		}
 		MiscHelper.checkFabricLoaderVersion();
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
-		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.config.manifestSource.getManifestSourceImpl());
+		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.config.manifestSource, GitCraft.config.manifestSource.getManifestSourceImpl());
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);

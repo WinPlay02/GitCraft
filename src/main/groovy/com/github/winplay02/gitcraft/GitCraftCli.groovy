@@ -107,6 +107,7 @@ class GitCraftCli {
 			String[] subjectVersion = cli_args_parsed.'exclude-versions';
 			config.excludedVersion = subjectVersion;
 		}
+		config.manifestSource = cli_args_parsed.'manifest-source';
 		config.usedMapping = cli_args_parsed.'mappings';
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
 			MappingFlavour[] fallbackMappings = cli_args_parsed.'fallback-mappingss';
