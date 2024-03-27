@@ -89,6 +89,12 @@ public class CommitStep extends Step {
 			MiscHelper.println("Created branch for linear version %s", mcVersion.launcherFriendlyVersionName());
 		}
 
+		// Create branch for stable linear version
+		if (GitCraft.config.createStableVersionBranches && !GitCraft.config.createVersionBranches && !mcVersion.isSnapshotOrPending()) {
+			MiscHelper.executeTimedStep("Creating branch for stable linear version...", () -> createBranchFromCurrentCommit(mcVersion, repo));
+			MiscHelper.println("Created branch for stable linear version %s", mcVersion.launcherFriendlyVersionName());
+		}
+
 		return StepResult.SUCCESS;
 	}
 
