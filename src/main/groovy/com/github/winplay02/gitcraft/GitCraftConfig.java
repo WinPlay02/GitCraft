@@ -42,6 +42,7 @@ public class GitCraftConfig {
 	public String gitMail = "gitcraft@decompiled.mc";
 	public String gitMainlineLinearBranch = "master";
     public boolean createVersionBranches = false;
+    public boolean createStableVersionBranches = false;
 
 	/// Refresh settings
 	public boolean refreshDecompilation = false;
@@ -168,6 +169,9 @@ public class GitCraftConfig {
 		}
         if (createVersionBranches) {
             MiscHelper.println("A seperate branch will be created for each version.");
+        }
+        else if (createStableVersionBranches) {
+            MiscHelper.println("A seperate branch will be created for each stable version.");
         }
 		if (sortJsonObjects) {
 			MiscHelper.println("JSON files (JSON objects) will be sorted in natural order.");
