@@ -62,7 +62,9 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 						// 1.19 Deep Dark Experimental Snapshot 1
 						Artifact.fromURL("https://piston-data.mojang.com/v1/objects/b1e589c1d6ed73519797214bc796e53f5429ac46/1_19_deep_dark_experimental_snapshot-1.zip", "b1e589c1d6ed73519797214bc796e53f5429ac46"),
 						// Before Reupload of 23w13a_or_b: 23w13a_or_b_original
-						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/23w13a_or_b_original.json", "469f0d1416f2b25a8829d7991c11be3411813bf1")
+						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/23w13a_or_b_original.json", "469f0d1416f2b25a8829d7991c11be3411813bf1"),
+						// Before Reupload of 24w14potato: 24w14potato_original
+						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/24w14potato_original.json", "4e54c25e6eafdf0a2f1f6e86fb1b8c1d239dd8d5")
 				}
 		);
 	}
@@ -255,6 +257,12 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 			}
 			case "1.20-alpha.23.13.ab.original" -> {
 				return List.of("1.20-alpha.23.13.a");
+			}
+			case "1.20.5-alpha.24.12.potato" -> {
+				return List.of("1.20.5-alpha.24.12.potato.original", "1.20.5-alpha.24.12.a");
+			}
+			case "1.20.5-alpha.24.12.potato.original" -> {
+				return List.of("1.20.5-alpha.24.12.a");
 			}
 			default -> {
 				return null;
