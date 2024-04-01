@@ -10,14 +10,18 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
+import com.github.winplay02.gitcraft.util.SerializationHelper;
+import com.google.gson.JsonSyntaxException;
 import groovy.lang.Tuple2;
 import net.fabricmc.loom.util.FileSystemUtil;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +31,7 @@ import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -67,9 +72,23 @@ public class CommitStep extends Step {
 			// External Assets
 			copyExternalAssets(pipelineCache, mcVersion, repo);
 		});
+		// Optionally sort copied JSON files
+		if (GitCraft.config.sortJsonObjects) {
+			MiscHelper.executeTimedStep("Sorting JSON files...", () -> {
+				// Sort them
+				sortJSONFiles(repo);
+			});
+		}
 		// Commit
 		MiscHelper.executeTimedStep("Committing files to repo...", () -> createCommit(mcVersion, repo));
 		MiscHelper.println("Committed %s to the repository! (Target Branch is %s)", mcVersion.launcherFriendlyVersionName(), target_branch.orElseThrow() + (MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : ""));
+
+		// Create branch for linear version
+		if (GitCraft.config.createVersionBranches && !MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion)) {
+			MiscHelper.executeTimedStep("Creating branch for linear version...", () -> createBranchFromCurrentCommit(mcVersion, repo));
+			MiscHelper.println("Created branch for linear version %s", mcVersion.launcherFriendlyVersionName());
+		}
+
 		return StepResult.SUCCESS;
 	}
 
@@ -227,6 +246,17 @@ public class CommitStep extends Step {
 		}
 	}
 
+	private void sortJSONFiles(final RepoWrapper repo) throws IOException {
+		final List<Path> jsonFiles = MiscHelper.listRecursivelyFilteredExtension(repo.getRootPath(), ".json");
+		for (final Path jsonFile : jsonFiles) {
+			try {
+				SerializationHelper.sortJSONFile(jsonFile);
+			} catch (final JsonSyntaxException e) {
+				MiscHelper.println("WARNING: File %s cannot be sorted, skipping...", jsonFile);
+			}
+		}
+	}
+
 	private void copyExternalAssets(PipelineCache pipelineCache, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
 		if (GitCraft.config.loadAssets && GitCraft.config.loadAssetsExtern) {
 			AssetsIndex assetsIndex = pipelineCache.getAssetsIndex();
@@ -236,7 +266,7 @@ public class CommitStep extends Step {
 			}
 			// Copy Assets
 			Path targetRoot = repo.getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
-			if (GitCraft.config.useHardlinks && GitCraftPaths.ASSETS_OBJECTS.getFileSystem().equals(targetRoot.getFileSystem())) {
+			if (GitCraft.config.useHardlinks && GitCraftPaths.ASSETS_OBJECTS.getFileSystem().equals(targetRoot.getFileSystem()) && !GitCraft.config.sortJsonObjects) {
 				for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
@@ -262,5 +292,14 @@ public class CommitStep extends Step {
 		Date version_date = new Date(OffsetDateTime.parse(mcVersion.timestamp()).toInstant().toEpochMilli());
 		PersonIdent author = new PersonIdent(GitCraft.config.gitUser, GitCraft.config.gitMail, version_date, TimeZone.getTimeZone("UTC"));
 		repo.getGit().commit().setMessage(mcVersion.toCommitMessage()).setAuthor(author).setCommitter(author).setSign(false).call();
+	}
+
+	private void createBranchFromCurrentCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
+		String branchName = mcVersion.launcherFriendlyVersionName().replace(" ", "-");
+		try (RevWalk walk = new RevWalk(repo.getGit().getRepository())) {
+			ObjectId commitId = repo.getGit().getRepository().resolve(Constants.HEAD);
+			RevCommit commit = walk.parseCommit(commitId);
+			repo.getGit().branchCreate().setName(branchName).setStartPoint(commit).call();
+		}
 	}
 }
