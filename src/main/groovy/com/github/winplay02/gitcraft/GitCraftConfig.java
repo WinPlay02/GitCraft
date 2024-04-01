@@ -85,7 +85,7 @@ public class GitCraftConfig {
 
 	public static List<String> yarnMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
 
-	public static List<String> yarnMissingReuploadedVersions = List.of("23w13a_or_b_original");
+	public static List<String> yarnMissingReuploadedVersions = List.of("23w13a_or_b_original", "24w14potato_original");
 
 	// Maps (version, [broken] build) -> [working] build or -1
 	public static Map<Tuple2<String, Integer>, Integer> yarnBrokenBuildOverride = Map.of(
@@ -111,14 +111,16 @@ public class GitCraftConfig {
 	);
 
 	// There are no releases for these parchment versions (yet)
-	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.3");
+	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.5");
 
 	// Version Override
 	public static Map<String, String> minecraftVersionSemVerOverride = Map.of(
 			// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be to rc1 versions)
 			"1.16-rc1", "1.16-rc.9",
 			// support extra original for 23w13a_or_b
-			"23w13a_or_b_original", "1.20-alpha.23.13.ab.original"
+			"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",
+			// support extra original for 24w14potato...
+			"24w14potato_original", "1.20.5-alpha.24.12.potato.original"
 			// FIX until fabric-loader is updated
 			// END FIX
 	);
