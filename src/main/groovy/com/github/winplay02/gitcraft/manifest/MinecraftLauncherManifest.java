@@ -40,7 +40,7 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 						// Combat Test 7c
 						Artifact.fromURL("https://piston-data.mojang.com/experiments/combat/2557b99d95588505e988886220779087d7d6b1e9/1_16_combat-3.zip", "2557b99d95588505e988886220779087d7d6b1e9"),
 						// Combat Test 8 - From Minecraft Wiki
-						Artifact.fromURL("https://cdn.discordapp.com/attachments/369990015096455168/947864881028272198/1_16_combat-4.zip", "b4306b421183bd084b2831bd8d33a5db05ae9f9c"),
+						Artifact.fromURL("https://archive.org/download/1-16-combat-4/1_16_combat-4.zip", "b4306b421183bd084b2831bd8d33a5db05ae9f9c"),
 						// Combat Test 8b
 						Artifact.fromURL("https://piston-data.mojang.com/experiments/combat/9b2b984d635d373564b50803807225c75d7fd447/1_16_combat-5.zip", "9b2b984d635d373564b50803807225c75d7fd447"),
 						// Combat Test 8c
