@@ -35,16 +35,23 @@ public record OrderedVersion(
 		Artifact assetsIndex
 ) implements Comparable<OrderedVersion> {
 
+	/*
+	 * For some old Minecraft versions, the download URLs end in the same
+	 * file names for both the client and server jars, thus we cannot use
+	 * Artifact.fromURL, as it would place both artifacts in the same place
+	 * locally.
+	 */
+
 	public static Artifact getClientJarFromMeta(VersionMeta versionMeta) {
 		if (versionMeta.downloads().client() != null) {
-			return Artifact.fromURL(versionMeta.downloads().client().url(), versionMeta.downloads().client().sha1());
+			return new Artifact(versionMeta.downloads().client().url(), "client.jar", versionMeta.downloads().client().sha1());
 		}
 		return null;
 	}
 
 	public static Artifact getServerJarFromMeta(VersionMeta versionMeta) {
 		if (versionMeta.downloads().server() != null) {
-			return Artifact.fromURL(versionMeta.downloads().server().url(), versionMeta.downloads().server().sha1());
+			return new Artifact(versionMeta.downloads().server().url(), "server.jar", versionMeta.downloads().server().sha1());
 		}
 		return null;
 	}
