@@ -11,13 +11,13 @@ public record VersionMeta(ArtifactMeta assetIndex, String assets, VersionDownloa
 
 	public static VersionMeta merge(String versionId, List<VersionMeta> metaSources) {
 		return new VersionMeta(
-			MiscHelper.mergeEqualOrNull(metaSources, VersionMeta::assetIndex),
+			MiscHelper.mergeEqualOrFallbackToFirst(metaSources, VersionMeta::assetIndex),
 			MiscHelper.mergeEqualOrNull(metaSources, VersionMeta::assets),
 			new VersionDownloadsMeta(
-				MiscHelper.mergeEqualOrNull(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::client)),
-				MiscHelper.mergeEqualOrNull(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::client_mappings)),
-				MiscHelper.mergeEqualOrNull(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::server)),
-				MiscHelper.mergeEqualOrNull(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::server_mappings)),
+				MiscHelper.mergeEqualOrFallbackToFirst(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::client)),
+				MiscHelper.mergeEqualOrFallbackToFirst(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::client_mappings)),
+				MiscHelper.mergeEqualOrFallbackToFirst(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::server)),
+				MiscHelper.mergeEqualOrFallbackToFirst(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::server_mappings)),
 				MiscHelper.mergeEqualOrNull(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::windows_server)),
 				MiscHelper.mergeEqualOrNull(metaSources, MiscHelper.chain(VersionMeta::downloads, VersionDownloadsMeta::server_zip))
 			),

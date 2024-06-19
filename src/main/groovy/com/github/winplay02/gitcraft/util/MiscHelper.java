@@ -168,6 +168,16 @@ public class MiscHelper {
 		return values.size() == 1 ? values.get(0) : null;
 	}
 
+	@Deprecated
+	public static <Source, T> T mergeEqualOrFallbackToFirst(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
+		// TODO remove this and add versions that need this to quirks
+		List<T> values = sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().toList();
+		//if (values.size() > 1) {
+		//	   MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value");
+		//}
+		return values.size() >= 1 ? values.get(0) : null;
+	}
+
 	public static <Source, T extends Comparable<T>> T mergeMaxOrNull(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
 		return sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().max(Comparator.naturalOrder()).orElse(null);
 	}
