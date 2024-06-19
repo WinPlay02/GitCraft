@@ -110,7 +110,11 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 			if (rootVersions.size() == 2 && rootVersions.get(0).hasClientCode() != rootVersions.get(1).hasClientCode() && rootVersions.get(0).hasServerCode() != rootVersions.get(1).hasServerCode()) {
 				return;
 			}
-			MiscHelper.panic(amountRootNodes < 1 ? "There is no root node. This either means, that the version graph is empty, or that it contains a cycle." : "There are multiple root nodes. A connected git history would not be guaranteed");
+			if (amountRootNodes < 1) {
+				MiscHelper.panic("There is no root node. This either means, that the version graph is empty, or that it contains a cycle.");
+			} else {
+				MiscHelper.panic("There are multiple root nodes %s. A connected git history would not be guaranteed", rootVersions.stream().map(OrderedVersion::launcherFriendlyVersionName).toList().toString());
+			}
 		}
 	}
 

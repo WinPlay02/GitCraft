@@ -165,28 +165,26 @@ public record OrderedVersion(
 		return this.launcherFriendlyVersionName() + "\n\nSemVer: " + this.semanticVersion();
 	}
 
-	public int compareTo(SemanticVersion o) {
-		try {
-			return SemanticVersion.parse(semanticVersion()).compareTo((Version) o);
-		} catch (VersionParsingException e) {
-			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", launcherFriendlyVersionName(), semanticVersion());
-		}
-		return 0;
-	}
-
 	@Override
 	public int compareTo(OrderedVersion o) {
 		SemanticVersion thisVersion = null;
+		SemanticVersion otherVersion = null;
 		try {
 			thisVersion = SemanticVersion.parse(semanticVersion());
 		} catch (VersionParsingException e) {
 			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", launcherFriendlyVersionName(), semanticVersion());
 		}
 		try {
-			return thisVersion.compareTo((Version) SemanticVersion.parse(o.semanticVersion()));
+			otherVersion = SemanticVersion.parse(o.semanticVersion());
 		} catch (VersionParsingException e) {
 			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", o.launcherFriendlyVersionName(), o.semanticVersion());
 		}
-		return 0;
+		int c = thisVersion.compareTo((Version) otherVersion);
+		if (c == 0) {
+			String thisBuild = thisVersion.getBuildKey().orElse("");
+			String otherBuild = otherVersion.getBuildKey().orElse("");
+			c = thisBuild.compareTo(otherBuild);
+		}
+		return c;
 	}
 }
