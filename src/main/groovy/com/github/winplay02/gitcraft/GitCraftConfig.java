@@ -45,6 +45,7 @@ public class GitCraftConfig {
 	public String gitMainlineLinearBranch = "master";
 	public String gitOldServerLinearBranch = "classic-alpha-server";
 	public boolean createVersionBranches = false;
+    public boolean createStableVersionBranches = false;
 
 	/// Refresh settings
 	public boolean refreshDecompilation = false;
@@ -66,7 +67,7 @@ public class GitCraftConfig {
 	public String[] excludedVersion = null;
 
 	/// Mapping quirks
-	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.15.6";
+	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.15.11";
 
 	public static final String INTERMEDIARY_MAPPINGS_START_VERSION_ID = "18w43b"; // 1.14 snapshot
 	public static final String YARN_MAPPINGS_START_VERSION_ID = "18w49a"; // 1.14 snapshot
@@ -79,7 +80,7 @@ public class GitCraftConfig {
 
 	public static List<String> yarnMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
 
-	public static List<String> yarnMissingReuploadedVersions = List.of("23w13a_or_b_original");
+	public static List<String> yarnMissingReuploadedVersions = List.of("23w13a_or_b_original", "24w14potato_original");
 
 	// Maps (version, [broken] build) -> [working] build or -1
 	public static Map<Tuple2<String, Integer>, Integer> yarnBrokenBuildOverride = Map.of(
@@ -105,7 +106,7 @@ public class GitCraftConfig {
 	);
 
 	// There are no releases for these parchment versions (yet)
-	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.3");
+	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.5");
 
 	public static GitCraftConfig defaultConfig() {
 		return new GitCraftConfig();
@@ -154,6 +155,9 @@ public class GitCraftConfig {
 		if (createVersionBranches) {
 			MiscHelper.println("A seperate branch will be created for each version.");
 		}
+        else if (createStableVersionBranches) {
+            MiscHelper.println("A seperate branch will be created for each stable version.");
+        }
 		if (sortJsonObjects) {
 			MiscHelper.println("JSON files (JSON objects) will be sorted in natural order.");
 		}

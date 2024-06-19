@@ -45,7 +45,7 @@ public class MinecraftLauncherManifest extends ManifestProvider<MinecraftLaunche
 						// Combat Test 7c
 						Artifact.fromURL("https://piston-data.mojang.com/experiments/combat/2557b99d95588505e988886220779087d7d6b1e9/1_16_combat-3.zip", "2557b99d95588505e988886220779087d7d6b1e9"),
 						// Combat Test 8 - From Minecraft Wiki
-						Artifact.fromURL("https://cdn.discordapp.com/attachments/369990015096455168/947864881028272198/1_16_combat-4.zip", "b4306b421183bd084b2831bd8d33a5db05ae9f9c"),
+						Artifact.fromURL("https://archive.org/download/1-16-combat-4/1_16_combat-4.zip", "b4306b421183bd084b2831bd8d33a5db05ae9f9c"),
 						// Combat Test 8b
 						Artifact.fromURL("https://piston-data.mojang.com/experiments/combat/9b2b984d635d373564b50803807225c75d7fd447/1_16_combat-5.zip", "9b2b984d635d373564b50803807225c75d7fd447"),
 						// Combat Test 8c
@@ -67,7 +67,9 @@ public class MinecraftLauncherManifest extends ManifestProvider<MinecraftLaunche
 						// 1.19 Deep Dark Experimental Snapshot 1
 						Artifact.fromURL("https://piston-data.mojang.com/v1/objects/b1e589c1d6ed73519797214bc796e53f5429ac46/1_19_deep_dark_experimental_snapshot-1.zip", "b1e589c1d6ed73519797214bc796e53f5429ac46"),
 						// Before Reupload of 23w13a_or_b: 23w13a_or_b_original
-						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/23w13a_or_b_original.json", "469f0d1416f2b25a8829d7991c11be3411813bf1")
+						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/23w13a_or_b_original.json", "469f0d1416f2b25a8829d7991c11be3411813bf1"),
+						// Before Reupload of 24w14potato: 24w14potato_original
+						Artifact.fromURL("https://maven.fabricmc.net/net/minecraft/24w14potato_original.json", "4e54c25e6eafdf0a2f1f6e86fb1b8c1d239dd8d5")
 				},
 			MinecraftLauncherMeta.class
 		);
@@ -285,6 +287,12 @@ public class MinecraftLauncherManifest extends ManifestProvider<MinecraftLaunche
 			}
 			case "1.20-alpha.23.13.ab.original" -> {
 				return List.of("1.20-alpha.23.13.a");
+			}
+			case "1.20.5-alpha.24.12.potato" -> {
+				return List.of("1.20.5-alpha.24.12.potato.original", "1.20.5-alpha.24.12.a");
+			}
+			case "1.20.5-alpha.24.12.potato.original" -> {
+				return List.of("1.20.5-alpha.24.12.a");
 			}
 			default -> {
 				return null;

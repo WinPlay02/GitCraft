@@ -16,7 +16,7 @@ repositories {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release = 17
+	it.options.release = 21
 }
 
 application {
@@ -59,16 +59,14 @@ dependencies {
 	implementation "org.vineflower:vineflower:${vineflower_version}"
 
 	// Testing
-	testImplementation(platform("org.junit:junit-bom:5.10.0"))
-	testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+	testImplementation(platform("org.junit:junit-bom:5.10.+"))
+	testImplementation("org.junit.jupiter:junit-jupiter:5.10.+")
 }
 
 // if not working: run ./gradlew run --refresh-dependencies
 configurations.all {
 	resolutionStrategy.cacheDynamicVersionsFor 15, 'minutes'
 }
-
-
 
 test {
 	maxHeapSize = "4G"

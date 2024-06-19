@@ -55,9 +55,10 @@ public class ParchmentMappings extends Mapping {
 	@Override
 	public Step.StepResult prepareMappings(OrderedVersion mcVersion) throws IOException {
 		Path mappingsPath = getMappingsPathInternal(mcVersion);
-		if (Files.exists(mappingsPath)) {
+		if (Files.exists(mappingsPath) && validateMappings(mappingsPath)) {
 			return Step.StepResult.UP_TO_DATE;
 		}
+		Files.deleteIfExists(mappingsPath);
 		String parchmentLatestReleaseVersionBuild = getLatestReleaseVersionParchmentBuild(mcVersion);
 		Path mappingsFileJson = GitCraftPaths.MAPPINGS.resolve(String.format("%s-parchment-%s-%s.json", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), parchmentLatestReleaseVersionBuild));
 		Step.StepResult downloadResult = null;

@@ -4,6 +4,8 @@ import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyUtils;
 
@@ -103,5 +105,14 @@ public abstract class Mapping {
 	 */
 	public Path executeCustomRemappingLogic(Path previousFile, OrderedVersion mcVersion) {
 		return null;
+	}
+
+	protected static boolean validateMappings(Path mappingsTinyPath) {
+		try {
+			MappingReader.read(mappingsTinyPath, new MemoryMappingTree());
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 }
