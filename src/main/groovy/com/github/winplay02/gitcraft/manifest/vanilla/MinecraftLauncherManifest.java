@@ -89,7 +89,9 @@ public class MinecraftLauncherManifest extends ManifestProvider<MinecraftLaunche
 		// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be to rc1 versions)
 		"1.16-rc1", "1.16-rc.9",
 		// support extra original for 23w13a_or_b
-		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original"
+		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",
+		// support extra original for 24w14potato...
+		"24w14potato_original", "1.20.5-alpha.24.12.potato.original"
 		// FIX until fabric-loader is updated
 		// END FIX
 	);
