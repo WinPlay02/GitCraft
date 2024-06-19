@@ -154,7 +154,12 @@ public record OrderedVersion(
 	}
 
 	public ZonedDateTime timestamp() {
-		return this.versionMeta().time();
+		if (this.versionMeta().time() != null)
+			return this.versionMeta().time();
+		if (this.versionMeta().releaseTime() != null)
+			return this.versionMeta().releaseTime();
+		MiscHelper.panic("cannot find timestamp for %s, as its version meta contains neither a time nor a releaseTime!", this.versionMeta().id());
+		return null; // panic throws an exception anyway so this is just here to make the compiler happy
 	}
 
 	public String assetsIndexId() {
