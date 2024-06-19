@@ -35,7 +35,7 @@ public class FabricIntermediaryMappings extends Mapping {
 		if (GitCraftConfig.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(GitCraftConfig.INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(GitCraftConfig.FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	protected static String mappingsIntermediaryPathQuirkVersion(String version) {
