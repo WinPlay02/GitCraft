@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class GitCraftConfig {
 
 	/// Manifest Source option
-	public ManifestSource manifestSource = ManifestSource.MOJANG_MINECRAFT_LAUNCHER;
+	public ManifestSource manifestSource = ManifestSource.MOJANG;
 
 	/// Additional Data import settings
 	public boolean loadIntegratedDatapack = true;

@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.types;
 
-import com.github.winplay02.gitcraft.meta.ArtifactMeta;
-import com.github.winplay02.gitcraft.meta.LibraryMeta;
-import com.github.winplay02.gitcraft.meta.VersionMeta;
+import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
+import com.github.winplay02.gitcraft.meta.LibraryMetadata;
+import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -16,7 +16,7 @@ import java.util.Set;
 /**
  * Represents a minecraft version with an order
  *
- * @param versionMeta     Version Meta, e.g. from Mojang, or provided in extra-versions
+ * @param versionInfo     Version Info, e.g. from Mojang, or provided in extra-versions
  * @param semanticVersion Semantic Version. This field is used to order versions.
  * @param clientJar       Client JAR Artifact, if exists
  * @param clientMappings  Client Mappings Artifact (mojmaps), if exists
@@ -26,7 +26,7 @@ import java.util.Set;
  * @param assetsIndex     Assets Index, containing assets for this version
  */
 public record OrderedVersion(
-		VersionMeta versionMeta,
+		VersionInfo versionInfo,
 		String semanticVersion,
 		Artifact clientJar,
 		Artifact clientMappings,
@@ -43,78 +43,78 @@ public record OrderedVersion(
 	 * locally.
 	 */
 
-	public static Artifact getClientJarFromMeta(VersionMeta versionMeta) {
-		if (versionMeta.downloads().client() != null) {
-			return new Artifact(versionMeta.downloads().client().url(), "client.jar", versionMeta.downloads().client().sha1());
+	public static Artifact getClientJarFromInfo(VersionInfo versionInfo) {
+		if (versionInfo.downloads().client() != null) {
+			return new Artifact(versionInfo.downloads().client().url(), "client.jar", versionInfo.downloads().client().sha1());
 		}
 		return null;
 	}
 
-	public static Artifact getServerJarFromMeta(VersionMeta versionMeta) {
-		if (versionMeta.downloads().server() != null) {
-			return new Artifact(versionMeta.downloads().server().url(), "server.jar", versionMeta.downloads().server().sha1());
+	public static Artifact getServerJarFromInfo(VersionInfo versionInfo) {
+		if (versionInfo.downloads().server() != null) {
+			return new Artifact(versionInfo.downloads().server().url(), "server.jar", versionInfo.downloads().server().sha1());
 		}
 		return null;
 	}
 
-	public static Artifact getServerWindowsFromMeta(VersionMeta versionMeta) {
-		if (versionMeta.downloads().windows_server() != null) {
-			return Artifact.fromURL(versionMeta.downloads().windows_server().url(), versionMeta.downloads().windows_server().sha1());
+	public static Artifact getServerWindowsFromInfo(VersionInfo versionInfo) {
+		if (versionInfo.downloads().windows_server() != null) {
+			return Artifact.fromURL(versionInfo.downloads().windows_server().url(), versionInfo.downloads().windows_server().sha1());
 		}
 		return null;
 	}
 
-	public static Artifact getServerZipFromMeta(VersionMeta versionMeta) {
-		if (versionMeta.downloads().server_zip() != null) {
-			return Artifact.fromURL(versionMeta.downloads().server_zip().url(), versionMeta.downloads().server_zip().sha1());
+	public static Artifact getServerZipFromInfo(VersionInfo versionInfo) {
+		if (versionInfo.downloads().server_zip() != null) {
+			return Artifact.fromURL(versionInfo.downloads().server_zip().url(), versionInfo.downloads().server_zip().sha1());
 		}
 		return null;
 	}
 
-	public static OrderedVersion from(VersionMeta versionMeta, String semanticVersion) {
-		Artifact clientJar = getClientJarFromMeta(versionMeta);
+	public static OrderedVersion from(VersionInfo versionInfo, String semanticVersion) {
+		Artifact clientJar = getClientJarFromInfo(versionInfo);
 		Artifact clientMappings = null;
-		if (versionMeta.downloads().client_mappings() != null) {
-			clientMappings = Artifact.fromURL(versionMeta.downloads().client_mappings().url(), versionMeta.downloads().client_mappings().sha1());
+		if (versionInfo.downloads().client_mappings() != null) {
+			clientMappings = Artifact.fromURL(versionInfo.downloads().client_mappings().url(), versionInfo.downloads().client_mappings().sha1());
 		}
-		Artifact serverJar = getServerJarFromMeta(versionMeta);
-		Artifact serverWindows = getServerWindowsFromMeta(versionMeta);
-		Artifact serverZip = getServerZipFromMeta(versionMeta);
+		Artifact serverJar = getServerJarFromInfo(versionInfo);
+		Artifact serverWindows = getServerWindowsFromInfo(versionInfo);
+		Artifact serverZip = getServerZipFromInfo(versionInfo);
 		Artifact serverMappings = null;
-		if (versionMeta.downloads().server_mappings() != null) {
-			serverMappings = Artifact.fromURL(versionMeta.downloads().server_mappings().url(), versionMeta.downloads().server_mappings().sha1());
+		if (versionInfo.downloads().server_mappings() != null) {
+			serverMappings = Artifact.fromURL(versionInfo.downloads().server_mappings().url(), versionInfo.downloads().server_mappings().sha1());
 		}
 		// Ignores natives, not needed as we don't have a runtime
 		Set<Artifact> libs = new HashSet<>();
-		for (LibraryMeta library : versionMeta.libraries()) {
-			ArtifactMeta artifactMeta = library.getArtifactDownload();
+		for (LibraryMetadata library : versionInfo.libraries()) {
+			ArtifactMetadata artifactMeta = library.getArtifact();
 			if (artifactMeta != null) {
 				libs.add(Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1()));
 			}
 		}
-		String assetsIndexId = versionMeta.id() + "_" + versionMeta.assets();
-		Artifact assetsIndex = versionMeta.assetIndex() != null ? new Artifact(versionMeta.assetIndex().url(), assetsIndexId, versionMeta.assetIndex().sha1()) : null;
-		return new OrderedVersion(versionMeta, semanticVersion, clientJar, clientMappings, new ServerDistribution(serverJar, serverWindows, serverZip), serverMappings, libs, assetsIndex);
+		String assetsIndexId = versionInfo.id() + "_" + versionInfo.assets();
+		Artifact assetsIndex = versionInfo.assetIndex() != null ? new Artifact(versionInfo.assetIndex().url(), assetsIndexId, versionInfo.assetIndex().sha1()) : null;
+		return new OrderedVersion(versionInfo, semanticVersion, clientJar, clientMappings, new ServerDistribution(serverJar, serverWindows, serverZip), serverMappings, libs, assetsIndex);
 	}
 
 	public String launcherFriendlyVersionName() {
-		return versionMeta.id();
+		return this.versionInfo().id();
 	}
 
 	public int javaVersion() {
-		return versionMeta.javaVersion() != null ? versionMeta.javaVersion().majorVersion() : 8;
+		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
 	public boolean isSnapshot() {
-		return Objects.equals(versionMeta.type(), "snapshot");
+		return Objects.equals(this.versionInfo().type(), "snapshot");
 	}
 
 	public boolean isPending() {
-		return Objects.equals(versionMeta.type(), "pending");
+		return Objects.equals(this.versionInfo().type(), "pending");
 	}
 
 	public boolean isSnapshotOrPending() {
-		return isSnapshot() || isPending();
+		return this.isSnapshot() || this.isPending();
 	}
 
 	public boolean hasClientCode() {
@@ -150,20 +150,20 @@ public record OrderedVersion(
 	}
 
 	public String mainClass() {
-		return this.versionMeta().mainClass();
+		return this.versionInfo().mainClass();
 	}
 
 	public ZonedDateTime timestamp() {
-		if (this.versionMeta().time() != null)
-			return this.versionMeta().time();
-		if (this.versionMeta().releaseTime() != null)
-			return this.versionMeta().releaseTime();
-		MiscHelper.panic("cannot find timestamp for %s, as its version meta contains neither a time nor a releaseTime!", this.versionMeta().id());
+		if (this.versionInfo().time() != null)
+			return this.versionInfo().time();
+		if (this.versionInfo().releaseTime() != null)
+			return this.versionInfo().releaseTime();
+		MiscHelper.panic("cannot find timestamp for %s, as its version meta contains neither a time nor a releaseTime!", this.versionInfo().id());
 		return null; // panic throws an exception anyway so this is just here to make the compiler happy
 	}
 
 	public String assetsIndexId() {
-		return this.versionMeta().assets();
+		return this.versionInfo().assets();
 	}
 
 	public String toCommitMessage() {

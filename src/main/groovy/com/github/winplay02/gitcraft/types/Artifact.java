@@ -8,7 +8,7 @@ import java.nio.file.Path;
 /**
  * Single artifact
  *
- * @param url     Download URL
+ * @param describedUrl     Download URL
  * @param name    Artifact File name
  * @param sha1sum SHA1 Checksum
  */

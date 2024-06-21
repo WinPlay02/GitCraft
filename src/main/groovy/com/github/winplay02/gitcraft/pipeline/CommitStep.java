@@ -3,7 +3,7 @@ package com.github.winplay02.gitcraft.pipeline;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.meta.AssetsIndexMeta;
+import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -284,14 +284,14 @@ public class CommitStep extends Step {
 			// Copy Assets
 			Path targetRoot = repo.getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
 			if (GitCraft.config.useHardlinks && GitCraftPaths.ASSETS_OBJECTS.getFileSystem().equals(targetRoot.getFileSystem()) && !GitCraft.config.sortJsonObjects) {
-				for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.assetsIndex().objects().entrySet()) {
+				for (Map.Entry<String, AssetsIndexMetadata.Object> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
 					Files.createDirectories(targetPath.getParent());
 					Files.createLink(targetPath, sourcePath);
 				}
 			} else {
-				for (Map.Entry<String, AssetsIndexMeta.AssetsIndexEntry> entry : assetsIndex.assetsIndex().objects().entrySet()) {
+				for (Map.Entry<String, AssetsIndexMetadata.Object> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
 					Files.createDirectories(targetPath.getParent());
