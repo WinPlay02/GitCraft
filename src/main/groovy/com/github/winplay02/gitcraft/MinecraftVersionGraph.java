@@ -3,7 +3,6 @@ package com.github.winplay02.gitcraft;
 import com.github.winplay02.gitcraft.manifest.MetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.io.IOException;
@@ -13,14 +12,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +35,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		this.edgesFw = new HashMap<>(previous.edgesFw.keySet().stream().filter(predicate).collect(Collectors.toMap(Function.identity(), key -> new TreeSet<OrderedVersion>())));
 		this.repoTags.addAll(Arrays.asList(tags));
 		this.reconnectGraph(previous);
+		this.findMainBranch();
 	}
 
 	private void reconnectGraph(MinecraftVersionGraph previous) {
@@ -117,28 +117,105 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		}
 	}
 
-	protected static final Pattern LINEAR_SNAPSHOT_REGEX = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)\\d+|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+	private void findMainBranch() {
+		this.roots.clear();
+		this.branchPoints.clear();
 
-	public static boolean isVersionNonLinearSnapshot(OrderedVersion mcVersion) {
-		// remove all pending "snapshots" from mainline and mark as non-linear
-		return mcVersion.isPending() || mcVersion.isSnapshotOrPending() && (Objects.equals(mcVersion.launcherFriendlyVersionName(), "15w14a") || !(LINEAR_SNAPSHOT_REGEX.matcher(mcVersion.launcherFriendlyVersionName()).matches())); // mark 15w14a explicit as april fools snapshot, since this case should not be covered by the regex
+		Set<OrderedVersion> roots = this.edgesBack.entrySet()
+			.stream()
+			.filter(entry -> entry.getValue().isEmpty())
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toSet());
+
+		for (OrderedVersion root : roots) {
+			int length = this.findBranchPoints(root);
+			this.roots.put(root, length);
+		}
+		for (OrderedVersion root : roots) {
+			this.markMainBranch(root);
+		}
+		this.getMainRootVersion();
+	}
+
+	private int findBranchPoints(OrderedVersion mcVersion) {
+		int branchLength = this.branchPoints.getOrDefault(mcVersion, 0);
+
+		// this branch point was already identified earlier
+		if (branchLength > 0) {
+			return branchLength;
+		}
+
+		NavigableSet<OrderedVersion> nextBranches = this.getFollowingNodes(mcVersion);
+
+		// tip of a branch
+		if (nextBranches.size() < 1) {
+			branchLength = 0;
+		}
+
+		// only one following node; no splitting
+		if (nextBranches.size() == 1) {
+			OrderedVersion nextBranch = nextBranches.first();
+			int nextBranchLength = this.findBranchPoints(nextBranch);
+
+			branchLength = nextBranchLength;
+		}
+
+		// multiple following nodes; find largest path forward
+		if (nextBranches.size() > 1) {
+			for (OrderedVersion nextBranch : this.getFollowingNodes(mcVersion)) {
+				int nextBranchLength = this.findBranchPoints(nextBranch);
+				this.branchPoints.put(nextBranch, nextBranchLength);
+
+				if (nextBranchLength > branchLength) {
+					branchLength = nextBranchLength;
+				}
+			}
+		}
+
+		return branchLength + 1;
+	}
+
+	private void markMainBranch(OrderedVersion mcVersion) {
+		NavigableSet<OrderedVersion> nextBranches = this.getFollowingNodes(mcVersion);
+
+		OrderedVersion mainBranch = null;
+		int mainBranchLength = -1;
+
+		for (OrderedVersion branch : nextBranches) {
+			int branchLength = this.branchPoints.getOrDefault(branch, 0);
+
+			if (branchLength > mainBranchLength) {
+				mainBranch = branch;
+				mainBranchLength = branchLength;
+			}
+		}
+
+		if (mainBranch != null) {
+			if (mainBranchLength > 0) {
+				this.branchPoints.remove(mainBranch);
+			}
+
+			this.markMainBranch(mainBranch);
+		}
 	}
 
 	public HashSet<String> repoTags = new HashSet<>();
+	public HashMap<OrderedVersion, Integer> roots = new HashMap<>();;
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesBack = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesFw = new HashMap<>();
+	public HashMap<OrderedVersion, Integer> branchPoints = new HashMap<>();
 
 	public static MinecraftVersionGraph createFromMetadata(MetadataProvider provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
 		graph.repoTags.add(String.format("manifest_%s", provider.getInternalName()));
-		//TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersionMeta().values());
-		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions().values().stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());
+		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersions().values());
+		//TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions().values().stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());
 		Map<String, OrderedVersion> semverMetaVersions = provider.getVersions().values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
 		for (OrderedVersion version : provider.getVersions().values()) {
 			graph.edgesFw.computeIfAbsent(version, value -> new TreeSet<>());
 			List<String> previousVersion = provider.getParentVersion(version);
 			if (previousVersion == null) {
-				OrderedVersion prevLinearVersion = metaVersionsMainline.lower(version);
+				OrderedVersion prevLinearVersion = metaVersions.lower(version);
 				previousVersion = prevLinearVersion != null ? List.of(prevLinearVersion.semanticVersion()) : Collections.emptyList();
 			}
 			if (previousVersion.isEmpty()) {
@@ -152,6 +229,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 			}
 		}
 		graph.testGraphConnectivity();
+		graph.findMainBranch();
 		return graph;
 	}
 
@@ -160,7 +238,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	}
 
 	public MinecraftVersionGraph filterMainlineVersions() {
-		return new MinecraftVersionGraph(this, (entry -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(entry)));
+		return new MinecraftVersionGraph(this, this::isOnMainBranch);
 	}
 
 	public MinecraftVersionGraph filterMinVersion(OrderedVersion version) {
@@ -192,14 +270,18 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		return new MinecraftVersionGraph(this, OrderedVersion::isSnapshotOrPending, "snapshot");
 	}
 
-	private final LazyValue<List<OrderedVersion>> rootVersions = LazyValue.of(() -> this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).map(Map.Entry::getKey).toList());
-
-	public List<OrderedVersion> getRootVersions() {
-		List<OrderedVersion> rootVersions = this.rootVersions.get();
-		if (rootVersions.isEmpty()) {
+	public Set<OrderedVersion> getRootVersions() {
+		if (this.roots.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
 		}
-		return rootVersions;
+		return this.roots.keySet();
+	}
+
+	public OrderedVersion getMainRootVersion() {
+		if (this.roots.isEmpty()) {
+			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
+		}
+		return this.roots.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).get().getKey();
 	}
 
 	public NavigableSet<OrderedVersion> getPreviousNodes(OrderedVersion version) {
@@ -208,6 +290,64 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 
 	public NavigableSet<OrderedVersion> getFollowingNodes(OrderedVersion version) {
 		return Collections.unmodifiableNavigableSet(this.edgesFw.get(version));
+	}
+
+	public boolean isOnMainBranch(OrderedVersion mcVersion) {
+		return this.walkToPreviousBranchPoint(mcVersion) == null;
+	}
+
+	public OrderedVersion walkToPreviousBranchPoint(OrderedVersion mcVersion) {
+		if (this.branchPoints.containsKey(mcVersion)) {
+			return mcVersion;
+		}
+
+		OrderedVersion longestBranch = null;
+		int longestBranchLength = 0;
+
+		for (OrderedVersion previousVersion : this.getPreviousNodes(mcVersion)) {
+			OrderedVersion branchPoint = this.walkToPreviousBranchPoint(previousVersion);
+
+			if (branchPoint == null) {
+				// this version is part of the main branch
+				return null;
+			} else {
+				int branchLength = this.branchPoints.get(branchPoint);
+
+				if (branchLength > longestBranchLength) {
+					longestBranch = branchPoint;
+					longestBranchLength = branchLength;
+				}
+			}
+		}
+
+		return longestBranch;
+	}
+
+	public OrderedVersion walkToRoot(OrderedVersion mcVersion) {
+		if (this.roots.containsKey(mcVersion)) {
+			return mcVersion;
+		}
+
+		OrderedVersion longestBranch = null;
+		int longestBranchLength = 0;
+
+		for (OrderedVersion previousVersion : this.getPreviousNodes(mcVersion)) {
+			OrderedVersion branchPoint = this.walkToRoot(previousVersion);
+
+			if (branchPoint == null) {
+				// this version is part of the main branch
+				return null;
+			} else {
+				int branchLength = this.roots.get(branchPoint);
+
+				if (branchLength > longestBranchLength) {
+					longestBranch = branchPoint;
+					longestBranchLength = branchLength;
+				}
+			}
+		}
+
+		return longestBranch;
 	}
 
 	public OrderedVersion getMinecraftVersionByName(String versionName) {

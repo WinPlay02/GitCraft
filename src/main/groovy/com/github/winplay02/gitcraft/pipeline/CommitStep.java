@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
@@ -80,10 +81,10 @@ public class CommitStep extends Step {
 		}
 		// Commit
 		MiscHelper.executeTimedStep("Committing files to repo...", () -> createCommit(mcVersion, repo));
-		MiscHelper.println("Committed %s to the repository! (Target Branch is %s)", mcVersion.launcherFriendlyVersionName(), target_branch.orElseThrow() + (MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? " (non-linear)" : ""));
+		MiscHelper.println("Committed %s to the repository! (Target Branch is %s)", mcVersion.launcherFriendlyVersionName(), target_branch.orElseThrow() + (GitCraft.versionGraph.isOnMainBranch(mcVersion) ? "" : " (non-linear)"));
 
 		// Create branch for linear version
-		if (GitCraft.config.createVersionBranches && !MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion)) {
+		if (GitCraft.config.createVersionBranches && GitCraft.versionGraph.isOnMainBranch(mcVersion)) {
 			MiscHelper.executeTimedStep("Creating branch for linear version...", () -> createBranchFromCurrentCommit(mcVersion, repo));
 			MiscHelper.println("Created branch for linear version %s", mcVersion.launcherFriendlyVersionName());
 		}
@@ -110,7 +111,14 @@ public class CommitStep extends Step {
 	}
 
 	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
-		return (MinecraftVersionGraph.isVersionNonLinearSnapshot(mcVersion) ? mcVersion.launcherFriendlyVersionName() : !mcVersion.hasClientCode() ? GitCraft.config.gitOldServerLinearBranch : GitCraft.config.gitMainlineLinearBranch).replace(" ", "-");
+		OrderedVersion branch = GitCraft.versionGraph.walkToPreviousBranchPoint(mcVersion);
+		OrderedVersion root = GitCraft.versionGraph.walkToRoot(branch);
+		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
+		return (branch == null
+			? roots.size() == 1
+				? GitCraft.config.gitMainlineLinearBranch
+				: root.launcherFriendlyVersionName()
+			: branch.launcherFriendlyVersionName()).replace(" ", "-");
 	}
 
 	private void checkoutNewOrphanBranch(RepoWrapper repo, String target_branch) throws GitAPIException {

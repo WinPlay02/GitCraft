@@ -89,9 +89,15 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	@Override
 	public List<String> getParentVersion(OrderedVersion mcVersion) {
 		return this.getVersionDetails(mcVersion.launcherFriendlyVersionName()).previous().stream()
-			// issue in the manifest, it's listed as a previous
-			// version but does not itself appear in the manifest
-			.filter(versionId -> !"rd-132211".equals(versionId))
+			.filter(versionId -> switch (versionId) {
+				// 12w34a has 1.3.2 as parent while 12w32a has 1.3.1 as parent
+				// leading to two valid paths through those versions
+				case "1.3.2"     -> false;
+				// issue in the manifest, it's listed as a previous
+				// version but does not itself appear in the manifest
+				case "rd-132211" -> false;
+				default          -> true;
+			})
 			.map(versionId -> this.getVersionDetails(versionId).normalizedVersion())
 			.filter(Objects::nonNull)
 			.toList();
