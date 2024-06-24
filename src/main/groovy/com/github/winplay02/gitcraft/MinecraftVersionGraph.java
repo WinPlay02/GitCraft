@@ -131,7 +131,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	private int findBranchPoints(OrderedVersion mcVersion) {
 		int branchLength = this.branchPoints.getOrDefault(mcVersion, 0);
 
-		// this branch point was already identified earlier
+		// check if this branch point was already identified earlier
 		if (branchLength > 0) {
 			return branchLength;
 		}
@@ -154,6 +154,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		// multiple following nodes; find largest path forward
 		if (nextBranches.size() > 1) {
 			for (OrderedVersion nextBranch : this.getFollowingNodes(mcVersion)) {
+				// since the branch splits, mark these versions as branch points
 				int nextBranchLength = this.findBranchPoints(nextBranch);
 				this.branchPoints.put(nextBranch, nextBranchLength);
 
@@ -167,6 +168,11 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	}
 
 	private void markMainBranch(OrderedVersion mcVersion) {
+		// after the branch points have been identified,  search for the longest path
+		// from each of the roots to a tip, and mark that path as a main branch - that
+		// is to say, remove any branch points that lay on these paths from the map,
+		// as it should only contain side branches
+
 		NavigableSet<OrderedVersion> nextBranches = this.getFollowingNodes(mcVersion);
 
 		OrderedVersion mainBranch = null;
@@ -191,9 +197,11 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	}
 
 	public HashSet<String> repoTags = new HashSet<>();
+	/** root nodes of the graph, mapped to the path lengths to the tips of those main branches */
 	public HashMap<OrderedVersion, Integer> roots = new HashMap<>();;
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesBack = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesFw = new HashMap<>();
+	/** nodes that mark new side branches, mapped to the path lengths to the tip sof those side branches */
 	public HashMap<OrderedVersion, Integer> branchPoints = new HashMap<>();
 
 	public static MinecraftVersionGraph createFromMetadata(MetadataProvider provider) throws IOException {
