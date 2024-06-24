@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -104,16 +103,8 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 			}
 		}
 		long amountRootNodes = this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).count();
-		if (amountRootNodes != 1) {
-			List<OrderedVersion> rootVersions = this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).map(Map.Entry::getKey).toList();
-			if (rootVersions.size() == 2 && rootVersions.get(0).hasClientCode() != rootVersions.get(1).hasClientCode() && rootVersions.get(0).hasServerCode() != rootVersions.get(1).hasServerCode()) {
-				return;
-			}
-			if (amountRootNodes < 1) {
-				MiscHelper.panic("There is no root node. This either means, that the version graph is empty, or that it contains a cycle.");
-			} else {
-				MiscHelper.panic("There are multiple root nodes %s. A connected git history would not be guaranteed", rootVersions.stream().map(OrderedVersion::launcherFriendlyVersionName).toList().toString());
-			}
+		if (amountRootNodes < 1) {
+			MiscHelper.panic("There is no root node. This either means, that the version graph is empty, or that it contains a cycle.");
 		}
 	}
 
