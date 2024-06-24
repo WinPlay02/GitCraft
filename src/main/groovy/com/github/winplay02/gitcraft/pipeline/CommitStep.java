@@ -115,7 +115,7 @@ public class CommitStep extends Step {
 		OrderedVersion root = GitCraft.versionGraph.walkToRoot(branch);
 		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
 		return (branch == null
-			? roots.size() == 1
+			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
 				? GitCraft.config.gitMainlineLinearBranch
 				: root.launcherFriendlyVersionName()
 			: branch.launcherFriendlyVersionName()).replace(" ", "-");

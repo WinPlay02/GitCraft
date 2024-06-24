@@ -125,7 +125,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		for (OrderedVersion root : roots) {
 			this.markMainBranch(root);
 		}
-		this.getMainRootVersion();
+		this.getDeepestRootVersion();
 	}
 
 	private int findBranchPoints(OrderedVersion mcVersion) {
@@ -268,7 +268,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		return this.roots.keySet();
 	}
 
-	public OrderedVersion getMainRootVersion() {
+	public OrderedVersion getDeepestRootVersion() {
 		if (this.roots.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
 		}
