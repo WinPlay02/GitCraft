@@ -201,7 +201,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	public HashMap<OrderedVersion, Integer> roots = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesBack = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesFw = new HashMap<>();
-	/** nodes that mark new side branches, mapped to the path lengths to the tip sof those side branches */
+	/** nodes that mark new side branches, mapped to the path lengths to the tips of those side branches */
 	public HashMap<OrderedVersion, Integer> branchPoints = new HashMap<>();
 
 	public static MinecraftVersionGraph createFromMetadata(MetadataProvider provider) throws IOException {
