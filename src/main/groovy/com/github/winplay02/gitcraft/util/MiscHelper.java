@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,6 +96,14 @@ public class MiscHelper {
 			return walk.sorted(Comparator.naturalOrder())
 				.filter(path -> path.toString().endsWith(extension))
 				.collect(Collectors.toList());
+		}
+	}
+
+	public static Optional<Path> findRecursivelyByName(Path directory, String name) throws IOException {
+		try (Stream<Path> walk = Files.walk(directory)) {
+			return walk.sorted(Comparator.naturalOrder())
+				.filter(path -> path.getFileName().toString().equals(name))
+				.findFirst();
 		}
 	}
 

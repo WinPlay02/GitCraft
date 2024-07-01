@@ -13,8 +13,6 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 public class RemapStep extends Step {
@@ -36,16 +34,11 @@ public class RemapStep extends Step {
 
 	@Override
 	protected Path getInternalArtifactPath(OrderedVersion mcVersion, MappingFlavour mappingFlavour) {
-		if (!mappingFlavour.getMappingImpl().isMappingFileRequired()) {
-			return customRemappingTargetPaths.get(mcVersion);
-		}
 		return this.rootPath.resolve(String.format("%s-%s.jar", mcVersion.launcherFriendlyVersionName(), mappingFlavour));
 	}
 
 	// From Fabric-loom
 	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
-
-	private final Map<OrderedVersion, Path> customRemappingTargetPaths = new HashMap<>();
 
 	@Override
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception {
@@ -64,14 +57,6 @@ public class RemapStep extends Step {
 		}
 
 		final IMappingProvider mappingProvider = mappingFlavour.getMappingImpl().getMappingsProvider(mcVersion);
-		if (mappingProvider == null) {
-			final Path customRemappedJar = mappingFlavour.getMappingImpl().executeCustomRemappingLogic(mergedPath, mcVersion);
-			if (customRemappedJar == null) {
-				MiscHelper.panic("Mapping flavour '%s' specified using custom remapping logic, but returned a null result path.");
-			}
-			this.customRemappingTargetPaths.put(mcVersion, customRemappedJar);
-			return StepResult.SUCCESS;
-		}
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
 				.renameInvalidLocals(true)

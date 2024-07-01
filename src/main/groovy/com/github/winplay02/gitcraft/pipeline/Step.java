@@ -58,11 +58,11 @@ public abstract class Step {
 		FAILED;
 
 		public static StepResult merge(StepResult... results) {
-			return Arrays.stream(results).max(StepResult::compareTo).orElse(NOT_RUN);
+			return Arrays.stream(results).filter(Objects::nonNull).max(StepResult::compareTo).orElse(NOT_RUN);
 		}
 
 		public static StepResult merge(Collection<StepResult> results) {
-			return results.stream().max(StepResult::compareTo).orElse(NOT_RUN);
+			return results.stream().filter(Objects::nonNull).max(StepResult::compareTo).orElse(NOT_RUN);
 		}
 
 		@Override

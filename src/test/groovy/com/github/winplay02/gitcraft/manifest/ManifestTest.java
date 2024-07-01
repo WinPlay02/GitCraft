@@ -2,7 +2,7 @@ package com.github.winplay02.gitcraft.manifest;
 
 import com.github.winplay02.gitcraft.GitCraftTestingFs;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
-import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
+import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,30 +20,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ManifestTest {
 	@Test
 	public void metadataBootstrapDefaultMeta() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.deleteIfExists(metadataBootstrap.getSemverCachePath());
-		metadataBootstrap = new MinecraftLauncherManifest();
+		metadataBootstrap = new MojangLauncherMetadataProvider();
 		assertTrue(metadataBootstrap.semverCache.isEmpty());
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), metadataBootstrap.getSemverCachePath());
-		metadataBootstrap = new MinecraftLauncherManifest();
+		metadataBootstrap = new MojangLauncherMetadataProvider();
 		metadataBootstrap.loadSemverCache();
 		assertFalse(metadataBootstrap.semverCache.isEmpty());
 		metadataBootstrap.semverCache.remove("1.20");
 		metadataBootstrap.semverCache.remove("rd-132328");
-		metadataBootstrap.singleMetaUrls.clear();
-		metadataBootstrap.getVersionMeta();
-		assertTrue(metadataBootstrap.versionMeta.containsKey("1.20"));
-		assertTrue(metadataBootstrap.versionMeta.containsKey("rd-132328"));
-		assertEquals("0.0.0-rd.132328", metadataBootstrap.versionMeta.get("rd-132328").semanticVersion());
+		metadataBootstrap.metadataSources.clear();
+		metadataBootstrap.getVersions();
+		assertTrue(metadataBootstrap.versionsById.containsKey("1.20"));
+		assertTrue(metadataBootstrap.versionsById.containsKey("rd-132328"));
+		assertEquals("0.0.0-rd.132328", metadataBootstrap.versionsById.get("rd-132328").semanticVersion());
 	}
 
 	@Test
 	public void metadataSemverCacheTest() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), metadataBootstrap.getSemverCachePath(), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
+		metadataBootstrap = new MojangLauncherMetadataProvider();
 		metadataBootstrap.loadSemverCache();
-		MinecraftVersionGraph versionGraphComplete = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		MinecraftVersionGraph versionGraphComplete = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		assertNotNull(versionGraphComplete);
 	}
 }

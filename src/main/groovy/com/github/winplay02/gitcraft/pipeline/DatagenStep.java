@@ -85,13 +85,13 @@ public class DatagenStep extends Step {
 
 	@Override
 	public boolean preconditionsShouldRun(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
-		return mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(DATAGEN_AVAILABLE_ID)) >= 0 && (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) && super.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo);
+		return mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_ID)) >= 0 && (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) && super.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo);
 	}
 
 	private TreeMap<OrderedVersion, Artifact> getExtVanillaWorldgenPackOrderedVersions() {
 		if (orderedExtVanillaWorldgen == null) {
 			try {
-				Map<String, OrderedVersion> manifestVersionMetaMap = GitCraft.config.manifestSource.getManifestSourceImpl().getVersionMeta();
+				Map<String, OrderedVersion> manifestVersionMetaMap = GitCraft.config.manifestSource.getMetadataProvider().getVersions();
 				orderedExtVanillaWorldgen = new TreeMap<>(EXT_VANILLA_WORLDGEN_PACK.entrySet().stream().map((entry) -> Tuple2.tuple(manifestVersionMetaMap.get(entry.getKey()), entry.getValue())).collect(Collectors.toMap(Tuple2::getV1, Tuple2::getV2)));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -101,7 +101,7 @@ public class DatagenStep extends Step {
 	}
 
 	protected Tuple2<OrderedVersion, Artifact> getExtVanillaWorldgenPack(OrderedVersion mcVersion) {
-		if (mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START_ID)) >= 0 && mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END_ID)) <= 0) {
+		if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START_ID)) >= 0 && mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END_ID)) <= 0) {
 			Map.Entry<OrderedVersion, Artifact> entry = getExtVanillaWorldgenPackOrderedVersions().floorEntry(mcVersion);
 			if (entry != null) {
 				return Tuple2.tuple(entry.getKey(), entry.getValue());
@@ -194,7 +194,7 @@ public class DatagenStep extends Step {
 	}
 
 	private void executeDatagen(OrderedVersion mcVersion, Path cwd, Path executable, String... args) throws IOException, InterruptedException {
-		if (mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(DATAGEN_BUNDLER_ID)) >= 0) {
+		if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(DATAGEN_BUNDLER_ID)) >= 0) {
 			// >= DATAGEN_BUNDLER: java -DbundlerMainClass=net.minecraft.data.Main -jar minecraft_server.jar
 			MiscHelper.createJavaJarSubprocess(executable, cwd, new String[]{"-DbundlerMainClass=net.minecraft.data.Main"}, args);
 		} else {

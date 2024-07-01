@@ -4,7 +4,7 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.integrity.GitBlobSHA1Algorithm;
 import com.github.winplay02.gitcraft.integrity.IntegrityAlgorithm;
 import com.github.winplay02.gitcraft.integrity.SHA1Algorithm;
-import com.github.winplay02.gitcraft.meta.ArtifactMeta;
+import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
 import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import org.w3c.dom.Document;
@@ -160,8 +160,8 @@ public class RemoteHelper {
 		}
 	}
 
-	public static ArtifactMeta createMavenURLFromMavenArtifact(String mavenUrl) throws IOException {
-		return new ArtifactMeta(mavenCache.getSha1ForURL(urlencodedURL(mavenUrl + ".sha1")), -1, urlencodedURL(mavenUrl));
+	public static ArtifactMetadata createMavenURLFromMavenArtifact(String mavenUrl) throws IOException {
+		return new ArtifactMetadata(mavenCache.getSha1ForURL(urlencodedURL(mavenUrl + ".sha1")), -1, urlencodedURL(mavenUrl));
 	}
 
 	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetryMaven(String url, LocalFileInfo localFileInfo) {

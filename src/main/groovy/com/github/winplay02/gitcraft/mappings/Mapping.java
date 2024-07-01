@@ -83,17 +83,17 @@ public abstract class Mapping {
 	protected abstract Path getMappingsPathInternal(OrderedVersion mcVersion);
 
 	public final IMappingProvider getMappingsProvider(OrderedVersion mcVersion) {
-		if (!doMappingsExist(mcVersion)) {
+		if (!this.doMappingsExist(mcVersion)) {
 			MiscHelper.panic("Tried to use %s-mappings for version %s. These mappings do not exist for this version.", this, mcVersion.launcherFriendlyVersionName());
 		}
-		Optional<Path> mappingsPath = getMappingsPath(mcVersion);
+		Optional<Path> mappingsPath = this.getMappingsPath(mcVersion);
 		if (mappingsPath.isEmpty() && !this.isMappingFileRequired()) {
-			return null;
+			return acceptor -> { };
 		}
 		if (mappingsPath.isEmpty() || !Files.exists(mappingsPath.orElseThrow())) {
 			MiscHelper.panic("An error occurred while getting mapping information for %s (version %s)", this, mcVersion.launcherFriendlyVersionName());
 		}
-		return TinyUtils.createTinyMappingProvider(mappingsPath.get(), getSourceNS(), getDestinationNS());
+		return TinyUtils.createTinyMappingProvider(mappingsPath.get(), this.getSourceNS(), this.getDestinationNS());
 	}
 
 	/**
