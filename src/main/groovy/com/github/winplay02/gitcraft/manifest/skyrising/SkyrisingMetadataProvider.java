@@ -49,7 +49,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 		Set<VersionInfo> infos = new LinkedHashSet<>();
 		Map<String, VersionDetails> detailses = new LinkedHashMap<>();
 
-		for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && f.endsWith(".json"))) {
+		for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
 			VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
 
 			// we could check every field but this ought to be enough
