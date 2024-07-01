@@ -292,14 +292,14 @@ public class CommitStep extends Step {
 			// Copy Assets
 			Path targetRoot = repo.getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
 			if (GitCraft.config.useHardlinks && GitCraftPaths.ASSETS_OBJECTS.getFileSystem().equals(targetRoot.getFileSystem()) && !GitCraft.config.sortJsonObjects) {
-				for (Map.Entry<String, AssetsIndexMetadata.Object> entry : assetsIndex.assetsIndex().objects().entrySet()) {
+				for (Map.Entry<String, AssetsIndexMetadata.Asset> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
 					Files.createDirectories(targetPath.getParent());
 					Files.createLink(targetPath, sourcePath);
 				}
 			} else {
-				for (Map.Entry<String, AssetsIndexMetadata.Object> entry : assetsIndex.assetsIndex().objects().entrySet()) {
+				for (Map.Entry<String, AssetsIndexMetadata.Asset> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = GitCraftPaths.ASSETS_OBJECTS.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
 					Files.createDirectories(targetPath.getParent());
