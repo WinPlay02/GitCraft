@@ -8,6 +8,8 @@ import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 public interface MetadataProvider {
+	ManifestSource getSource();
+
 	/**
 	 * @return A human-readable string that identifies this manifest provider.
 	 */

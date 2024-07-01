@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.github.winplay02.gitcraft.manifest.BaseMetadataProvider;
+import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -139,6 +140,11 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	private void addMetadataSource(String id, String url, String sha1) {
 		this.addMetadataSource(new MojangLauncherManifest.VersionEntry(id, url, sha1));
+	}
+
+	@Override
+	public ManifestSource getSource() {
+		return ManifestSource.MOJANG;
 	}
 
 	@Override

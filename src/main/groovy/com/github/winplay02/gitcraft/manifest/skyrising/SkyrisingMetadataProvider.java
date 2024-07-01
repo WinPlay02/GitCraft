@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.manifest.skyrising;
 
 import com.github.winplay02.gitcraft.manifest.BaseMetadataProvider;
+import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.meta.VersionDetails;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -24,6 +25,11 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	public SkyrisingMetadataProvider() {
 		this.addManifestSource("https://skyrising.github.io/mc-versions/version_manifest.json", SkyrisingManifest.class);
+	}
+
+	@Override
+	public ManifestSource getSource() {
+		return ManifestSource.SKYRISING;
 	}
 
 	@Override

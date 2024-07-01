@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.MetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -206,7 +207,9 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 
 	public static MinecraftVersionGraph createFromMetadata(MetadataProvider provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
-		graph.repoTags.add(String.format("manifest_%s", provider.getInternalName()));
+		if (provider.getSource() != ManifestSource.MOJANG) {
+			graph.repoTags.add(String.format("manifest_%s", provider.getInternalName()));
+		}
 		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersions().values());
 		//TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions().values().stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());
 		Map<String, OrderedVersion> semverMetaVersions = provider.getVersions().values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
