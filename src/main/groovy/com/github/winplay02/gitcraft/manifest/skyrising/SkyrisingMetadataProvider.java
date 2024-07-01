@@ -99,9 +99,6 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 				// 12w34a has 1.3.2 as parent while 12w32a has 1.3.1 as parent
 				// leading to two valid paths through those versions
 				case "1.3.2"     -> false;
-				// issue in the manifest, it's listed as a previous
-				// version but does not itself appear in the manifest
-				case "rd-132211" -> false;
 				default          -> true;
 			})
 			.map(versionId -> this.getVersionDetails(versionId).normalizedVersion())
