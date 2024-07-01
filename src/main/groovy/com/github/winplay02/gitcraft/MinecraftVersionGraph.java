@@ -198,7 +198,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 
 	public HashSet<String> repoTags = new HashSet<>();
 	/** root nodes of the graph, mapped to the path lengths to the tips of those main branches */
-	public HashMap<OrderedVersion, Integer> roots = new HashMap<>();;
+	public HashMap<OrderedVersion, Integer> roots = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesBack = new HashMap<>();
 	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesFw = new HashMap<>();
 	/** nodes that mark new side branches, mapped to the path lengths to the tip sof those side branches */
