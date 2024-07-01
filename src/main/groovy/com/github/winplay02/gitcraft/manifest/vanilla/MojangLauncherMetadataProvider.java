@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import com.github.winplay02.gitcraft.manifest.BaseMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
@@ -384,5 +385,15 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 				return null;
 			}
 		}
+	}
+
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)\\d+|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+
+	@Override
+	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
+		return super.shouldExcludeFromMainBranch(mcVersion)
+			// filter out april fools snapshots and experimental versions,
+			// which often have typical ids that do not match normal snapshots
+			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
 	}
 }

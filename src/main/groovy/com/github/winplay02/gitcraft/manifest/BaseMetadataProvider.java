@@ -208,4 +208,9 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			return null;
 		}
 	}
+
+	@Override
+	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
+		return mcVersion.isPending();
+	}
 }

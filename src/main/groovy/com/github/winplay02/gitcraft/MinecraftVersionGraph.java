@@ -126,7 +126,6 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		for (OrderedVersion root : roots) {
 			this.markMainBranch(root);
 		}
-		this.getDeepestRootVersion();
 	}
 
 	private int findBranchPoints(OrderedVersion mcVersion) {
@@ -137,31 +136,25 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 			return branchLength;
 		}
 
+		Predicate<OrderedVersion> mainBranchPredicate = v -> !GitCraft.config.manifestSource.getMetadataProvider().shouldExcludeFromMainBranch(v);
+
 		NavigableSet<OrderedVersion> nextBranches = this.getFollowingNodes(mcVersion);
+		Set<OrderedVersion> potentialMainBranches = nextBranches.stream().filter(mainBranchPredicate).collect(Collectors.toSet());
 
-		// tip of a branch
-		if (nextBranches.size() < 1) {
-			branchLength = 0;
-		}
-
-		// only one following node; no splitting
-		if (nextBranches.size() == 1) {
-			OrderedVersion nextBranch = nextBranches.first();
+		// find branch points in all following paths
+		for (OrderedVersion nextBranch : nextBranches) {
+			// find more branch points down this path
+			// and find the length to the farthest tip
 			int nextBranchLength = this.findBranchPoints(nextBranch);
-
-			branchLength = nextBranchLength;
-		}
-
-		// multiple following nodes; find largest path forward
-		if (nextBranches.size() > 1) {
-			for (OrderedVersion nextBranch : this.getFollowingNodes(mcVersion)) {
-				// since the branch splits, mark these versions as branch points
-				int nextBranchLength = this.findBranchPoints(nextBranch);
+			// some versions are *definitely* side branches
+			// we only want to mark potential main branches
+			// if there are more than one, since side branches
+			// are not sanitized later
+			if (mainBranchPredicate.test(nextBranch) || potentialMainBranches.size() > 1) {
+				// this branch is marked as a branch point right now,
+				// but the map will be sanitized later to remove versions
+				// from the main branch
 				this.branchPoints.put(nextBranch, nextBranchLength);
-
-				if (nextBranchLength > branchLength) {
-					branchLength = nextBranchLength;
-				}
 			}
 		}
 
@@ -179,7 +172,13 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		OrderedVersion mainBranch = null;
 		int mainBranchLength = -1;
 
+		// walk the main branch and continue along the longest path
 		for (OrderedVersion branch : nextBranches) {
+			// ignore versions that are *definitely* side branches
+			if (GitCraft.config.manifestSource.getMetadataProvider().shouldExcludeFromMainBranch(branch)) {
+				continue;
+			}
+
 			int branchLength = this.branchPoints.getOrDefault(branch, 0);
 
 			if (branchLength > mainBranchLength) {

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingManifest, SkyrisingManifest.VersionEntry> {
 
@@ -95,15 +96,21 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	@Override
 	public List<String> getParentVersion(OrderedVersion mcVersion) {
 		return this.getVersionDetails(mcVersion.launcherFriendlyVersionName()).previous().stream()
-			.filter(versionId -> switch (versionId) {
-				// 12w34a has 1.3.2 as parent while 12w32a has 1.3.1 as parent
-				// leading to two valid paths through those versions
-				case "1.3.2"     -> false;
-				default          -> true;
-			})
 			.map(versionId -> this.getVersionDetails(versionId).normalizedVersion())
 			.filter(Objects::nonNull)
 			.toList();
+	}
+
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)(-\\d+|\\d+)|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+
+	@Override
+	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
+		return super.shouldExcludeFromMainBranch(mcVersion)
+			// ensure the main branch goes through 12w32a rather than 1.3.2
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "1.3.2")
+			// filter out april fools snapshots and experimental versions,
+			// which often have typical ids that do not match normal snapshots
+			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
 	}
 
 	private VersionDetails getVersionDetails(String versionId) {
