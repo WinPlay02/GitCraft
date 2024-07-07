@@ -49,7 +49,7 @@ public class ParchmentMappings extends Mapping {
 
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
-		return mcVersion.hasFullMojMaps() && !mcVersion.isSnapshotOrPending() && !GitCraftConfig.parchmentMissingVersions.contains(mcVersion.launcherFriendlyVersionName()) && mcVersion.compareTo(GitCraft.config.manifestSource.getManifestSourceImpl().getVersionByVersionID(GitCraftConfig.PARCHMENT_START_VERSION_ID)) >= 0;
+		return mcVersion.hasFullMojMaps() && !mcVersion.isSnapshotOrPending() && !GitCraftConfig.parchmentMissingVersions.contains(mcVersion.launcherFriendlyVersionName()) && mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(GitCraftConfig.PARCHMENT_START_VERSION_ID)) >= 0;
 	}
 
 	@Override

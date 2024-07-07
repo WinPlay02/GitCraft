@@ -1,7 +1,6 @@
 package com.github.winplay02.gitcraft;
 
-import com.github.winplay02.gitcraft.manifest.ManifestSource;
-import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
+import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -42,10 +41,10 @@ public class GitCraftTest {
 
 	@Test
 	public void versionGraphFilter() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraphComplete = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraphComplete = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		MinecraftVersionGraph vgSnapshots = versionGraphComplete.filterSnapshots();
 		MinecraftVersionGraph vgStable = versionGraphComplete.filterStableRelease();
 		assertEquals(versionGraphComplete.stream().count(), vgSnapshots.stream().count() + vgStable.stream().count());
@@ -57,10 +56,10 @@ public class GitCraftTest {
 		assertNull(vgSnapshots.getMinecraftVersionByName("1.20"));
 		assertTrue(vgSnapshots.containsVersion(versionGraphComplete.getMinecraftVersionBySemanticVersion("1.20-rc.1")));
 		assertNotNull(versionGraphComplete.getMinecraftVersionBySemanticVersion("1.20-rc.1"));
-		assertEquals("1.14.4", versionGraphComplete.filterMapping(MappingFlavour.MOJMAP, new MappingFlavour[0]).getRootVersions().get(0).launcherFriendlyVersionName());
-		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.filterMinVersion(versionGraphComplete.getMinecraftVersionByName("1.20")).getRootVersions().get(0));
+		assertEquals("1.14.4", versionGraphComplete.filterMapping(MappingFlavour.MOJMAP, new MappingFlavour[0]).getDeepestRootVersion().launcherFriendlyVersionName());
+		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.filterMinVersion(versionGraphComplete.getMinecraftVersionByName("1.20")).getDeepestRootVersion());
 		MinecraftVersionGraph onlyVersionGraph = versionGraphComplete.filterOnlyVersion(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.getMinecraftVersionByName("1.19"));
-		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.19"), onlyVersionGraph.getRootVersions().get(0));
+		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.19"), onlyVersionGraph.getDeepestRootVersion());
 		assertEquals(2L, onlyVersionGraph.stream().count());
 		MinecraftVersionGraph excludeVersionGraph = versionGraphComplete.filterExcludeVersion(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.getMinecraftVersionByName("1.19"));
 		assertFalse(excludeVersionGraph.containsVersion(versionGraphComplete.getMinecraftVersionByName("1.19")));
@@ -69,15 +68,15 @@ public class GitCraftTest {
 		MinecraftVersionGraph minMaxVersionGraph = versionGraphComplete.filterMinVersion(versionGraphComplete.getMinecraftVersionByName("1.19")).filterMaxVersion(versionGraphComplete.getMinecraftVersionByName("1.19"));
 		assertEquals(1L, minMaxVersionGraph.stream().count());
 		MinecraftVersionGraph mainlineVersionGraph = versionGraphComplete.filterMainlineVersions();
-		assertFalse(mainlineVersionGraph.stream().anyMatch(MinecraftVersionGraph::isVersionNonLinearSnapshot));
+		assertTrue(mainlineVersionGraph.stream().allMatch(mainlineVersionGraph::isOnMainBranch));
 	}
 
 	@Test
 	public void mappingsMojang() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		Path mappingsPath = GitCraft.MOJANG_MAPPINGS.get().getMappingsPathInternal(versionGraph.getMinecraftVersionByName("1.20"));
 		Files.deleteIfExists(mappingsPath);
@@ -97,10 +96,10 @@ public class GitCraftTest {
 
 	@Test
 	public void mappingsParchment() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		Path mappingsPath = GitCraft.MOJANG_PARCHMENT_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.20.1")).orElse(null);
 		assertNotNull(mappingsPath);
@@ -119,10 +118,10 @@ public class GitCraftTest {
 
 	@Test
 	public void mappingsFabricIntermediary() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		Path mappingsPath = GitCraft.FABRIC_INTERMEDIARY_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.20")).orElse(null);
 		assertNotNull(mappingsPath);
@@ -141,10 +140,10 @@ public class GitCraftTest {
 
 	@Test
 	public void mappingsYarn() throws IOException {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		Path mappingsPath = GitCraft.YARN_MAPPINGS.get().getMappingsPath(versionGraph.getMinecraftVersionByName("1.20")).orElse(null);
 		assertNotNull(mappingsPath);
@@ -254,10 +253,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipeline() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -332,10 +331,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineNoAssets() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=1.17.1", "--no-assets"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -353,10 +352,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineExternalAssets() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=21w37a", "--no-external-assets"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -371,10 +370,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineDatapack() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=1.18", "--no-datapack"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -392,10 +391,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineDatapackReset() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=1.18", "--no-datapack", "--refresh"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -413,10 +412,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineMinMaxExclude() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--min-version=1.20-rc1", "--max-version=1.20", "--exclude-version=1.20"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -449,10 +448,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineNoDatagenSnbt() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=1.20-rc1", "--no-datagen-snbt"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
@@ -473,10 +472,10 @@ public class GitCraftTest {
 
 	@Test
 	public void pipelineNoDatagenRegistryReports() throws Exception {
-		MinecraftLauncherManifest metadataBootstrap = new MinecraftLauncherManifest();
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(GitCraftPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MinecraftLauncherManifest();
-		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(ManifestSource.MOJANG_MINECRAFT_LAUNCHER, metadataBootstrap);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
 		GitCraft.main(new String[]{"--only-version=1.18_experimental-snapshot-1", "--no-datagen-report"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {

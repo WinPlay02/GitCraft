@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -46,6 +47,10 @@ public class MergeStep extends Step {
 	@Override
 	public StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException {
 		if (!mcVersion.hasClientCode() || !mcVersion.hasServerJar()) {
+			return StepResult.NOT_RUN;
+		}
+		// obfuscated jars for versions older than 1.3 cannot be merged
+		if (mcVersion.timestamp().isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)) {
 			return StepResult.NOT_RUN;
 		}
 		Path mergedPath = getInternalArtifactPath(mcVersion, mappingFlavour);

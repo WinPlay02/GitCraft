@@ -3,7 +3,7 @@ package com.github.winplay02.gitcraft.pipeline;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.meta.AssetsIndexMeta;
+import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -49,7 +49,7 @@ public class FetchAssetsStep extends Step {
 		}
 		Path assetsIndexPath = mcVersion.assetsIndex().resolve(this.rootPathAssetsIndex);
 		StepResult assetsIndexResult = mcVersion.assetsIndex().fetchArtifact(this.rootPathAssetsIndex, "assets index");
-		AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMeta.class));
+		AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMetadata.class));
 		pipelineCache.putAssetsIndex(assetsIndex);
 		List<StepResult> results = new java.util.ArrayList<>(List.of(assetsIndexResult));
 		for (Artifact assetObject : assetsIndex.assets()) {

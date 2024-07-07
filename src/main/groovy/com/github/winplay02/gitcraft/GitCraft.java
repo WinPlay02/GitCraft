@@ -1,7 +1,5 @@
 package com.github.winplay02.gitcraft;
 
-import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingManifest;
-import com.github.winplay02.gitcraft.manifest.vanilla.MinecraftLauncherManifest;
 import com.github.winplay02.gitcraft.mappings.IdentityMappings;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
@@ -33,9 +31,7 @@ import java.util.List;
 
 public class GitCraft {
 	public static final String VERSION = "0.2.0";
-	/// Every Manifest Source
-	public static final LazyValue<MinecraftLauncherManifest> MANIFEST_SOURCE_MOJANG_MINECRAFT_LAUNCHER = LazyValue.of(MinecraftLauncherManifest::new);
-	public static final LazyValue<SkyrisingManifest> MANIFEST_SKYRISING = LazyValue.of(SkyrisingManifest::new);
+
 	/// Every Mapping
 	public static final LazyValue<MojangMappings> MOJANG_MAPPINGS = LazyValue.of(MojangMappings::new);
 	public static final LazyValue<FabricIntermediaryMappings> FABRIC_INTERMEDIARY_MAPPINGS = LazyValue.of(FabricIntermediaryMappings::new);
@@ -83,7 +79,7 @@ public class GitCraft {
 			}
 		}, "Shutdown-Hook-Maven-Cache-Saver"));
 		// Create Graph
-		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.config.manifestSource, GitCraft.config.manifestSource.getManifestSourceImpl());
+		GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(GitCraft.config.manifestSource.getMetadataProvider());
 		RemoteHelper.saveMavenCache();
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);

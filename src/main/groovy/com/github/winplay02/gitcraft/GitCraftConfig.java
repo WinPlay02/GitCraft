@@ -7,6 +7,7 @@ import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
 
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 public class GitCraftConfig {
 
 	/// Manifest Source option
-	public ManifestSource manifestSource = ManifestSource.MOJANG_MINECRAFT_LAUNCHER;
+	public ManifestSource manifestSource = ManifestSource.MOJANG;
 
 	/// Additional Data import settings
 	public boolean loadIntegratedDatapack = true;
@@ -43,7 +44,6 @@ public class GitCraftConfig {
 	public String gitUser = "Mojang";
 	public String gitMail = "gitcraft@decompiled.mc";
 	public String gitMainlineLinearBranch = "master";
-	public String gitOldServerLinearBranch = "classic-alpha-server";
 	public boolean createVersionBranches = false;
     public boolean createStableVersionBranches = false;
 
@@ -69,10 +69,13 @@ public class GitCraftConfig {
 	/// Mapping quirks
 	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.15.11";
 
-	public static final String INTERMEDIARY_MAPPINGS_START_VERSION_ID = "18w43b"; // 1.14 snapshot
+	public static final String FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID = "18w43b"; // 1.14 snapshot
 	public static final String YARN_MAPPINGS_START_VERSION_ID = "18w49a"; // 1.14 snapshot
 	public static final String YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID = "1.14.3";
 	public static final String PARCHMENT_START_VERSION_ID = "1.16.5";
+
+	// use release time to get around 1.3 having different ids in different manifest sources
+	public static final ZonedDateTime FIRST_MERGEABLE_VERSION_RELEASE_TIME = ZonedDateTime.parse("2012-07-25T22:00:00+00:00");
 
 	public static List<String> intermediaryMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
 
