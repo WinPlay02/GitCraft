@@ -97,6 +97,7 @@ public class GitCraft {
 			DEFAULT_PIPELINE.add(STEP_UNPICK = new UnpickStep());
 			DEFAULT_PIPELINE.add(STEP_DECOMPILE = new DecompileStep());
 			DEFAULT_PIPELINE.add(STEP_COMMIT = new CommitStep());
+			RemapStep.init();
 		}
 		try (RepoWrapper repo = GitCraft.getRepository()) {
 			runMainPipeline(GitCraft.DEFAULT_PIPELINE, repo);

@@ -286,11 +286,11 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	}
 
 	public NavigableSet<OrderedVersion> getPreviousNodes(OrderedVersion version) {
-		return Collections.unmodifiableNavigableSet(this.edgesBack.get(version));
+		return Collections.unmodifiableNavigableSet(this.edgesBack.containsKey(version) ? this.edgesBack.get(version) : Collections.emptyNavigableSet());
 	}
 
 	public NavigableSet<OrderedVersion> getFollowingNodes(OrderedVersion version) {
-		return Collections.unmodifiableNavigableSet(this.edgesFw.get(version));
+		return Collections.unmodifiableNavigableSet(this.edgesFw.containsKey(version) ? this.edgesFw.get(version) : Collections.emptyNavigableSet());
 	}
 
 	public boolean isOnMainBranch(OrderedVersion mcVersion) {

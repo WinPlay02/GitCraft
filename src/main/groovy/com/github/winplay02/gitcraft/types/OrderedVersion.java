@@ -9,6 +9,8 @@ import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -154,12 +156,12 @@ public record OrderedVersion(
 	}
 
 	public ZonedDateTime timestamp() {
-		if (this.versionInfo().time() != null)
-			return this.versionInfo().time();
-		if (this.versionInfo().releaseTime() != null)
-			return this.versionInfo().releaseTime();
-		MiscHelper.panic("cannot find timestamp for %s, as its version meta contains neither a time nor a releaseTime!", this.versionInfo().id());
-		return null; // panic throws an exception anyway so this is just here to make the compiler happy
+		if (this.versionInfo().time() == null && this.versionInfo().releaseTime() == null) {
+			MiscHelper.panic("cannot find timestamp for %s, as its version meta contains neither a time nor a releaseTime!", this.versionInfo().id());
+			return null; // panic throws an exception anyway so this is just here to make the compiler happy
+		}
+		// otherwise the check against FIRST_MERGEABLE_VERSION_RELEASE_TIME may fail
+		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
 	}
 
 	public String assetsIndexId() {

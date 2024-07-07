@@ -112,7 +112,7 @@ public class CommitStep extends Step {
 
 	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
 		OrderedVersion branch = GitCraft.versionGraph.walkToPreviousBranchPoint(mcVersion);
-		OrderedVersion root = GitCraft.versionGraph.walkToRoot(branch);
+		OrderedVersion root = GitCraft.versionGraph.walkToRoot(mcVersion);
 		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
 		return (branch == null
 			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
@@ -135,6 +135,7 @@ public class CommitStep extends Step {
 					MiscHelper.panic("HEAD is not empty and the target branch already exists, but the current version is the root version, and should be one initial commit");
 				}
 				checkoutNewOrphanBranch(repo, target_branch);
+				return Optional.of(target_branch);
 			} else if (prev_version.isEmpty()) {
 				MiscHelper.panic("HEAD is not empty, but current version does not have any preceding versions and is not a root version");
 			} else {
@@ -236,22 +237,41 @@ public class CommitStep extends Step {
 
 	private void copyAssets(PipelineCache pipelineCache, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
 		if (GitCraft.config.loadAssets || GitCraft.config.loadIntegratedDatapack) {
+			if (mcVersion.hasServerZip()) {
+				Path artifactRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mcVersion.serverDist().serverZip().resolve(artifactRootPath))) {
+					for (Path rootPath : fs.get().getRootDirectories()) {
+						MiscHelper.copyLargeDirExcept(rootPath, repo.getRootPath().resolve("server-info"), List.of(rootPath.resolve(RemapStep.SERVER_ZIP_JAR_NAME)));
+					}
+				}
+			}
 			Path mergedJarPath = pipelineCache.getForKey(Step.STEP_MERGE);
 			if (mergedJarPath == null) { // Client JAR could also work, if merge did not happen
-				MiscHelper.panic("A merged JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
-			}
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mergedJarPath)) {
-				if (GitCraft.config.loadAssets) {
-					MiscHelper.copyLargeDir(fs.get().getPath("assets"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("assets"));
+				if (mcVersion.hasClientCode()) {
+					Path artifactRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
+					mergedJarPath = mcVersion.clientJar().resolve(artifactRootPath);
 				}
-				if (GitCraft.config.loadIntegratedDatapack) {
-					MiscHelper.copyLargeDir(fs.get().getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("data"));
+			}
+			if (mergedJarPath != null) {
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mergedJarPath)) {
+					if (GitCraft.config.loadAssets) {
+						Path assetsSrcPath = fs.get().getPath("assets");
+						if (Files.exists(assetsSrcPath)) {
+							MiscHelper.copyLargeDir(fs.get().getPath("assets"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("assets"));
+						}
+					}
+					if (GitCraft.config.loadIntegratedDatapack) {
+						Path dataSrcPath = fs.get().getPath("data");
+						if (Files.exists(dataSrcPath)) {
+							MiscHelper.copyLargeDir(fs.get().getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("data"));
+						}
+					}
 				}
 			}
 		}
 		if (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) {
 			Path artifactsRootPath = pipelineCache.getForKey(Step.STEP_FETCH_ARTIFACTS);
-			if (GitCraft.config.loadDatagenRegistry) {
+			if (GitCraft.config.loadDatagenRegistry && Files.exists(GitCraft.STEP_DATAGEN.getDatagenReportsArchive(artifactsRootPath))) {
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(GitCraft.STEP_DATAGEN.getDatagenReportsArchive(artifactsRootPath))) {
 					MiscHelper.copyLargeDir(fs.getPath("reports"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
 				}
@@ -263,7 +283,7 @@ public class CommitStep extends Step {
 					}
 				}
 			}
-			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack) {
+			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack && Files.exists(GitCraft.STEP_DATAGEN.getDatagenSNBTArchive(artifactsRootPath))) {
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(GitCraft.STEP_DATAGEN.getDatagenSNBTArchive(artifactsRootPath))) {
 					MiscHelper.copyLargeDir(fs.getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
 				}

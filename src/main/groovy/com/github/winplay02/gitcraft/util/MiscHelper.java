@@ -58,6 +58,24 @@ public class MiscHelper {
 		}
 	}
 
+	public static void copyLargeDirExcept(Path source, Path target, List<Path> exceptions) {
+		try (Stream<Path> walk = Files.walk(source)) {
+			for (Path path : (Iterable<? extends Path>) walk::iterator) {
+				Path resultPath = target.resolve(source.relativize(path).toString());
+				if (exceptions.contains(resultPath)) {
+					continue;
+				}
+				if (Files.isDirectory(path) && Files.notExists(resultPath)) {
+					Files.createDirectories(resultPath);
+				} else if (Files.isRegularFile(path)) {
+					Files.copy(path, resultPath, StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	public static void deleteFile(Path file) {
 		try {
 			Files.deleteIfExists(file);

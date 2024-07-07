@@ -65,17 +65,21 @@ public class DecompileStep extends Step {
 			Files.delete(decompiledPath);
 		}
 		Path remappedPath = pipelineCache.getForKey(Step.STEP_UNPICK);
+		Path remappedPathClient = pipelineCache.getForKey(Step.STEP_REMAP_CLIENT_ONLY);
+		Path remappedPathServer = pipelineCache.getForKey(Step.STEP_REMAP_SERVER_ONLY);
 		if (remappedPath == null) {
 			// if no unpicking happened, use remapped
 			remappedPath = pipelineCache.getForKey(Step.STEP_REMAP);
-			// TODO if remapping did not happen, do something useful; Maybe decompile raw?
-			if (remappedPath == null) {
+			if (remappedPath == null && remappedPathClient == null && remappedPathServer == null) {
 				MiscHelper.panic("Both an unpicked JAR and a remapped JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
 			}
 		}
+		if (remappedPath != null && (remappedPathClient != null || remappedPathServer != null)) {
+			MiscHelper.panic("Both an remapped JAR for version %s and a separately remapped client or server jar exists", mcVersion.launcherFriendlyVersionName());
+		}
 		Path libraryPath = pipelineCache.getForKey(Step.STEP_FETCH_LIBRARIES);
-		if (libraryPath == null) {
-			MiscHelper.panic("Libraries for version %s do not exist", mcVersion.launcherFriendlyVersionName());
+		if (libraryPath == null && !mcVersion.libraries().isEmpty()) {
+			MiscHelper.panic("Library path for version %s does not exist, but libraries exist", mcVersion.launcherFriendlyVersionName());
 		}
 
 		// Adapted from loom-quiltflower by Juuxel
@@ -95,33 +99,43 @@ public class DecompileStep extends Step {
 			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappingFlavour.getMappingImpl().getMappingsPath(mcVersion).orElseThrow().toFile()));
 		}
 
-		FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath, true);
-		Iterator<Path> resultFsIt = decompiledJar.get().getRootDirectories().iterator();
-		if (!resultFsIt.hasNext()) {
-			throw new RuntimeException("Zip FileSystem does not have any root directories");
+		try (FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(decompiledPath, true)) {
+			Iterator<Path> resultFsIt = decompiledJar.get().getRootDirectories().iterator();
+			if (!resultFsIt.hasNext()) {
+				throw new RuntimeException("Zip FileSystem does not have any root directories");
+			}
+			Path targetJarRootPath = resultFsIt.next();
+
+			if (remappedPath != null) {
+				decompileSingleFileToOutputPath(mcVersion, remappedPath, "merged", targetJarRootPath, options, libraryPath);
+			}
+			if (remappedPathClient != null) {
+				decompileSingleFileToOutputPath(mcVersion, remappedPathClient, "client", targetJarRootPath.resolve("client"), options, libraryPath);
+			}
+			if (remappedPathServer != null) {
+				decompileSingleFileToOutputPath(mcVersion, remappedPathServer, "server", targetJarRootPath.resolve("server"), options, libraryPath);
+			}
+
+			MiscHelper.println("Writing dependencies file...");
+			writeLibraries(targetJarRootPath, mcVersion);
 		}
-		Path targetJarRootPath = resultFsIt.next();
+		return StepResult.SUCCESS;
+	}
 
-		Fernflower ff = new Fernflower(new FFNIODirectoryResultSaver(targetJarRootPath, decompiledJar), options, new PrintStreamLogger(NULL_IS)); // System.out
-
-		MiscHelper.println("Adding libraries...");
-		for (Artifact library : mcVersion.libraries()) {
-			Path lib_file = library.resolve(libraryPath);
-			// TODO add library via NIO
-			ff.addLibrary(lib_file.toFile());
+	private void decompileSingleFileToOutputPath(OrderedVersion mcVersion, Path sourceJar, String sourceJarName, Path outputPath, Map<String, Object> options, Path libraryPath) {
+		Fernflower ff = new Fernflower(new FFNIODirectoryResultSaver(outputPath, null), options, new PrintStreamLogger(NULL_IS)); // System.out
+		if (libraryPath != null) {
+			for (Artifact library : mcVersion.libraries()) {
+				Path lib_file = library.resolve(libraryPath);
+				// TODO add library via NIO
+				ff.addLibrary(lib_file.toFile());
+			}
 		}
-
 		// TODO add source via NIO
-		ff.addSource(remappedPath.toFile());
-
-		MiscHelper.executeTimedStep("Decompiling...", ff::decompileContext);
-
-		MiscHelper.println("Writing dependencies file...");
-		writeLibraries(targetJarRootPath, mcVersion);
-
+		ff.addSource(sourceJar.toFile());
+		MiscHelper.executeTimedStep(String.format("Decompiling %s...", sourceJarName), ff::decompileContext);
 		// Should release file handles, if exists
 		ff.clearContext();
-		return StepResult.SUCCESS;
 	}
 
 	private static void writeLibraries(Path parentDirectory, OrderedVersion mcVersion) throws IOException {

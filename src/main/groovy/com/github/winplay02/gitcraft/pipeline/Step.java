@@ -17,10 +17,12 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +45,10 @@ public abstract class Step {
 	protected static final String STEP_PREPARE_MAPPINGS = "Prepare Mappings";
 
 	protected static final String STEP_REMAP = "Remap";
+
+	protected static final String STEP_REMAP_CLIENT_ONLY = "Remap Client";
+
+	protected static final String STEP_REMAP_SERVER_ONLY = "Remap Server";
 
 	protected static final String STEP_UNPICK = "Unpick";
 
@@ -138,9 +144,11 @@ public abstract class Step {
 
 	public abstract StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception;
 
-	public static void executePipeline(List<Step> steps, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
+	public static void executePipeline(List<Step> defaultSteps, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
+		LinkedList<Step> pipelineSteps = new LinkedList<>(defaultSteps);
 		PipelineCache pipelineCache = new PipelineCache();
-		for (Step step : steps) {
+		while (!pipelineSteps.isEmpty()) {
+			Step step = pipelineSteps.pop();
 			Exception cachedException = null;
 			StepResult result;
 			long timeStart = System.nanoTime();
@@ -156,6 +164,9 @@ public abstract class Step {
 				} else {
 					result = StepResult.NOT_RUN;
 				}
+			} catch (PipelineInjectionReplaceControlFlow controlFlow) {
+				result = StepResult.NOT_RUN;
+				controlFlow.steps.forEach(pipelineSteps::push);
 			} catch (Exception e) {
 				cachedException = e;
 				result = StepResult.FAILED;
@@ -205,6 +216,24 @@ public abstract class Step {
 				pipelineCache.putPath(step, step.getArtifactPath(mcVersion, mappingFlavour).orElse(null));
 			}
 		}
+	}
+
+	private static class PipelineInjectionReplaceControlFlow extends RuntimeException {
+		final List<Step> steps;
+
+		private PipelineInjectionReplaceControlFlow(List<Step> steps) {
+			this.steps = steps;
+		}
+	}
+
+	public static void injectStepsAndReplace(Iterable<Step> steps) {
+		List<Step> stepsNew = new ArrayList<>();
+		steps.forEach(stepsNew::add);
+		throw new PipelineInjectionReplaceControlFlow(stepsNew);
+	}
+
+	public static void injectStepsAndReplace(Step... steps) {
+		injectStepsAndReplace(Arrays.asList(steps));
 	}
 
 	public static final class CommitMsgFilter extends RevFilter {
