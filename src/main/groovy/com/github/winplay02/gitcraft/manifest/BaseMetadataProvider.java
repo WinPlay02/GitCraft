@@ -176,6 +176,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 					if (zipFile.isPresent()) {
 						targetFile = zipFile.get();
 					}
+					return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
 				}
 			} else {
 				MiscHelper.panic("unknown metadata file extension: %s", targetFile);
