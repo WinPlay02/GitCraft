@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
@@ -151,7 +152,11 @@ public class RemoteHelper {
 	private static MavenCache mavenCache = new MavenCache();
 
 	public static void saveMavenCache() throws IOException {
-		SerializationHelper.writeAllToPath(GitCraftPaths.MAVEN_CACHE, SerializationHelper.serialize(mavenCache));
+		try {
+			SerializationHelper.writeAllToPath(GitCraftPaths.MAVEN_CACHE, SerializationHelper.serialize(mavenCache));
+		} catch (NoSuchFileException ignored) {}
+		// If it can't save, it probably means, we're in a testing environment, after cleaning up
+		// If this occurs during normal use, it just won't cache anything. Too bad.
 	}
 
 	public static void loadMavenCache() throws IOException {
