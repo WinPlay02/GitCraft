@@ -55,7 +55,7 @@ dependencies {
 	// https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
 	implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
 
-	// Decompiler, could be replaced with another fernflower fork
+	// Decompiler
 	implementation "org.vineflower:vineflower:${vineflower_version}"
 
 	// Testing
