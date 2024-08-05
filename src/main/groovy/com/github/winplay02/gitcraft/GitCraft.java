@@ -6,18 +6,7 @@ import com.github.winplay02.gitcraft.mappings.MojangMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
-import com.github.winplay02.gitcraft.pipeline.CommitStep;
-import com.github.winplay02.gitcraft.pipeline.DatagenStep;
-import com.github.winplay02.gitcraft.pipeline.DecompileStep;
-import com.github.winplay02.gitcraft.pipeline.FetchArtifactsStep;
-import com.github.winplay02.gitcraft.pipeline.FetchAssetsStep;
-import com.github.winplay02.gitcraft.pipeline.FetchLibrariesStep;
-import com.github.winplay02.gitcraft.pipeline.MergeStep;
-import com.github.winplay02.gitcraft.pipeline.PrepareMappingsStep;
-import com.github.winplay02.gitcraft.pipeline.RemapStep;
-import com.github.winplay02.gitcraft.pipeline.ResetStep;
-import com.github.winplay02.gitcraft.pipeline.Step;
-import com.github.winplay02.gitcraft.pipeline.UnpickStep;
+import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
@@ -26,8 +15,6 @@ import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class GitCraft {
 	public static final String VERSION = "0.2.0";
@@ -38,22 +25,6 @@ public class GitCraft {
 	public static final LazyValue<Mapping> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
 	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
 	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
-
-	/// Every Step
-	public static Step STEP_RESET = null;
-	public static Step STEP_FETCH_ARTIFACTS = null;
-	public static Step STEP_FETCH_LIBRARIES = null;
-	public static Step STEP_FETCH_ASSETS = null;
-	public static Step STEP_MERGE = null;
-	public static DatagenStep STEP_DATAGEN = null;
-	public static Step STEP_PREPARE_MAPPINGS = null;
-	public static Step STEP_REMAP = null;
-	public static Step STEP_UNPICK = null;
-	public static Step STEP_DECOMPILE = null;
-	public static CommitStep STEP_COMMIT = null;
-
-	/// Default Pipeline
-	public static List<Step> DEFAULT_PIPELINE = null;
 
 	/// Other Information
 	public static GitCraftConfig config = null;
@@ -84,32 +55,17 @@ public class GitCraft {
 		MiscHelper.println("Decompiler log output is suppressed!");
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);
-		{
-			DEFAULT_PIPELINE = new ArrayList<>();
-			DEFAULT_PIPELINE.add(STEP_RESET = new ResetStep());
-			DEFAULT_PIPELINE.add(STEP_FETCH_ARTIFACTS = new FetchArtifactsStep());
-			DEFAULT_PIPELINE.add(STEP_FETCH_LIBRARIES = new FetchLibrariesStep());
-			DEFAULT_PIPELINE.add(STEP_FETCH_ASSETS = new FetchAssetsStep());
-			DEFAULT_PIPELINE.add(STEP_MERGE = new MergeStep());
-			DEFAULT_PIPELINE.add(STEP_DATAGEN = new DatagenStep());
-			DEFAULT_PIPELINE.add(STEP_PREPARE_MAPPINGS = new PrepareMappingsStep());
-			DEFAULT_PIPELINE.add(STEP_REMAP = new RemapStep());
-			DEFAULT_PIPELINE.add(STEP_UNPICK = new UnpickStep());
-			DEFAULT_PIPELINE.add(STEP_DECOMPILE = new DecompileStep());
-			DEFAULT_PIPELINE.add(STEP_COMMIT = new CommitStep());
-			RemapStep.init();
-		}
 		try (RepoWrapper repo = GitCraft.getRepository()) {
-			runMainPipeline(GitCraft.DEFAULT_PIPELINE, repo);
+			runMainPipeline(repo);
 			if (repo != null) {
 				MiscHelper.println("Repo can be found at: %s", repo.getRootPath().toString());
 			}
 		}
 	}
 
-	private static void runMainPipeline(List<Step> pipeline, RepoWrapper repo) {
+	private static void runMainPipeline(RepoWrapper repo) {
 		for (OrderedVersion mcv : versionGraph) {
-			Step.executePipeline(pipeline, mcv, GitCraft.config.getMappingsForMinecraftVersion(mcv).orElseThrow(), versionGraph, repo);
+			new Pipeline().run(repo, versionGraph, mcv);
 		}
 	}
 
