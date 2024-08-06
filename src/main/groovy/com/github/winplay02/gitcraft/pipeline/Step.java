@@ -89,7 +89,7 @@ public enum Step {
 		{
 			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX_DIRECTORY, GitCraftPaths.ASSETS_INDEX);
 			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_OBJECTS_DIRECTORY, GitCraftPaths.ASSETS_OBJECTS);
-			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX, context -> FETCH_ASSETS.getResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX_DIRECTORY, context).resolve(context.minecraftVersion().assetsIndexId()));
+			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX, context -> FETCH_ASSETS.getResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX_DIRECTORY, context).resolve(context.minecraftVersion().assetsIndex().name()));
 		}
 		{
 			UNPACK_ARTIFACTS.setResultFile(ArtifactsUnpacker.Results.MINECRAFT_SERVER_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_JAR, context));
