@@ -276,7 +276,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 			}
 		}
 		if (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) {
-			Path datagenReportsArchive = pipeline.getResultFile(DataGenerator.Results.DATAGEN_REPORTS_ARCHIVE);
+			Path datagenReportsArchive = pipeline.getResultFile(DataGenerator.Results.ARTIFACTS_REPORTS_ARCHIVE);
 			if (GitCraft.config.loadDatagenRegistry && Files.exists(datagenReportsArchive)) {
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenReportsArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("reports"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
@@ -291,7 +291,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 					}
 				}
 			}
-			Path datagenSnbtArchive = pipeline.getResultFile(DataGenerator.Results.DATAGEN_SNBT_ARCHIVE);
+			Path datagenSnbtArchive = pipeline.getResultFile(DataGenerator.Results.ARTIFACTS_SNBT_ARCHIVE);
 			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack && Files.exists(datagenSnbtArchive)) {
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenSnbtArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));

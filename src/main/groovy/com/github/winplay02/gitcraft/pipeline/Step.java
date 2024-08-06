@@ -58,6 +58,17 @@ public enum Step {
 		}
 	},
 	DATAGEN("Datagen", true, DataGenerator::new) {
+
+		{
+			setResultFile(DataGenerator.Results.ARTIFACTS_SNBT_ARCHIVE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagen-snbt.jar"));
+			setResultFile(DataGenerator.Results.ARTIFACTS_REPORTS_ARCHIVE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagen-reports.jar"));
+			setResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagenerator"));
+			setResultFile(DataGenerator.Results.DATAGEN_NBT_SOURCE_DIRECTORY, context -> getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("input"));
+			setResultFile(DataGenerator.Results.DATAGEN_NBT_SOURCE_DATA_DIRECTORY, context -> getResultFile(DataGenerator.Results.DATAGEN_NBT_SOURCE_DIRECTORY, context).resolve("data"));
+			setResultFile(DataGenerator.Results.DATAGEN_SNBT_DESTINATION_DIRECTORY, context -> getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("output"));
+			setResultFile(DataGenerator.Results.DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY, context -> getResultFile(DataGenerator.Results.DATAGEN_SNBT_DESTINATION_DIRECTORY, context).resolve("data"));
+			setResultFile(DataGenerator.Results.DATAGEN_REPORTS_DIRECTORY, context -> getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("generated").resolve("reports"));
+		}
 	},
 	PROVIDE_MAPPINGS("Provide Mappings", false, MappingsProvider::new),
 	REMAP_JARS("Remap Jars", false, Remapper::new) {

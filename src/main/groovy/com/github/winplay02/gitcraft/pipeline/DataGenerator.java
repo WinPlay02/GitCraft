@@ -37,11 +37,11 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 		if (!mcVersion.hasServerCode() || !mcVersion.hasServerJar()) {
 			MiscHelper.panic("Cannot execute datagen, no jar available");
 		}
-		Path artifactSnbtArchive = pipeline.initResultFile(step, context, Results.DATAGEN_SNBT_ARCHIVE);
+		Path artifactSnbtArchive = pipeline.initResultFile(step, context, Results.ARTIFACTS_SNBT_ARCHIVE);
 		if (Files.exists(artifactSnbtArchive) && Files.size(artifactSnbtArchive) <= 22 /* empty jar */) {
 			Files.delete(artifactSnbtArchive);
 		}
-		Path artifactReportsArchive = pipeline.initResultFile(step, context, Results.DATAGEN_REPORTS_ARCHIVE);
+		Path artifactReportsArchive = pipeline.initResultFile(step, context, Results.ARTIFACTS_REPORTS_ARCHIVE);
 		if (Files.exists(artifactReportsArchive) && Files.size(artifactReportsArchive) <= 22 /* empty jar */) {
 			Files.delete(artifactReportsArchive);
 		}
@@ -124,7 +124,7 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 	}
 
 	public enum Results implements StepResult {
-		DATAGEN_DIRECTORY, DATAGEN_SNBT_ARCHIVE, DATAGEN_REPORTS_ARCHIVE, DATAGEN_REPORTS_DIRECTORY, DATAGEN_NBT_SOURCE_DIRECTORY, DATAGEN_NBT_SOURCE_DATA_DIRECTORY, DATAGEN_SNBT_DESTINATION_DIRECTORY, DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY
+		ARTIFACTS_SNBT_ARCHIVE, ARTIFACTS_REPORTS_ARCHIVE, DATAGEN_DIRECTORY, DATAGEN_NBT_SOURCE_DIRECTORY, DATAGEN_NBT_SOURCE_DATA_DIRECTORY, DATAGEN_SNBT_DESTINATION_DIRECTORY, DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY, DATAGEN_REPORTS_DIRECTORY
 	}
 
 	public static class ExternalWorldgenPacks {
