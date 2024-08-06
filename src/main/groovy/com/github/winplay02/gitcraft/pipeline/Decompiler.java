@@ -32,6 +32,7 @@ public record Decompiler(Step step, Config config) implements StepWorker {
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
+		Files.createDirectories(pipeline.initResultFile(step, context, Results.DECOMPILED_JARS_DIRECTORY));
 		StepStatus mergedStatus = decompileJar(pipeline, context, MinecraftJar.MERGED, Results.MINECRAFT_MERGED_JAR);
 		if (mergedStatus.hasRun()) {
 			return mergedStatus;

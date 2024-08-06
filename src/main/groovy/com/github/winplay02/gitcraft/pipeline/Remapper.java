@@ -16,6 +16,7 @@ public record Remapper(Step step, Config config) implements StepWorker {
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
+		Files.createDirectories(pipeline.initResultFile(step, context, Results.REMAPPED_JARS_DIRECTORY));
 		StepStatus mergedStatus = remapJar(pipeline, context, MinecraftJar.MERGED, Results.MINECRAFT_MERGED_JAR);
 		if (mergedStatus.hasRun()) {
 			return mergedStatus;

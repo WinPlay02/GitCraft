@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.github.winplay02.gitcraft.types.Artifact;
@@ -9,7 +10,7 @@ public record ArtifactsFetcher(Step step, Config config) implements StepWorker {
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
-		pipeline.initResultFile(step, context, Results.ARTIFACTS_DIRECTORY);
+		Files.createDirectories(pipeline.initResultFile(step, context, Results.ARTIFACTS_DIRECTORY));
 
 		StepStatus clientJarStatus = null;
 		StepStatus serverJarStatus = null;

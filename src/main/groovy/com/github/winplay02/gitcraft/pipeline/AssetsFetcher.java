@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +21,10 @@ public record AssetsFetcher(Step step, Config config) implements StepWorker {
 		if (context.minecraftVersion().assetsIndex() == null) {
 			return StepStatus.NOT_RUN;
 		}
-		pipeline.initResultFile(step, context, ResultFiles.ASSETS_INDEX_DIRECTORY);
+		Path assetsIndexDir = pipeline.initResultFile(step, context, ResultFiles.ASSETS_INDEX_DIRECTORY);
 		Path assetsObjectsDir = pipeline.initResultFile(step, context, ResultFiles.ASSETS_OBJECTS_DIRECTORY);
+		Files.createDirectories(assetsIndexDir);
+		Files.createDirectories(assetsObjectsDir);
 		Path assetsIndexPath = pipeline.initResultFile(step, context, ResultFiles.ASSETS_INDEX);
 		List<StepStatus> statuses = new ArrayList<>();
 		statuses.add(ArtifactsFetcher.fetchArtifact(step, pipeline, context, context.minecraftVersion().assetsIndex(), ResultFiles.ASSETS_INDEX));
