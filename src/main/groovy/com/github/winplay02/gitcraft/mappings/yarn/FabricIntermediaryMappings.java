@@ -50,7 +50,7 @@ public class FabricIntermediaryMappings extends Mapping {
 	@Override
 	public boolean canMappingsBeUsedOn(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		// the merged mappings can be used for all jars
-		return true;
+		return doMappingsExist(mcVersion);
 	}
 
 	protected static String mappingsIntermediaryPathQuirkVersion(String version) {
