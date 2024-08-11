@@ -25,6 +25,8 @@ public enum Step {
 	REMAP_JARS("Remap Jars", Remapper::new),
 	MERGE_REMAPPED_JARS("Merge Remapped Jars", JarsMerger::new),
 	UNPICK_JARS("Unpick Jars", Unpicker::new),
+	PROVIDE_NESTS("Provide Nests", NestsProvider::new),
+	APPLY_NESTS("Apply Nests", JarsNester::new),
 	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
 	COMMIT("Commit to repository", Committer::new);
 
@@ -175,6 +177,23 @@ public enum Step {
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.MERGED, Unpicker.Results.MINECRAFT_MERGED_JAR);
 		}
 		{
+			PROVIDE_NESTS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
+		}
+		{
+			APPLY_NESTS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
+			APPLY_NESTS.setDependency(DependencyType.REQUIRED, PROVIDE_NESTS);
+			APPLY_NESTS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
+
+			APPLY_NESTS.setResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context -> GitCraftPaths.NESTS_APPLIED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			APPLY_NESTS.setResultFile(JarsNester.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context).resolve("client-nested.jar"));
+			APPLY_NESTS.setResultFile(JarsNester.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context).resolve("server-nested.jar"));
+			APPLY_NESTS.setResultFile(JarsNester.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context).resolve("merged-nested.jar"));
+
+			APPLY_NESTS.setMinecraftJar(MinecraftJar.CLIENT, JarsNester.Results.MINECRAFT_CLIENT_JAR);
+			APPLY_NESTS.setMinecraftJar(MinecraftJar.SERVER, JarsNester.Results.MINECRAFT_SERVER_JAR);
+			APPLY_NESTS.setMinecraftJar(MinecraftJar.MERGED, JarsNester.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
@@ -182,6 +201,7 @@ public enum Step {
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, REMAP_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_REMAPPED_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_NESTS);
 
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context -> GitCraftPaths.DECOMPILED_WORKINGS.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_CLIENT_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("client.jar"));

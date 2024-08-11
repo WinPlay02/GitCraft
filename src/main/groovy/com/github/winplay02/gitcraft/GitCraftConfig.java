@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft;
 
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
@@ -56,6 +57,9 @@ public class GitCraftConfig {
 	/// Mapping settings
 	public MappingFlavour usedMapping = MappingFlavour.MOJMAP;
 	public MappingFlavour[] fallbackMappings = null;
+
+	// Nests settings
+	public NestsFlavour usedNests = NestsFlavour.NONE;
 
 	/// Version settings
 	public boolean onlyStableReleases = false;
@@ -152,6 +156,7 @@ public class GitCraftConfig {
 		if (fallbackMappings != null && fallbackMappings.length > 0) {
 			MiscHelper.println("Mappings used as fallback: %s", Arrays.stream(fallbackMappings).map(Object::toString).collect(Collectors.joining(", ")));
 		}
+		MiscHelper.println("Nests used: %s", usedNests);
 		if (overrideRepositoryPath != null) {
 			MiscHelper.println("Repository path is overridden. This may lead to various errors (see help). Proceed with caution. Target: %s", overrideRepositoryPath);
 		}
@@ -210,5 +215,13 @@ public class GitCraftConfig {
 			MiscHelper.panic("ERROR: %s mappings do not exist for %s. No fallback options were specified", this.usedMapping, mcVersion.launcherFriendlyVersionName());
 		}
 		return Optional.empty();
+	}
+
+	public Optional<NestsFlavour> getNestsForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedNests.getNestsImpl().doNestsExist(mcVersion)) {
+			return Optional.of(this.usedNests);
+		} else {
+			return Optional.empty();
+		}
 	}
 }

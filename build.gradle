@@ -11,6 +11,10 @@ repositories {
 	maven {
 		url = "https://maven.quiltmc.org/repository/release"
 	}
+	maven {
+		name = 'Ornithe Releases'
+		url = 'https://maven.ornithemc.net/releases/'
+	}
 	mavenCentral()
 }
 
@@ -51,6 +55,8 @@ dependencies {
 	implementation("net.fabricmc:lorenz-tiny:${lorenz_tiny_version}") {
 		transitive = false
 	}
+
+	implementation "net.ornithemc:nester:${nester_version}"
 
 	// https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
 	implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"

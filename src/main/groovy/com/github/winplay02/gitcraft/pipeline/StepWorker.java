@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
@@ -13,11 +14,11 @@ public interface StepWorker {
 
 	StepStatus run(Pipeline pipeline, Context context) throws Exception;
 
-	public record Config(MappingFlavour mappingFlavour) {
+	public record Config(MappingFlavour mappingFlavour, NestsFlavour nestsFlavour) {
 
 		@Override
 		public String toString() {
-			return "mappings: %s".formatted(mappingFlavour);
+			return "mappings: %s, nests: %s".formatted(mappingFlavour, nestsFlavour);
 		}
 	}
 

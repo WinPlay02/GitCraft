@@ -6,6 +6,9 @@ import com.github.winplay02.gitcraft.mappings.MojangMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
+import com.github.winplay02.gitcraft.nests.Nest;
+import com.github.winplay02.gitcraft.nests.NoneNests;
+import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNests;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
@@ -25,6 +28,10 @@ public class GitCraft {
 	public static final LazyValue<Mapping> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
 	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
 	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
+
+	// Every Nests
+	public static final LazyValue<Nest> ORNITHE_NESTS = LazyValue.of(OrnitheNests::new);
+	public static final LazyValue<Nest> NONE_NESTS = LazyValue.of(NoneNests::new);
 
 	/// Other Information
 	public static GitCraftConfig config = null;
