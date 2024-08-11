@@ -21,6 +21,7 @@ public class GitCraftPaths {
 	public static Path MC_VERSION_META_DOWNLOADS = null;
 	public static Path LIBRARY_STORE = null;
 	public static Path REMAPPED = null;
+	public static Path UNPICKED = null;
 	public static Path ASSETS_INDEX = null;
 	public static Path ASSETS_OBJECTS = null;
 	public static Path SOURCE_EXTRA_VERSIONS = null;
@@ -46,6 +47,7 @@ public class GitCraftPaths {
 		MC_VERSION_META_DOWNLOADS = MAIN_ARTIFACT_STORE.resolve("mc-meta-download");
 		LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve("libraries");
 		REMAPPED = MAIN_ARTIFACT_STORE.resolve("remapped-mc");
+		UNPICKED = MAIN_ARTIFACT_STORE.resolve("unpicked-mc");
 		ASSETS_INDEX = MAIN_ARTIFACT_STORE.resolve("assets-index");
 		ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve("assets-objects");
 		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
@@ -62,6 +64,7 @@ public class GitCraftPaths {
 		Files.createDirectories(MC_VERSION_META_DOWNLOADS);
 		Files.createDirectories(LIBRARY_STORE);
 		Files.createDirectories(REMAPPED);
+		Files.createDirectories(UNPICKED);
 		Files.createDirectories(ASSETS_INDEX);
 		Files.createDirectories(ASSETS_OBJECTS);
 		Files.createDirectories(SOURCE_EXTRA_VERSIONS);

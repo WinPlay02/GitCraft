@@ -165,9 +165,10 @@ public enum Step {
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
 
-			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-unpicked.jar"));
-			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("server-unpicked.jar"));
-			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("merged-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context -> GitCraftPaths.UNPICKED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context).resolve("client-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context).resolve("server-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context).resolve("merged-unpicked.jar"));
 
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.CLIENT, Unpicker.Results.MINECRAFT_CLIENT_JAR);
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.SERVER, Unpicker.Results.MINECRAFT_SERVER_JAR);

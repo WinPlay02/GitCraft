@@ -12,6 +12,7 @@ public record Unpicker(Step step, Config config) implements StepWorker {
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
+		Files.createDirectories(pipeline.initResultFile(step, context, Results.UNPICKED_JARS_DIRECTORY));
 		StepStatus mergedStatus = unpickJar(pipeline, context, MinecraftJar.MERGED, Results.MINECRAFT_MERGED_JAR);
 		if (mergedStatus.hasRun()) {
 			return mergedStatus;
@@ -54,6 +55,6 @@ public record Unpicker(Step step, Config config) implements StepWorker {
 	}
 
 	public enum Results implements StepResult {
-		MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR
+		UNPICKED_JARS_DIRECTORY, MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR
 	}
 }
