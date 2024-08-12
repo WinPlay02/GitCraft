@@ -4,6 +4,7 @@ import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
@@ -60,6 +61,7 @@ public class GitCraftConfig {
 	public MappingFlavour[] fallbackMappings = null;
 
 	public ExceptionsFlavour usedExceptions = ExceptionsFlavour.NONE;
+	public SignaturesFlavour usedSignatures = SignaturesFlavour.NONE;
 	public NestsFlavour usedNests = NestsFlavour.NONE;
 
 	/// Version settings
@@ -158,6 +160,7 @@ public class GitCraftConfig {
 			MiscHelper.println("Mappings used as fallback: %s", Arrays.stream(fallbackMappings).map(Object::toString).collect(Collectors.joining(", ")));
 		}
 		MiscHelper.println("Exceptions used: %s", usedExceptions);
+		MiscHelper.println("Signatures used: %s", usedSignatures);
 		MiscHelper.println("Nests used: %s", usedNests);
 		if (overrideRepositoryPath != null) {
 			MiscHelper.println("Repository path is overridden. This may lead to various errors (see help). Proceed with caution. Target: %s", overrideRepositoryPath);
@@ -222,6 +225,14 @@ public class GitCraftConfig {
 	public Optional<ExceptionsFlavour> getExceptionsForMinecraftVersion(OrderedVersion mcVersion) {
 		if (this.usedExceptions.getExceptionsImpl().doExceptionsExist(mcVersion)) {
 			return Optional.of(this.usedExceptions);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	public Optional<SignaturesFlavour> getSignaturesForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedSignatures.getSignaturesImpl().doSignaturesExist(mcVersion)) {
+			return Optional.of(this.usedSignatures);
 		} else {
 			return Optional.empty();
 		}

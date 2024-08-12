@@ -13,6 +13,9 @@ import com.github.winplay02.gitcraft.nests.Nest;
 import com.github.winplay02.gitcraft.nests.NoneNests;
 import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNests;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.signatures.NoneSignatures;
+import com.github.winplay02.gitcraft.signatures.SignaturesPatch;
+import com.github.winplay02.gitcraft.signatures.ornithe.SparrowSignatures;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
@@ -32,9 +35,13 @@ public class GitCraft {
 	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
 	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
 
-	// Every Exception
+	// Every Exception Patch
 	public static final LazyValue<ExceptionsPatch> RAVEN_EXCEPTIONS = LazyValue.of(RavenExceptions::new);
 	public static final LazyValue<ExceptionsPatch> NONE_EXCEPTIONS = LazyValue.of(NoneExceptions::new);
+
+	// Every Signature Patch
+	public static final LazyValue<SignaturesPatch> SPARROW_SIGNATURES = LazyValue.of(SparrowSignatures::new);
+	public static final LazyValue<SignaturesPatch> NONE_SIGNATURES = LazyValue.of(NoneSignatures::new);
 
 	// Every Nest
 	public static final LazyValue<Nest> ORNITHE_NESTS = LazyValue.of(OrnitheNests::new);

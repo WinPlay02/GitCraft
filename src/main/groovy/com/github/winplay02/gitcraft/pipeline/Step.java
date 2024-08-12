@@ -23,6 +23,8 @@ public enum Step {
 	DATAGEN("Datagen", DataGenerator::new),
 	PROVIDE_EXCEPTIONS("Provide Exceptions", ExceptionsProvider::new),
 	APPLY_EXCEPTIONS("Apply Exceptions", JarsExceptor::new),
+	PROVIDE_SIGNATURES("Provide Signatures", SignaturesProvider::new),
+	APPLY_SIGNATURES("Apply Signatures", JarsSignatureChanger::new),
 	PROVIDE_MAPPINGS("Provide Mappings", MappingsProvider::new),
 	REMAP_JARS("Remap Jars", Remapper::new),
 	MERGE_REMAPPED_JARS("Merge Remapped Jars", JarsMerger::new),
@@ -158,11 +160,28 @@ public enum Step {
 			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.MERGED, JarsExceptor.Results.MINECRAFT_MERGED_JAR);
 		}
 		{
+			APPLY_SIGNATURES.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			APPLY_SIGNATURES.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			APPLY_SIGNATURES.setDependency(DependencyType.REQUIRED, PROVIDE_SIGNATURES);
+			APPLY_SIGNATURES.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			APPLY_SIGNATURES.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context -> GitCraftPaths.SIGNATURES_APPLIED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context).resolve("client-signatures-patched.jar"));
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context).resolve("server-signatures-patched.jar"));
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context).resolve("merged-signatures-patched.jar"));
+
+			APPLY_SIGNATURES.setMinecraftJar(MinecraftJar.CLIENT, JarsSignatureChanger.Results.MINECRAFT_CLIENT_JAR);
+			APPLY_SIGNATURES.setMinecraftJar(MinecraftJar.SERVER, JarsSignatureChanger.Results.MINECRAFT_SERVER_JAR);
+			APPLY_SIGNATURES.setMinecraftJar(MinecraftJar.MERGED, JarsSignatureChanger.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
 			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_SIGNATURES);
 
 			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> GitCraftPaths.REMAPPED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-remapped.jar"));
@@ -184,6 +203,7 @@ public enum Step {
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, APPLY_EXCEPTIONS);
+			UNPICK_JARS.setDependency(DependencyType.REQUIRED, APPLY_SIGNATURES);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
 
 			UNPICK_JARS.setResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context -> GitCraftPaths.UNPICKED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
@@ -218,6 +238,7 @@ public enum Step {
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_SIGNATURES);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, REMAP_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_REMAPPED_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);

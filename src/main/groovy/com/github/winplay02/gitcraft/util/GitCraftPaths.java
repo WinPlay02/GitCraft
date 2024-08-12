@@ -15,6 +15,7 @@ public class GitCraftPaths {
 	public static Path MAIN_ARTIFACT_STORE = null;
 	public static Path DECOMPILED_WORKINGS = null;
 	public static Path EXCEPTIONS = null;
+	public static Path SIGNATURES = null;
 	public static Path MAPPINGS = null;
 	public static Path NESTS = null;
 	public static Path REPO = null;
@@ -23,6 +24,7 @@ public class GitCraftPaths {
 	public static Path MC_VERSION_META_DOWNLOADS = null;
 	public static Path LIBRARY_STORE = null;
 	public static Path EXCEPTIONS_APPLIED = null;
+	public static Path SIGNATURES_APPLIED = null;
 	public static Path REMAPPED = null;
 	public static Path UNPICKED = null;
 	public static Path NESTS_APPLIED = null;
@@ -45,6 +47,7 @@ public class GitCraftPaths {
 		MAIN_ARTIFACT_STORE = CURRENT_WORKING_DIRECTORY.resolve("artifact-store");
 		DECOMPILED_WORKINGS = MAIN_ARTIFACT_STORE.resolve("decompiled");
 		EXCEPTIONS = MAIN_ARTIFACT_STORE.resolve("exceptions");
+		SIGNATURES = MAIN_ARTIFACT_STORE.resolve("signatures");
 		MAPPINGS = MAIN_ARTIFACT_STORE.resolve("mappings");
 		NESTS = MAIN_ARTIFACT_STORE.resolve("nests");
 		REPO = CURRENT_WORKING_DIRECTORY.resolve("minecraft-repo");
@@ -53,6 +56,7 @@ public class GitCraftPaths {
 		MC_VERSION_META_DOWNLOADS = MAIN_ARTIFACT_STORE.resolve("mc-meta-download");
 		LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve("libraries");
 		EXCEPTIONS_APPLIED = MAIN_ARTIFACT_STORE.resolve("exceptions-applied-mc");
+		SIGNATURES_APPLIED = MAIN_ARTIFACT_STORE.resolve("signatures-applied-mc");
 		REMAPPED = MAIN_ARTIFACT_STORE.resolve("remapped-mc");
 		UNPICKED = MAIN_ARTIFACT_STORE.resolve("unpicked-mc");
 		NESTS_APPLIED = MAIN_ARTIFACT_STORE.resolve("nests-applied-mc");
@@ -67,6 +71,7 @@ public class GitCraftPaths {
 		upgradeExisting();
 		Files.createDirectories(DECOMPILED_WORKINGS);
 		Files.createDirectories(EXCEPTIONS);
+		Files.createDirectories(SIGNATURES);
 		Files.createDirectories(MAPPINGS);
 		Files.createDirectories(NESTS);
 		Files.createDirectories(MC_VERSION_STORE);
@@ -74,6 +79,7 @@ public class GitCraftPaths {
 		Files.createDirectories(MC_VERSION_META_DOWNLOADS);
 		Files.createDirectories(LIBRARY_STORE);
 		Files.createDirectories(EXCEPTIONS_APPLIED);
+		Files.createDirectories(SIGNATURES_APPLIED);
 		Files.createDirectories(REMAPPED);
 		Files.createDirectories(UNPICKED);
 		Files.createDirectories(NESTS_APPLIED);

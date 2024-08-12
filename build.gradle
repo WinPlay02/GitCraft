@@ -57,6 +57,7 @@ dependencies {
 	}
 
 	implementation "net.ornithemc:exceptor:${exceptor_version}"
+	implementation "io.github.gaming32:signature-changer:${signature_changer_version}"
 	implementation "net.ornithemc:nester:${nester_version}"
 
 	// https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit

@@ -4,6 +4,7 @@ import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour
 import com.github.winplay02.gitcraft.manifest.ManifestSource
 import com.github.winplay02.gitcraft.mappings.MappingFlavour
 import com.github.winplay02.gitcraft.nests.NestsFlavour
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour
 import com.github.winplay02.gitcraft.util.MiscHelper
 import groovy.cli.picocli.CliBuilder
 import groovy.cli.picocli.OptionAccessor
@@ -49,6 +50,7 @@ class GitCraftCli {
 		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour, argName: "mapping", defaultValue: "mojmap");
 		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
 		cli_args._(longOpt: 'exceptions', "Specifies the exceptions patches used to patch throws clauses into method declarations. None is selected by default. Possible values are: ${Arrays.stream(ExceptionsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ExceptionsFlavour, argName: "exceptions", defaultValue: "none");
+		cli_args._(longOpt: 'signatures', "Specifies the signatures patches used to patch generics into class, field, and method declarations. None is selected by default. Possible values are: ${Arrays.stream(SignaturesFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: SignaturesFlavour, argName: "signatures", defaultValue: "none");
 		cli_args._(longOpt: 'nests', "Specifies the nests used to patch inner classes. None is selected by default. Possible values are: ${Arrays.stream(NestsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: NestsFlavour, argName: "nests", defaultValue: "none");
 		cli_args._(longOpt: 'only-stable', 'Only decompiles stable releases.');
 		cli_args._(longOpt: 'only-snapshot', 'Only decompiles snapshots (includes pending and non-linear, if not otherwise specified).');
@@ -122,6 +124,10 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("exceptions")) {
 			ExceptionsFlavour exceptions = cli_args_parsed.'exceptions';
 			config.usedExceptions = exceptions;
+		}
+		if (cli_args_parsed.hasOption("signatures")) {
+			SignaturesFlavour signatures = cli_args_parsed.'signatures';
+			config.usedSignatures = signatures;
 		}
 		if (cli_args_parsed.hasOption("nests")) {
 			NestsFlavour nests = cli_args_parsed.'nests';

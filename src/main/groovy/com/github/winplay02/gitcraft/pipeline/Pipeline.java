@@ -16,6 +16,7 @@ import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
@@ -81,6 +82,7 @@ public class Pipeline {
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(
 			GitCraft.config.getExceptionsForMinecraftVersion(minecraftVersion).orElse(ExceptionsFlavour.NONE),
+			GitCraft.config.getSignaturesForMinecraftVersion(minecraftVersion).orElse(SignaturesFlavour.NONE),
 			GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED),
 			GitCraft.config.getNestsForMinecraftVersion(minecraftVersion).orElse(NestsFlavour.NONE)
 		);
@@ -118,6 +120,7 @@ public class Pipeline {
 					MiscHelper.println("Step '%s' for %s (%s) was \u001B[36mnot run\u001B[0m", step.getName(), context, config);
 				}
 			}
+			default -> { }
 			}
 
 			if (status == StepStatus.FAILED) {
