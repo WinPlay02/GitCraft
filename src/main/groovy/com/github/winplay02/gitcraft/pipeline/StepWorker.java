@@ -1,6 +1,10 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -14,11 +18,15 @@ public interface StepWorker {
 
 	StepStatus run(Pipeline pipeline, Context context) throws Exception;
 
-	public record Config(MappingFlavour mappingFlavour, NestsFlavour nestsFlavour) {
+	public record Config(ExceptionsFlavour exceptionsFlavour, MappingFlavour mappingFlavour, NestsFlavour nestsFlavour) {
 
 		@Override
 		public String toString() {
-			return "mappings: %s, nests: %s".formatted(mappingFlavour, nestsFlavour);
+			List<String> flavours = new ArrayList<>();
+			if (exceptionsFlavour != ExceptionsFlavour.NONE) flavours.add("exceptions: %s".formatted(exceptionsFlavour));
+			if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED) flavours.add("mappings: %s".formatted(mappingFlavour));
+			if (nestsFlavour != NestsFlavour.NONE) flavours.add("nests: %s".formatted(nestsFlavour));
+			return String.join(", ", flavours);
 		}
 	}
 

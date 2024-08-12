@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.util;
 
+import com.github.winplay02.gitcraft.exceptions.ornithe.OrnitheRavenVersionMeta;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricYarnVersionMeta;
 import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNestsVersionMeta;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -44,6 +45,8 @@ public class SerializationHelper {
 	public static final TypeToken<TreeMap<String, String>> TYPE_TREE_MAP_STRING_STRING = new TypeToken<TreeMap<String, String>>() {
 	};
 	public static final TypeToken<ArrayList<FabricYarnVersionMeta>> TYPE_LIST_FABRIC_YARN_VERSION_META = new TypeToken<ArrayList<FabricYarnVersionMeta>>() {
+	};
+	public static final TypeToken<ArrayList<OrnitheRavenVersionMeta>> TYPE_LIST_ORNITHE_RAVEN_VERSION_META = new TypeToken<ArrayList<OrnitheRavenVersionMeta>>() {
 	};
 	public static final TypeToken<ArrayList<OrnitheNestsVersionMeta>> TYPE_LIST_ORNITHE_NESTS_VERSION_META = new TypeToken<ArrayList<OrnitheNestsVersionMeta>>() {
 	};

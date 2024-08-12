@@ -11,8 +11,8 @@ public enum NestsFlavour {
 
 	private final LazyValue<? extends Nest> nestsImpl;
 
-	NestsFlavour(LazyValue<? extends Nest> mapping) {
-		this.nestsImpl = mapping;
+	NestsFlavour(LazyValue<? extends Nest> nests) {
+		this.nestsImpl = nests;
 	}
 
 	public Nest getNestsImpl() {

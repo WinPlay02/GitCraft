@@ -1,5 +1,8 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.exceptions.ExceptionsPatch;
+import com.github.winplay02.gitcraft.exceptions.NoneExceptions;
+import com.github.winplay02.gitcraft.exceptions.ornithe.RavenExceptions;
 import com.github.winplay02.gitcraft.mappings.IdentityMappings;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
@@ -29,7 +32,11 @@ public class GitCraft {
 	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
 	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
 
-	// Every Nests
+	// Every Exception
+	public static final LazyValue<ExceptionsPatch> RAVEN_EXCEPTIONS = LazyValue.of(RavenExceptions::new);
+	public static final LazyValue<ExceptionsPatch> NONE_EXCEPTIONS = LazyValue.of(NoneExceptions::new);
+
+	// Every Nest
 	public static final LazyValue<Nest> ORNITHE_NESTS = LazyValue.of(OrnitheNests::new);
 	public static final LazyValue<Nest> NONE_NESTS = LazyValue.of(NoneNests::new);
 

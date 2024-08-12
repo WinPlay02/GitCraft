@@ -13,6 +13,7 @@ import java.util.Set;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -79,6 +80,7 @@ public class Pipeline {
 	public void run(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion) {
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(
+			GitCraft.config.getExceptionsForMinecraftVersion(minecraftVersion).orElse(ExceptionsFlavour.NONE),
 			GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED),
 			GitCraft.config.getNestsForMinecraftVersion(minecraftVersion).orElse(NestsFlavour.NONE)
 		);

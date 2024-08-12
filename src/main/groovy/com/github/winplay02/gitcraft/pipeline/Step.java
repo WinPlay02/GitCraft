@@ -21,6 +21,8 @@ public enum Step {
 	UNPACK_ARTIFACTS("Unpack Artifacts", ArtifactsUnpacker::new),
 	MERGE_OBFUSCATED_JARS("Merge Obfuscated Jars", JarsMerger::new),
 	DATAGEN("Datagen", DataGenerator::new),
+	PROVIDE_EXCEPTIONS("Provide Exceptions", ExceptionsProvider::new),
+	APPLY_EXCEPTIONS("Apply Exceptions", JarsExceptor::new),
 	PROVIDE_MAPPINGS("Provide Mappings", MappingsProvider::new),
 	REMAP_JARS("Remap Jars", Remapper::new),
 	MERGE_REMAPPED_JARS("Merge Remapped Jars", JarsMerger::new),
@@ -141,10 +143,26 @@ public enum Step {
 			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_REPORTS_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("generated").resolve("reports"));
 		}
 		{
+			APPLY_EXCEPTIONS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.REQUIRED, PROVIDE_EXCEPTIONS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context -> GitCraftPaths.EXCEPTIONS_APPLIED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context).resolve("client-exceptions-patched.jar"));
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context).resolve("server-exceptions-patched.jar"));
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context).resolve("merged-exceptions-patched.jar"));
+
+			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.CLIENT, JarsExceptor.Results.MINECRAFT_CLIENT_JAR);
+			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.SERVER, JarsExceptor.Results.MINECRAFT_SERVER_JAR);
+			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.MERGED, JarsExceptor.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
 
 			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> GitCraftPaths.REMAPPED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-remapped.jar"));
@@ -165,6 +183,7 @@ public enum Step {
 		{
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
+			UNPICK_JARS.setDependency(DependencyType.REQUIRED, APPLY_EXCEPTIONS);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
 
 			UNPICK_JARS.setResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context -> GitCraftPaths.UNPICKED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
@@ -198,6 +217,7 @@ public enum Step {
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, REMAP_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_REMAPPED_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
