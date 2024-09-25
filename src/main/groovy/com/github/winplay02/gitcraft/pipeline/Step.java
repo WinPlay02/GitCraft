@@ -11,29 +11,27 @@ import com.github.winplay02.gitcraft.util.GitCraftPaths;
 
 public enum Step {
 
-	RESET("Reset", true, Resetter::new),
-	FETCH_ARTIFACTS("Fetch Artifacts", true, ArtifactsFetcher::new),
-	FETCH_LIBRARIES("Fetch Libraries", true, LibrariesFetcher::new),
-	FETCH_ASSETS("Fetch Assets", true, AssetsFetcher::new),
-	UNPACK_ARTIFACTS("Unpack Artifacts", true, ArtifactsUnpacker::new),
-	MERGE_OBFUSCATED_JARS("Merge Obfuscated Jars", true, JarsMerger::new),
-	DATAGEN("Datagen", true, DataGenerator::new),
-	PROVIDE_MAPPINGS("Provide Mappings", false, MappingsProvider::new),
-	REMAP_JARS("Remap Jars", false, Remapper::new),
-	MERGE_REMAPPED_JARS("Merge Remapped Jars", false, JarsMerger::new),
-	UNPICK_JARS("Unpick Jars", true, Unpicker::new),
-	DECOMPILE_JARS("Decompile Jars", true, Decompiler::new),
-	COMMIT("Commit to repository", true, Committer::new);
+	RESET("Reset", Resetter::new),
+	FETCH_ARTIFACTS("Fetch Artifacts", ArtifactsFetcher::new),
+	FETCH_LIBRARIES("Fetch Libraries", LibrariesFetcher::new),
+	FETCH_ASSETS("Fetch Assets", AssetsFetcher::new),
+	UNPACK_ARTIFACTS("Unpack Artifacts", ArtifactsUnpacker::new),
+	MERGE_OBFUSCATED_JARS("Merge Obfuscated Jars", JarsMerger::new),
+	DATAGEN("Datagen", DataGenerator::new),
+	PROVIDE_MAPPINGS("Provide Mappings", MappingsProvider::new),
+	REMAP_JARS("Remap Jars", Remapper::new),
+	MERGE_REMAPPED_JARS("Merge Remapped Jars", JarsMerger::new),
+	UNPICK_JARS("Unpick Jars", Unpicker::new),
+	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
+	COMMIT("Commit to repository", Committer::new);
 
 	private final String name;
-	private final boolean ignoresMappings;
 	private final Map<StepResult, Function<StepWorker.Context, Path>> resultFiles;
 	private final Map<MinecraftJar, StepResult> minecraftJars;
 	private final BiFunction<Step, StepWorker.Config, StepWorker> workerFactory;
 
-	private Step(String name, boolean ignoresMappings, BiFunction<Step, StepWorker.Config, StepWorker> workerFactory) {
+	private Step(String name, BiFunction<Step, StepWorker.Config, StepWorker> workerFactory) {
 		this.name = name;
-		this.ignoresMappings = ignoresMappings;
 		this.resultFiles = new HashMap<>();
 		this.minecraftJars = new EnumMap<>(MinecraftJar.class);
 		this.workerFactory = workerFactory;
@@ -54,11 +52,6 @@ public enum Step {
 	public String getName() {
 		return name;
 	}
-
-	public boolean ignoresMappings() {
-		return ignoresMappings;
-	}
-
 	public Path getResultFile(StepResult resultFile, StepWorker.Context context) {
 		return resultFiles.get(resultFile).apply(context);
 	}
