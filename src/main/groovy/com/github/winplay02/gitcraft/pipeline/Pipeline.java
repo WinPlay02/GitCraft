@@ -73,8 +73,12 @@ public class Pipeline {
 			}
 
 			if (status == StepStatus.FAILED) {
-				if (exception != null) {
-					MiscHelper.panicBecause(exception, "Step '%s' for %s (%s) \u001B[31mfailed\u001B[0m (%s)", step.getName(), context, config, timeInfo);
+				String message = String.format("Step '%s' for %s (%s) \u001B[31mfailed\u001B[0m (%s)", step.getName(), context, config, timeInfo);
+
+				if (exception == null) {
+					MiscHelper.panic(message);
+				} else {
+					MiscHelper.panicBecause(exception, message);
 				}
 			} else if (status.hasRun()) {
 				for (MinecraftJar minecraftJar : MinecraftJar.values()) {
