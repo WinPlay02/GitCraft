@@ -72,7 +72,7 @@ public class Pipeline {
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED));
 
-		for (Step step : Step.values()) {
+		for (Step step : steps) {
 			StepStatus status = null;
 			Exception exception = null;
 
