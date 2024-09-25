@@ -124,6 +124,7 @@ public enum Step {
 		}
 		{
 			MERGE_OBFUSCATED_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			MERGE_OBFUSCATED_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 
 			MERGE_OBFUSCATED_JARS.setResultFile(JarsMerger.Results.OBFUSCATED_MINECRAFT_MERGED_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("merged.jar"));
 
@@ -131,6 +132,7 @@ public enum Step {
 		}
 		{
 			DATAGEN.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			DATAGEN.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			DATAGEN.setDependency(DependencyType.REQUIRED, MERGE_OBFUSCATED_JARS);
 
 			DATAGEN.setResultFile(DataGenerator.Results.ARTIFACTS_SNBT_ARCHIVE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagen-snbt.jar"));
@@ -143,8 +145,9 @@ public enum Step {
 			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_REPORTS_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("generated").resolve("reports"));
 		}
 		{
-			REMAP_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			REMAP_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			REMAP_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
 
 			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> GitCraftPaths.REMAPPED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
@@ -165,6 +168,7 @@ public enum Step {
 		}
 		{
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
+			UNPICK_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
 
 			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-unpicked.jar"));
@@ -192,6 +196,12 @@ public enum Step {
 			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.CLIENT, Decompiler.Results.MINECRAFT_CLIENT_JAR);
 			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.SERVER, Decompiler.Results.MINECRAFT_SERVER_JAR);
 			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.MERGED, Decompiler.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ASSETS);
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, DECOMPILE_JARS);
 		}
 	}
 }
