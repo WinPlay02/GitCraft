@@ -22,7 +22,8 @@ public enum Step {
 	REMAP_JARS("Remap Jars", false, Remapper::new),
 	MERGE_REMAPPED_JARS("Merge Remapped Jars", false, JarsMerger::new),
 	UNPICK_JARS("Unpick Jars", true, Unpicker::new),
-	DECOMPILE_JARS("Decompile Jars", true, Decompiler::new);
+	DECOMPILE_JARS("Decompile Jars", true, Decompiler::new),
+	COMMIT("Commit to repository", true, Committer::new);
 
 	private final String name;
 	private final boolean ignoresMappings;
@@ -72,9 +73,7 @@ public enum Step {
 
 	static {
 		{
-			Path root = GitCraftPaths.MC_VERSION_STORE;
-
-			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context -> root.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context -> GitCraftPaths.MC_VERSION_STORE.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_CLIENT_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("client.jar"));
 			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("server.jar"));
 			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_EXE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("server.exe"));
@@ -112,9 +111,8 @@ public enum Step {
 			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_REPORTS_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("generated").resolve("reports"));
 		}
 		{
-			Path root = GitCraftPaths.REMAPPED;
 
-			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> root.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> GitCraftPaths.REMAPPED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-remapped.jar"));
 			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("server-remapped.jar"));
 			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("merged-remapped.jar"));
@@ -138,9 +136,8 @@ public enum Step {
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.MERGED, Unpicker.Results.MINECRAFT_MERGED_JAR);
 		}
 		{
-			Path root = GitCraftPaths.DECOMPILED_WORKINGS;
 
-			DECOMPILE_JARS.setResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context -> root.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			DECOMPILE_JARS.setResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context -> GitCraftPaths.DECOMPILED_WORKINGS.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_CLIENT_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("client.jar"));
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_SERVER_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("server.jar"));
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_MERGED_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("merged.jar"));
