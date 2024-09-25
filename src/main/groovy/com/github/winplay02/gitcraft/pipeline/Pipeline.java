@@ -126,4 +126,12 @@ public class Pipeline {
 			}
 		}
 	}
+
+	public static void run(RepoWrapper repository, MinecraftVersionGraph versionGraph) throws Exception {
+		for (OrderedVersion mcVersion : versionGraph) {
+			if (repository == null || !repository.findVersionRev(mcVersion)) {
+				new Pipeline().run(repository, versionGraph, mcVersion);
+			}
+		}
+	}
 }

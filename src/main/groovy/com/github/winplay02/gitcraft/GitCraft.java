@@ -56,16 +56,10 @@ public class GitCraft {
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);
 		try (RepoWrapper repo = GitCraft.getRepository()) {
-			runMainPipeline(repo);
+			Pipeline.run(repo, versionGraph);
 			if (repo != null) {
 				MiscHelper.println("Repo can be found at: %s", repo.getRootPath().toString());
 			}
-		}
-	}
-
-	private static void runMainPipeline(RepoWrapper repo) {
-		for (OrderedVersion mcv : versionGraph) {
-			new Pipeline().run(repo, versionGraph, mcv);
 		}
 	}
 
