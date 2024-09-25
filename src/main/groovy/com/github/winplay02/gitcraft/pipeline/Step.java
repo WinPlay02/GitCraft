@@ -29,17 +29,19 @@ public enum Step {
 	COMMIT("Commit to repository", Committer::new);
 
 	private final String name;
+	private final BiFunction<Step, StepWorker.Config, StepWorker> workerFactory;
+
 	private final Map<DependencyType, Set<Step>> dependencies;
 	private final Map<StepResult, Function<StepWorker.Context, Path>> resultFiles;
 	private final Map<MinecraftJar, StepResult> minecraftJars;
-	private final BiFunction<Step, StepWorker.Config, StepWorker> workerFactory;
 
 	private Step(String name, BiFunction<Step, StepWorker.Config, StepWorker> workerFactory) {
 		this.name = name;
+		this.workerFactory = workerFactory;
+
 		this.dependencies = new EnumMap<>(DependencyType.class);
 		this.resultFiles = new HashMap<>();
 		this.minecraftJars = new EnumMap<>(MinecraftJar.class);
-		this.workerFactory = workerFactory;
 
 		for (DependencyType type : DependencyType.values()) {
 			if (type != DependencyType.NONE) {
