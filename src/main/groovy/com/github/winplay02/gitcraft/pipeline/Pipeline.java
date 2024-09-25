@@ -2,9 +2,13 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
@@ -15,12 +19,37 @@ import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 public class Pipeline {
 
+	private final List<Step> steps; // TODO: customize?
 	private final Map<StepResult, Path> resultFiles;
 	private final Map<MinecraftJar, Path> minecraftJars;
 
 	public Pipeline() {
+		this.steps = Arrays.asList(Step.values());
 		this.resultFiles = new HashMap<>();
 		this.minecraftJars = new EnumMap<>(MinecraftJar.class);
+
+		checkStepDependencies();
+	}
+
+	private void checkStepDependencies() {
+		Set<Step> prev = EnumSet.noneOf(Step.class);
+		Set<Step> next = EnumSet.copyOf(steps);
+
+		for (Step step : steps) {
+			for (Step required : step.getDependencies(DependencyType.REQUIRED)) {
+				if (!prev.contains(required)) {
+					MiscHelper.panic("Illegal pipeline: Step \'" + step.getName() + "\' depends on step \'" + required.getName() + "\' but that step does not appear before it in the pipeline!");
+				}
+			}
+			for (Step notRequired : step.getDependencies(DependencyType.NOT_REQUIRED)) {
+				if (next.contains(notRequired)) {
+					MiscHelper.panic("Illegal pipeline: Step \'" + step.getName() + "\' depends on step \'" + notRequired.getName() + "\' but it appears before that step in the pipeline!");
+				}
+			}
+
+			prev.add(step);
+			next.remove(step);
+		}
 	}
 
 	Path initResultFile(Step step, StepWorker.Context context, StepResult resultFile) {
@@ -38,6 +67,8 @@ public class Pipeline {
 	}
 
 	public void run(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion) {
+		checkStepDependencies();
+
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED));
 
