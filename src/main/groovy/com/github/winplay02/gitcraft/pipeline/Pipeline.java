@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.pipeline;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -36,19 +37,27 @@ public class Pipeline {
 		Set<Step> next = EnumSet.copyOf(steps);
 
 		for (Step step : steps) {
-			for (Step required : step.getDependencies(DependencyType.REQUIRED)) {
-				if (!prev.contains(required)) {
-					MiscHelper.panic("Illegal pipeline: Step \'" + step.getName() + "\' depends on step \'" + required.getName() + "\' but that step does not appear before it in the pipeline!");
-				}
-			}
-			for (Step notRequired : step.getDependencies(DependencyType.NOT_REQUIRED)) {
-				if (next.contains(notRequired)) {
-					MiscHelper.panic("Illegal pipeline: Step \'" + step.getName() + "\' depends on step \'" + notRequired.getName() + "\' but it appears before that step in the pipeline!");
-				}
+			try {
+				checkStepDependencies(step, prev, next);
+			} catch (Exception e) {
+				MiscHelper.panicBecause(e, "Illegal pipeline!");
 			}
 
 			prev.add(step);
 			next.remove(step);
+		}
+	}
+
+	private void checkStepDependencies(Step step, Set<Step> prev, Set<Step> next) {
+		for (Step required : step.getDependencies(DependencyType.REQUIRED)) {
+			if (!prev.contains(required)) {
+				throw new IllegalStateException("Step \'" + step.getName() + "\' depends on step \'" + required.getName() + "\' but that step does not appear before it in the pipeline!");
+			}
+		}
+		for (Step notRequired : step.getDependencies(DependencyType.NOT_REQUIRED)) {
+			if (next.contains(notRequired)) {
+				throw new IllegalStateException("Step \'" + step.getName() + "\' depends on step \'" + notRequired.getName() + "\' but it appears before that step in the pipeline!");
+			}
 		}
 	}
 
@@ -70,14 +79,18 @@ public class Pipeline {
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED));
 
+		Set<Step> completed = EnumSet.noneOf(Step.class);
+
 		for (Step step : steps) {
+			MiscHelper.println("Performing step '%s' for %s (%s)...", step.getName(), context, config);
+
 			StepStatus status = null;
 			Exception exception = null;
 
 			long timeStart = System.nanoTime();
 
 			try {
-				MiscHelper.println("Performing step '%s' for %s (%s)...", step.getName(), context, config);
+				checkStepDependencies(step, completed, Collections.emptySet());
 				status = step.createWorker(config).run(this, context);
 			} catch (Exception e) {
 				status = StepStatus.FAILED;
@@ -110,6 +123,8 @@ public class Pipeline {
 					MiscHelper.panicBecause(exception, message);
 				}
 			} else if (status.hasRun()) {
+				completed.add(step);
+
 				for (MinecraftJar minecraftJar : MinecraftJar.values()) {
 					StepResult resultFile = step.getMinecraftJar(minecraftJar);
 
