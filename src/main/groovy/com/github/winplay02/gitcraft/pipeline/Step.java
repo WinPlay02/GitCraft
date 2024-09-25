@@ -198,10 +198,10 @@ public enum Step {
 			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.MERGED, Decompiler.Results.MINECRAFT_MERGED_JAR);
 		}
 		{
-			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
-			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
-			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ASSETS);
-			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, DECOMPILE_JARS);
+			COMMIT.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			COMMIT.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			COMMIT.setDependency(DependencyType.REQUIRED, FETCH_ASSETS);
+			COMMIT.setDependency(DependencyType.REQUIRED, DECOMPILE_JARS);
 		}
 	}
 }
