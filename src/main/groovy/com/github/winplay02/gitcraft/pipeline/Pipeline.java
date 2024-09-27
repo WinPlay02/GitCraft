@@ -122,9 +122,11 @@ public class Pipeline {
 				} else {
 					MiscHelper.panicBecause(exception, message);
 				}
-			} else if (status.hasRun()) {
-				completed.add(step);
+			}
 
+			completed.add(step);
+
+			if (status.hasRun()) {
 				for (MinecraftJar minecraftJar : MinecraftJar.values()) {
 					StepResult resultFile = step.getMinecraftJar(minecraftJar);
 
