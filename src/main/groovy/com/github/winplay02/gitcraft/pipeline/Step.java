@@ -42,16 +42,10 @@ public enum Step {
 		this.dependencies = new EnumMap<>(DependencyType.class);
 		this.resultFiles = new HashMap<>();
 		this.minecraftJars = new EnumMap<>(MinecraftJar.class);
-
-		for (DependencyType type : DependencyType.values()) {
-			if (type != DependencyType.NONE) {
-				this.dependencies.put(type, EnumSet.noneOf(Step.class));
-			}
-		}
 	}
 
 	private void setDependency(DependencyType type, Step dependency) {
-		dependencies.get(type).add(dependency);
+		dependencies.computeIfAbsent(type, key -> EnumSet.noneOf(Step.class)).add(dependency);
 	}
 
 	private void setResultFile(StepResult resultFile, Path path) {
