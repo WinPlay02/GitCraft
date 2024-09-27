@@ -174,7 +174,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 				try (FileSystem fs = FileSystems.newFileSystem(targetFile)) {
 					Optional<Path> zipFile = MiscHelper.findRecursivelyByName(fs.getPath("."), fileName);
 					if (zipFile.isPresent()) {
-						targetFile = zipFile.get();
+						return this.loadVersionMetadata(zipFile.get(), metadataClass);
 					}
 					return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
 				}

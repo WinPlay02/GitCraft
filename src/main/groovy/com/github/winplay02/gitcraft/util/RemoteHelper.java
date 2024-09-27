@@ -6,7 +6,8 @@ import com.github.winplay02.gitcraft.integrity.IntegrityAlgorithm;
 import com.github.winplay02.gitcraft.integrity.SHA1Algorithm;
 import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
 import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
-import com.github.winplay02.gitcraft.pipeline.Step;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
+
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -71,9 +72,9 @@ public class RemoteHelper {
 		return false;
 	}
 
-	public static Step.StepResult downloadToFileWithChecksumIfNotExists(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
+	public static StepStatus downloadToFileWithChecksumIfNotExists(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
 		if (checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, false)) {
-			return Step.StepResult.UP_TO_DATE;
+			return StepStatus.UP_TO_DATE;
 		}
 		if (localFileInfo.targetFile().getParent() != null) {
 			try {
@@ -98,12 +99,12 @@ public class RemoteHelper {
 				MiscHelper.sleep(GitCraft.config.failedFetchRetryInterval);
 			}
 		} while (!checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, true));
-		return Step.StepResult.SUCCESS;
+		return StepStatus.SUCCESS;
 	}
 
-	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetry(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
+	public static StepStatus downloadToFileWithChecksumIfNotExistsNoRetry(String url, LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm) {
 		if (checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, false)) {
-			return Step.StepResult.UP_TO_DATE;
+			return StepStatus.UP_TO_DATE;
 		}
 		if (localFileInfo.targetFile().getParent() != null) {
 			try {
@@ -137,7 +138,7 @@ public class RemoteHelper {
 		if (!checksumCheckFileIsValidAndExists(localFileInfo, integrityAlgorithm, true)) {
 			MiscHelper.panic("File download failed");
 		}
-		return Step.StepResult.SUCCESS;
+		return StepStatus.SUCCESS;
 	}
 
 	public static String createMavenURLFromMavenArtifact(String baseUrl, String mavenArtifact) {
@@ -164,7 +165,7 @@ public class RemoteHelper {
 		return new ArtifactMetadata(mavenCache.getSha1ForURL(urlencodedURL(mavenUrl + ".sha1")), -1, urlencodedURL(mavenUrl));
 	}
 
-	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetryMaven(String url, LocalFileInfo localFileInfo) {
+	public static StepStatus downloadToFileWithChecksumIfNotExistsNoRetryMaven(String url, LocalFileInfo localFileInfo) {
 		try {
 			String sha1 = mavenCache.getSha1ForURL(urlencodedURL(url + ".sha1"));
 			return downloadToFileWithChecksumIfNotExistsNoRetry(urlencodedURL(url), new LocalFileInfo(localFileInfo.targetFile(), sha1, localFileInfo.outputFileKind(), localFileInfo.outputFileId()), SHA1);
@@ -173,7 +174,7 @@ public class RemoteHelper {
 		}
 	}
 
-	public static Step.StepResult downloadToFileWithChecksumIfNotExistsNoRetryGitHub(String repository, String branch, String path, LocalFileInfo localFileInfo) {
+	public static StepStatus downloadToFileWithChecksumIfNotExistsNoRetryGitHub(String repository, String branch, String path, LocalFileInfo localFileInfo) {
 		String githubApiUrl = urlencodedURL(String.format("https://api.github.com/repos/%s/contents/%s?ref=%s", repository, path, branch));
 		try {
 			GithubRepositoryBlobContent apiResponse = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(githubApiUrl)), GithubRepositoryBlobContent.class);

@@ -1,284 +1,201 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.MinecraftVersionGraph;
-import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.types.AssetsIndex;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.MiscHelper;
-import com.github.winplay02.gitcraft.util.RepoWrapper;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
-
-import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-public abstract class Step {
+import com.github.winplay02.gitcraft.util.GitCraftPaths;
 
-	protected static final String STEP_RESET = "Reset";
+public enum Step {
 
-	protected static final String STEP_FETCH_ARTIFACTS = "Fetch Artifacts";
+	RESET("Reset", Resetter::new),
+	FETCH_ARTIFACTS("Fetch Artifacts", ArtifactsFetcher::new),
+	FETCH_LIBRARIES("Fetch Libraries", LibrariesFetcher::new),
+	FETCH_ASSETS("Fetch Assets", AssetsFetcher::new),
+	UNPACK_ARTIFACTS("Unpack Artifacts", ArtifactsUnpacker::new),
+	MERGE_OBFUSCATED_JARS("Merge Obfuscated Jars", JarsMerger::new),
+	DATAGEN("Datagen", DataGenerator::new),
+	PROVIDE_MAPPINGS("Provide Mappings", MappingsProvider::new),
+	REMAP_JARS("Remap Jars", Remapper::new),
+	MERGE_REMAPPED_JARS("Merge Remapped Jars", JarsMerger::new),
+	UNPICK_JARS("Unpick Jars", Unpicker::new),
+	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
+	COMMIT("Commit to repository", Committer::new);
 
-	protected static final String STEP_FETCH_ASSETS = "Fetch Assets";
+	private final String name;
+	private final BiFunction<Step, StepWorker.Config, StepWorker> workerFactory;
 
-	protected static final String STEP_FETCH_LIBRARIES = "Fetch Libraries";
+	private final Map<DependencyType, Set<Step>> dependencies;
+	private final Map<StepResult, Function<StepWorker.Context, Path>> resultFiles;
+	private final Map<MinecraftJar, StepResult> minecraftJars;
 
-	protected static final String STEP_DATAGEN = "Datagen";
+	private Step(String name, BiFunction<Step, StepWorker.Config, StepWorker> workerFactory) {
+		this.name = name;
+		this.workerFactory = workerFactory;
 
-	protected static final String STEP_MERGE = "Merge";
-
-	protected static final String STEP_PREPARE_MAPPINGS = "Prepare Mappings";
-
-	protected static final String STEP_REMAP = "Remap";
-
-	protected static final String STEP_REMAP_CLIENT_ONLY = "Remap Client";
-
-	protected static final String STEP_REMAP_SERVER_ONLY = "Remap Server";
-
-	protected static final String STEP_UNPICK = "Unpick";
-
-	protected static final String STEP_DECOMPILE = "Decompile";
-
-	protected static final String STEP_COMMIT = "Commit";
-
-	public enum StepResult implements Comparator<StepResult> {
-
-		NOT_RUN,
-		UP_TO_DATE,
-		SUCCESS,
-		FAILED;
-
-		public static StepResult merge(StepResult... results) {
-			return Arrays.stream(results).filter(Objects::nonNull).max(StepResult::compareTo).orElse(NOT_RUN);
-		}
-
-		public static StepResult merge(Collection<StepResult> results) {
-			return results.stream().filter(Objects::nonNull).max(StepResult::compareTo).orElse(NOT_RUN);
-		}
-
-		@Override
-		public int compare(StepResult o1, StepResult o2) {
-			if (o1 == null) {
-				o1 = NOT_RUN;
-			}
-			if (o2 == null) {
-				o2 = NOT_RUN;
-			}
-			return o2.ordinal() - o1.ordinal();
-		}
+		this.dependencies = new EnumMap<>(DependencyType.class);
+		this.resultFiles = new HashMap<>();
+		this.minecraftJars = new EnumMap<>(MinecraftJar.class);
 	}
 
-	public static class PipelineCache {
-		protected Optional<Boolean> versionAlreadyInRepo = Optional.empty();
-		protected AssetsIndex assetsIndexMeta = null;
-		protected Map<String, Path> cachedPaths = new HashMap<>();
-
-		protected void putPath(Step step, Path artifactPath) {
-			if (artifactPath != null) {
-				this.cachedPaths.put(step.getName(), artifactPath);
-			}
-		}
-
-		protected Path getForKey(String key) {
-			return this.cachedPaths.get(key);
-		}
-
-		protected void putAssetsIndex(AssetsIndex assetsIndexMeta) {
-			this.assetsIndexMeta = assetsIndexMeta;
-		}
-
-		protected AssetsIndex getAssetsIndex() {
-			return this.assetsIndexMeta;
-		}
+	private void setDependency(DependencyType type, Step dependency) {
+		dependencies.computeIfAbsent(type, key -> EnumSet.noneOf(Step.class)).add(dependency);
 	}
 
-	public abstract String getName();
-
-	public boolean ignoresMappings() {
-		return false;
+	private void setResultFile(StepResult resultFile, Path path) {
+		resultFiles.put(resultFile, context -> path);
 	}
 
-	public final Optional<Path> getArtifactPath(OrderedVersion mcVersion, MappingFlavour mappingFlavour) {
-		return Optional.ofNullable(getInternalArtifactPath(mcVersion, mappingFlavour));
+	private void setResultFile(StepResult resultFile, Function<StepWorker.Context, Path> path) {
+		resultFiles.put(resultFile, path);
 	}
 
-	protected Path getInternalArtifactPath(OrderedVersion mcVersion, MappingFlavour mappingFlavour) {
-		return null;
+	private void setMinecraftJar(MinecraftJar minecraftJar, StepResult resultFile) {
+		minecraftJars.put(minecraftJar, resultFile);
 	}
 
-	protected final boolean findVersionRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
-		if (repo.getGit().getRepository().resolve(Constants.HEAD) == null) {
-			return false;
-		}
-		return repo.getGit().log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
+	public String getName() {
+		return name;
 	}
 
-	public boolean preconditionsShouldRun(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
-		if (repo == null) {
-			return true;
-		}
-		if (pipelineCache.versionAlreadyInRepo.isEmpty()) {
-			try {
-				pipelineCache.versionAlreadyInRepo = Optional.of(findVersionRev(mcVersion, repo));
-			} catch (GitAPIException | IOException e) {
-				throw new RuntimeException(e);
+	public Set<Step> getDependencies(DependencyType type) {
+		return dependencies.getOrDefault(type, Collections.emptySet());
+	}
+
+	public DependencyType getDependencyType(Step other) {
+		for (Map.Entry<DependencyType, Set<Step>> entry : dependencies.entrySet()) {
+			if (entry.getValue().contains(other)) {
+				return entry.getKey();
 			}
 		}
-		return !pipelineCache.versionAlreadyInRepo.get();
+
+		return DependencyType.NONE;
 	}
 
-	public abstract StepResult run(PipelineCache pipelineCache, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws Exception;
-
-	public static void executePipeline(List<Step> defaultSteps, OrderedVersion mcVersion, MappingFlavour mappingFlavour, MinecraftVersionGraph versionGraph, RepoWrapper repo) {
-		LinkedList<Step> pipelineSteps = new LinkedList<>(defaultSteps);
-		PipelineCache pipelineCache = new PipelineCache();
-		while (!pipelineSteps.isEmpty()) {
-			Step step = pipelineSteps.pop();
-			Exception cachedException = null;
-			StepResult result;
-			long timeStart = System.nanoTime();
-			try {
-				if (step.preconditionsShouldRun(pipelineCache, mcVersion, mappingFlavour, versionGraph, repo)) {
-					if (step.ignoresMappings()) {
-						MiscHelper.println("Performing step '%s' for version %s...", step.getName(), mcVersion.launcherFriendlyVersionName());
-					} else {
-						MiscHelper.println("Performing step '%s' for version %s (%s mappings)...", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
-					}
-					// If mappings are ignored, force step to not use mappings (pass null)
-					result = step.run(pipelineCache, mcVersion, step.ignoresMappings() ? null : mappingFlavour, versionGraph, repo);
-				} else {
-					result = StepResult.NOT_RUN;
-				}
-			} catch (PipelineInjectionReplaceControlFlow controlFlow) {
-				result = StepResult.NOT_RUN;
-				controlFlow.steps.forEach(pipelineSteps::push);
-			} catch (Exception e) {
-				cachedException = e;
-				result = StepResult.FAILED;
-			}
-			long timeEnd = System.nanoTime();
-			long delta = timeEnd - timeStart;
-			Duration deltaDuration = Duration.ofNanos(delta);
-			String timeInfo = String.format("elapsed: %dm %02ds", deltaDuration.toMinutes(), deltaDuration.toSecondsPart());
-			if (step.ignoresMappings()) {
-				switch (result) {
-					case SUCCESS ->
-						MiscHelper.println("\tStep '%s' for version %s \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
-					case UP_TO_DATE ->
-						MiscHelper.println("\tStep '%s' for version %s was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
-					case NOT_RUN -> {
-						if (GitCraft.config.printNotRunSteps) {
-							MiscHelper.println("Step '%s' for version %s was \u001B[36mnot run\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName());
-						}
-					}
-					case FAILED ->
-						MiscHelper.println("\tStep '%s' for version %s \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
-				}
-			} else {
-				switch (result) {
-					case SUCCESS ->
-						MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[32msucceeded\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
-					case UP_TO_DATE ->
-						MiscHelper.println("\tStep '%s' for version %s (%s mappings) was \u001B[32malready up-to-date\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
-					case NOT_RUN -> {
-						if (GitCraft.config.printNotRunSteps) {
-							MiscHelper.println("Step '%s' for version %s (%s mappings) was \u001B[36mnot run\u001B[0m", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour);
-						}
-					}
-					case FAILED ->
-						MiscHelper.println("\tStep '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
-				}
-			}
-			if (result == StepResult.FAILED) {
-				if (cachedException != null) {
-					if (step.ignoresMappings()) {
-						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), timeInfo);
-					} else {
-						MiscHelper.panicBecause(cachedException, "Step '%s' for version %s (%s mappings) \u001B[31mfailed\u001B[0m (%s)", step.getName(), mcVersion.launcherFriendlyVersionName(), mappingFlavour, timeInfo);
-					}
-				}
-			} else if (result != StepResult.NOT_RUN) {
-				pipelineCache.putPath(step, step.getArtifactPath(mcVersion, mappingFlavour).orElse(null));
-			}
-		}
+	public Path getResultFile(StepResult resultFile, StepWorker.Context context) {
+		return resultFiles.get(resultFile).apply(context);
 	}
 
-	private static class PipelineInjectionReplaceControlFlow extends RuntimeException {
-		final List<Step> steps;
-
-		private PipelineInjectionReplaceControlFlow(List<Step> steps) {
-			this.steps = steps;
-		}
+	public StepResult getMinecraftJar(MinecraftJar minecraftJar) {
+		return minecraftJars.get(minecraftJar);
 	}
 
-	public static void injectStepsAndReplace(Iterable<Step> steps) {
-		List<Step> stepsNew = new ArrayList<>();
-		steps.forEach(stepsNew::add);
-		throw new PipelineInjectionReplaceControlFlow(stepsNew);
+	public StepWorker createWorker(StepWorker.Config config) {
+		return workerFactory.apply(this, config);
 	}
 
-	public static void injectStepsAndReplace(Step... steps) {
-		injectStepsAndReplace(Arrays.asList(steps));
-	}
+	static {
+		{
+			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context -> GitCraftPaths.MC_VERSION_STORE.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_CLIENT_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("client.jar"));
+			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("server.jar"));
+			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_EXE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("server.exe"));
+			FETCH_ARTIFACTS.setResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_ZIP, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("server.zip"));
 
-	public static final class CommitMsgFilter extends RevFilter {
-		String msg;
-
-		public CommitMsgFilter(String msg) {
-			this.msg = msg;
+			FETCH_ARTIFACTS.setMinecraftJar(MinecraftJar.CLIENT, ArtifactsFetcher.Results.MINECRAFT_CLIENT_JAR);
+			FETCH_ARTIFACTS.setMinecraftJar(MinecraftJar.SERVER, ArtifactsFetcher.Results.MINECRAFT_SERVER_JAR);
 		}
-
-		@Override
-		public boolean include(RevWalk walker, RevCommit c) {
-			return Objects.equals(c.getFullMessage(), this.msg);
+		{
+			FETCH_LIBRARIES.setResultFile(LibrariesFetcher.Results.LIBRARIES_DIRECTORY, GitCraftPaths.LIBRARY_STORE);
 		}
-
-		@Override
-		public RevFilter clone() {
-			return new CommitMsgFilter(this.msg);
+		{
+			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX_DIRECTORY, GitCraftPaths.ASSETS_INDEX);
+			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_OBJECTS_DIRECTORY, GitCraftPaths.ASSETS_OBJECTS);
+			FETCH_ASSETS.setResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX, context -> FETCH_ASSETS.getResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX_DIRECTORY, context).resolve(context.minecraftVersion().assetsIndex().name()));
 		}
+		{
+			UNPACK_ARTIFACTS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
 
-		@Override
-		public String toString() {
-			return "MSG_FILTER";
+			UNPACK_ARTIFACTS.setResultFile(ArtifactsUnpacker.Results.MINECRAFT_SERVER_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_JAR, context));
+
+			UNPACK_ARTIFACTS.setMinecraftJar(MinecraftJar.SERVER, ArtifactsUnpacker.Results.MINECRAFT_SERVER_JAR);
 		}
-	}
+		{
+			MERGE_OBFUSCATED_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			MERGE_OBFUSCATED_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 
-	public static final class CommitRevFilter extends RevFilter {
-		ObjectId revId;
+			MERGE_OBFUSCATED_JARS.setResultFile(JarsMerger.Results.OBFUSCATED_MINECRAFT_MERGED_JAR, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("merged.jar"));
 
-		public CommitRevFilter(ObjectId revId) {
-			this.revId = revId;
+			MERGE_OBFUSCATED_JARS.setMinecraftJar(MinecraftJar.MERGED, JarsMerger.Results.OBFUSCATED_MINECRAFT_MERGED_JAR);
 		}
+		{
+			DATAGEN.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			DATAGEN.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			DATAGEN.setDependency(DependencyType.REQUIRED, MERGE_OBFUSCATED_JARS);
 
-		@Override
-		public boolean include(RevWalk walker, RevCommit c) {
-			return Objects.equals(c.getId(), this.revId);
+			DATAGEN.setResultFile(DataGenerator.Results.ARTIFACTS_SNBT_ARCHIVE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagen-snbt.jar"));
+			DATAGEN.setResultFile(DataGenerator.Results.ARTIFACTS_REPORTS_ARCHIVE, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagen-reports.jar"));
+			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context -> FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, context).resolve("datagenerator"));
+			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_NBT_SOURCE_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("input"));
+			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_NBT_SOURCE_DATA_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_NBT_SOURCE_DIRECTORY, context).resolve("data"));
+			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_SNBT_DESTINATION_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("output"));
+			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_SNBT_DESTINATION_DIRECTORY, context).resolve("data"));
+			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_REPORTS_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("generated").resolve("reports"));
 		}
+		{
+			REMAP_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			REMAP_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			REMAP_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
+			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
 
-		@Override
-		public RevFilter clone() {
-			return new CommitRevFilter(this.revId);
+			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> GitCraftPaths.REMAPPED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-remapped.jar"));
+			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("server-remapped.jar"));
+			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("merged-remapped.jar"));
+
+			REMAP_JARS.setMinecraftJar(MinecraftJar.CLIENT, Remapper.Results.MINECRAFT_CLIENT_JAR);
+			REMAP_JARS.setMinecraftJar(MinecraftJar.SERVER, Remapper.Results.MINECRAFT_SERVER_JAR);
+			REMAP_JARS.setMinecraftJar(MinecraftJar.MERGED, Remapper.Results.MINECRAFT_MERGED_JAR);
 		}
+		{
+			MERGE_REMAPPED_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
 
-		@Override
-		public String toString() {
-			return "MSG_FILTER";
+			MERGE_REMAPPED_JARS.setResultFile(JarsMerger.Results.REMAPPED_MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("merged-remapped.jar"));
+
+			MERGE_REMAPPED_JARS.setMinecraftJar(MinecraftJar.MERGED, JarsMerger.Results.REMAPPED_MINECRAFT_MERGED_JAR);
+		}
+		{
+			UNPICK_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
+			UNPICK_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
+			UNPICK_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
+
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("server-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("merged-unpicked.jar"));
+
+			UNPICK_JARS.setMinecraftJar(MinecraftJar.CLIENT, Unpicker.Results.MINECRAFT_CLIENT_JAR);
+			UNPICK_JARS.setMinecraftJar(MinecraftJar.SERVER, Unpicker.Results.MINECRAFT_SERVER_JAR);
+			UNPICK_JARS.setMinecraftJar(MinecraftJar.MERGED, Unpicker.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, REMAP_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_REMAPPED_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
+
+			DECOMPILE_JARS.setResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context -> GitCraftPaths.DECOMPILED_WORKINGS.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_CLIENT_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("client.jar"));
+			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_SERVER_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("server.jar"));
+			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_MERGED_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("merged.jar"));
+
+			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.CLIENT, Decompiler.Results.MINECRAFT_CLIENT_JAR);
+			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.SERVER, Decompiler.Results.MINECRAFT_SERVER_JAR);
+			DECOMPILE_JARS.setMinecraftJar(MinecraftJar.MERGED, Decompiler.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
+			COMMIT.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			COMMIT.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			COMMIT.setDependency(DependencyType.REQUIRED, FETCH_ASSETS);
+			COMMIT.setDependency(DependencyType.REQUIRED, DECOMPILE_JARS);
 		}
 	}
 }

@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.types;
 
-import com.github.winplay02.gitcraft.pipeline.Step;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 
 import java.nio.file.Path;
@@ -25,11 +25,11 @@ public record Artifact(String url, String name, String sha1sum) {
 		return containingPath.resolve(name);
 	}
 
-	public Step.StepResult fetchArtifact(Path containingPath) {
+	public StepStatus fetchArtifact(Path containingPath) {
 		return fetchArtifact(containingPath, "artifact");
 	}
 
-	public Step.StepResult fetchArtifact(Path containingPath, String artifactKind) {
+	public StepStatus fetchArtifact(Path containingPath, String artifactKind) {
 		Path path = resolve(containingPath);
 		return RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(path, sha1sum, artifactKind, name), RemoteHelper.SHA1);
 	}

@@ -1,9 +1,15 @@
 package com.github.winplay02.gitcraft.util;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.pipeline.Committer.CommitMsgFilter;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
+
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -27,5 +33,12 @@ public class RepoWrapper implements Closeable {
 
 	public Path getRootPath() {
 		return this.root_path;
+	}
+
+	public boolean findVersionRev(OrderedVersion mcVersion) throws GitAPIException, IOException {
+		if (git.getRepository().resolve(Constants.HEAD) == null) {
+			return false;
+		}
+		return git.log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
 	}
 }
