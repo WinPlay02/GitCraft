@@ -80,18 +80,20 @@ public class GitCraftTest {
 		metadataBootstrap = new MojangLauncherMetadataProvider();
 		MinecraftVersionGraph versionGraph = MinecraftVersionGraph.createFromMetadata(metadataBootstrap);
 		//
-		Path mappingsPath = GitCraft.MOJANG_MAPPINGS.get().getMappingsPathInternal(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED);
+		Path mappingsPath = GitCraft.MOJANG_MAPPINGS.get().getMappingsPathInternal(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.CLIENT);
 		Files.deleteIfExists(mappingsPath);
 		assertFalse(Files.exists(mappingsPath));
 		assertTrue(GitCraft.MOJANG_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionByName("1.14.4")));
 		assertFalse(GitCraft.MOJANG_MAPPINGS.get().doMappingsExist(versionGraph.getMinecraftVersionByName("1.12")));
-		assertEquals(StepStatus.SUCCESS, GitCraft.MOJANG_MAPPINGS.get().provideMappings(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED));
+		assertEquals(StepStatus.SUCCESS, GitCraft.MOJANG_MAPPINGS.get().provideMappings(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.CLIENT));
+		assertEquals(StepStatus.SUCCESS, GitCraft.MOJANG_MAPPINGS.get().provideMappings(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.SERVER));
+		assertEquals(StepStatus.NOT_RUN, GitCraft.MOJANG_MAPPINGS.get().provideMappings(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED));
 		assertTrue(Files.exists(mappingsPath));
-		assertEquals(StepStatus.UP_TO_DATE, GitCraft.MOJANG_MAPPINGS.get().provideMappings(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED));
+		assertEquals(StepStatus.UP_TO_DATE, GitCraft.MOJANG_MAPPINGS.get().provideMappings(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.CLIENT));
 		assertTrue(Files.size(mappingsPath) > 0);
 		assertFalse(GitCraft.MOJANG_MAPPINGS.get().supportsComments());
 		assertFalse(GitCraft.MOJANG_MAPPINGS.get().supportsConstantUnpicking());
-		assertNotNull(GitCraft.MOJANG_MAPPINGS.get().getMappingsProvider(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED));
+		assertNotNull(GitCraft.MOJANG_MAPPINGS.get().getMappingsProvider(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.CLIENT));
 		assertEquals(MappingsNamespace.OFFICIAL.toString(), GitCraft.MOJANG_MAPPINGS.get().getSourceNS());
 		assertEquals(MappingsNamespace.NAMED.toString(), GitCraft.MOJANG_MAPPINGS.get().getDestinationNS());
 	}
