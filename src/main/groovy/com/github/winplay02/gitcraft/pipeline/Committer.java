@@ -135,7 +135,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 			} else {
 				checkoutVersionBranch(target_branch, mcVersion, versionGraph, repo);
 			}
-			if (findVersionRev(mcVersion, repo)) {
+			if (repo.findVersionRev(mcVersion)) {
 				MiscHelper.println("Version %s already exists in repo, skipping", mcVersion.launcherFriendlyVersionName());
 				return Optional.empty();
 			}
@@ -161,13 +161,6 @@ public record Committer(Step step, Config config) implements StepWorker {
 			target_branch = GitCraft.config.gitMainlineLinearBranch;
 		}
 		return Optional.of(target_branch);
-	}
-
-	protected final boolean findVersionRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
-		if (repo.getGit().getRepository().resolve(Constants.HEAD) == null) {
-			return false;
-		}
-		return repo.getGit().log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
 	}
 
 	private boolean doesBranchExist(String target_branch, RepoWrapper repo) throws IOException {

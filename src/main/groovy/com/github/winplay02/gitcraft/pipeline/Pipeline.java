@@ -2,9 +2,14 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
@@ -15,12 +20,45 @@ import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 public class Pipeline {
 
+	private final List<Step> steps; // TODO: customize?
 	private final Map<StepResult, Path> resultFiles;
 	private final Map<MinecraftJar, Path> minecraftJars;
 
 	public Pipeline() {
+		this.steps = Arrays.asList(Step.values());
 		this.resultFiles = new HashMap<>();
 		this.minecraftJars = new EnumMap<>(MinecraftJar.class);
+
+		checkStepDependencies();
+	}
+
+	private void checkStepDependencies() {
+		Set<Step> prev = EnumSet.noneOf(Step.class);
+		Set<Step> next = EnumSet.copyOf(steps);
+
+		for (Step step : steps) {
+			try {
+				checkStepDependencies(step, prev, next);
+			} catch (Exception e) {
+				MiscHelper.panicBecause(e, "Illegal pipeline!");
+			}
+
+			prev.add(step);
+			next.remove(step);
+		}
+	}
+
+	private void checkStepDependencies(Step step, Set<Step> prev, Set<Step> next) {
+		for (Step required : step.getDependencies(DependencyType.REQUIRED)) {
+			if (!prev.contains(required)) {
+				throw new IllegalStateException("Step \'" + step.getName() + "\' depends on step \'" + required.getName() + "\' but that step does not appear before it in the pipeline!");
+			}
+		}
+		for (Step notRequired : step.getDependencies(DependencyType.NOT_REQUIRED)) {
+			if (next.contains(notRequired)) {
+				throw new IllegalStateException("Step \'" + step.getName() + "\' depends on step \'" + notRequired.getName() + "\' but it appears before that step in the pipeline!");
+			}
+		}
 	}
 
 	Path initResultFile(Step step, StepWorker.Context context, StepResult resultFile) {
@@ -41,14 +79,18 @@ public class Pipeline {
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED));
 
-		for (Step step : Step.values()) {
+		Set<Step> completed = EnumSet.noneOf(Step.class);
+
+		for (Step step : steps) {
+			MiscHelper.println("Performing step '%s' for %s (%s)...", step.getName(), context, config);
+
 			StepStatus status = null;
 			Exception exception = null;
 
 			long timeStart = System.nanoTime();
 
 			try {
-				MiscHelper.println("Performing step '%s' for %s (%s)...", step.getName(), context, config);
+				checkStepDependencies(step, completed, Collections.emptySet());
 				status = step.createWorker(config).run(this, context);
 			} catch (Exception e) {
 				status = StepStatus.FAILED;
@@ -73,10 +115,18 @@ public class Pipeline {
 			}
 
 			if (status == StepStatus.FAILED) {
-				if (exception != null) {
-					MiscHelper.panicBecause(exception, "Step '%s' for %s (%s) \u001B[31mfailed\u001B[0m (%s)", step.getName(), context, config, timeInfo);
+				String message = String.format("Step '%s' for %s (%s) \u001B[31mfailed\u001B[0m (%s)", step.getName(), context, config, timeInfo);
+
+				if (exception == null) {
+					MiscHelper.panic(message);
+				} else {
+					MiscHelper.panicBecause(exception, message);
 				}
-			} else if (status.hasRun()) {
+			}
+
+			completed.add(step);
+
+			if (status.hasRun()) {
 				for (MinecraftJar minecraftJar : MinecraftJar.values()) {
 					StepResult resultFile = step.getMinecraftJar(minecraftJar);
 
@@ -90,6 +140,14 @@ public class Pipeline {
 						}
 					}
 				}
+			}
+		}
+	}
+
+	public static void run(RepoWrapper repository, MinecraftVersionGraph versionGraph) throws Exception {
+		for (OrderedVersion mcVersion : versionGraph) {
+			if (repository == null || !repository.findVersionRev(mcVersion)) {
+				new Pipeline().run(repository, versionGraph, mcVersion);
 			}
 		}
 	}

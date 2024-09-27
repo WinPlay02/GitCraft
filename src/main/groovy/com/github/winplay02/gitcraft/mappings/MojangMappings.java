@@ -103,17 +103,16 @@ public class MojangMappings extends Mapping {
 	@Override
 	public void visit(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingVisitor visitor) throws IOException {
 		switch (minecraftJar) {
-		case CLIENT:
-		case SERVER:
-			Path path = getMappingsPathInternal(mcVersion, minecraftJar);
-			try (BufferedReader br = Files.newBufferedReader(path)) {
-				Tiny2FileReader.read(br, visitor);
+			case CLIENT, SERVER -> {
+				Path path = getMappingsPathInternal(mcVersion, minecraftJar);
+				try (BufferedReader br = Files.newBufferedReader(path)) {
+					Tiny2FileReader.read(br, visitor);
+				}
 			}
-			break;
-		case MERGED:
-			visit(mcVersion, MinecraftJar.CLIENT, visitor);
-			visit(mcVersion, MinecraftJar.SERVER, visitor);
-			break;
+			case MERGED -> {
+				visit(mcVersion, MinecraftJar.CLIENT, visitor);
+				visit(mcVersion, MinecraftJar.SERVER, visitor);
+			}
 		}
 	}
 }
