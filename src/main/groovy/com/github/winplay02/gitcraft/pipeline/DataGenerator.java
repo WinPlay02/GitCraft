@@ -21,6 +21,8 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 	public static final ExternalWorldgenPacks EXTERNAL_WORLDGEN_PACKS = new ExternalWorldgenPacks();
 	private static final String DATAGEN_AVAILABLE_START_VERSION = "18w01a";
 	private static final String DATAGEN_BUNDLER_START_VERSION = "21w39a";
+	private static final String EXT_VANILLA_WORLDGEN_PACK_START = "20w28a";
+	private static final String EXT_VANILLA_WORLDGEN_PACK_END = "21w44a";
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
@@ -176,8 +178,15 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 		}
 
 		public Tuple2<OrderedVersion, Artifact> get(OrderedVersion mcVersion) {
-			Map.Entry<OrderedVersion, Artifact> entry = artifacts.floorEntry(mcVersion);
-			return (entry == null) ? null : Tuple2.tuple(entry.getKey(), entry.getValue());
+			if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START)) >= 0
+					&& mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END)) <= 0) {
+				Map.Entry<OrderedVersion, Artifact> entry = artifacts.floorEntry(mcVersion);
+				if (entry != null) {
+					return Tuple2.tuple(entry.getKey(), entry.getValue());
+				}
+			}
+
+			return null;
 		}
 	}
 }
