@@ -7,6 +7,7 @@ import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
@@ -26,26 +27,24 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URL;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class YarnMappings extends Mapping {
 
-	public static final String URL_FABRIC_YARN_META = "https://meta.fabricmc.net/v2/versions/yarn";
-
-	private Map<String, FabricYarnVersionMeta> yarnVersions = null;
+	private MetaVersionsSource<FabricYarnVersionMeta> yarnVersions = new MetaVersionsSource<>(
+		"https://meta.fabricmc.net/v2/versions/yarn",
+		SerializationHelper.TYPE_LIST_FABRIC_YARN_VERSION_META,
+		FabricYarnVersionMeta::gameVersion
+	);
 
 	protected FabricIntermediaryMappings intermediaryMappings;
 
@@ -234,15 +233,11 @@ public class YarnMappings extends Mapping {
 	}
 
 	private FabricYarnVersionMeta getYarnLatestBuild(OrderedVersion mcVersion) {
-		if (yarnVersions == null) {
-			try {
-				List<FabricYarnVersionMeta> yarnVersionMetas = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(URL_FABRIC_YARN_META)), SerializationHelper.TYPE_LIST_FABRIC_YARN_VERSION_META);
-				yarnVersions = yarnVersionMetas.stream().collect(Collectors.groupingBy(FabricYarnVersionMeta::gameVersion)).values().stream().map(fabricYarnVersionMetas -> fabricYarnVersionMetas.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(FabricYarnVersionMeta::gameVersion, Function.identity()));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			return yarnVersions.getLatest(FabricIntermediaryMappings.mappingsIntermediaryPathQuirkVersion(mcVersion.launcherFriendlyVersionName()));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
-		return yarnVersions.get(FabricIntermediaryMappings.mappingsIntermediaryPathQuirkVersion(mcVersion.launcherFriendlyVersionName()));
 	}
 
 	private static boolean isYarnBrokenVersion(OrderedVersion mcVersion) {
