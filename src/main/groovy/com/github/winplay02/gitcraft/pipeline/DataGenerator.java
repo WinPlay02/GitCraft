@@ -24,10 +24,7 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
-		if (!GitCraft.config.loadDatagenRegistry) {
-			return StepStatus.NOT_RUN;
-		}
-		if (!GitCraft.config.readableNbt || !GitCraft.config.loadIntegratedDatapack) {
+		if (!GitCraft.config.loadDatagenRegistry && (!GitCraft.config.readableNbt || !GitCraft.config.loadIntegratedDatapack)) {
 			return StepStatus.NOT_RUN;
 		}
 		OrderedVersion mcVersion = context.minecraftVersion();
