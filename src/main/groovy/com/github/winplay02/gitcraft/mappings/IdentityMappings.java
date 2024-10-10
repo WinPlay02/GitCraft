@@ -1,10 +1,14 @@
 package com.github.winplay02.gitcraft.mappings;
 
-import com.github.winplay02.gitcraft.pipeline.Step;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
-
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
+
+import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
+
+import net.fabricmc.mappingio.MappingVisitor;
 
 public class IdentityMappings extends Mapping {
 	@Override
@@ -28,17 +32,32 @@ public class IdentityMappings extends Mapping {
 	}
 
 	@Override
-	public Step.StepResult prepareMappings(OrderedVersion mcVersion) throws IOException {
-		return Step.StepResult.SUCCESS;
+	public boolean doMappingsExist(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+		return true;
 	}
 
 	@Override
-	protected Path getMappingsPathInternal(OrderedVersion mcVersion) {
+	public boolean canMappingsBeUsedOn(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+		return true;
+	}
+
+	@Override
+	public StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+		return StepStatus.SUCCESS;
+	}
+
+	@Override
+	protected Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return null;
 	}
 
 	@Override
-	public Path executeCustomRemappingLogic(Path previousFile, OrderedVersion mcVersion) {
+	public void visit(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingVisitor visitor) throws IOException {
+		visitor.visitNamespaces(getSourceNS(), List.of(getDestinationNS()));
+	}
+
+	@Override
+	public Path executeCustomRemappingLogic(Path previousFile, OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return previousFile;
 	}
 }

@@ -61,14 +61,14 @@ public record OrderedVersion(
 
 	public static Artifact getServerWindowsFromInfo(VersionInfo versionInfo) {
 		if (versionInfo.downloads().windows_server() != null) {
-			return Artifact.fromURL(versionInfo.downloads().windows_server().url(), versionInfo.downloads().windows_server().sha1());
+			return new Artifact(versionInfo.downloads().windows_server().url(), "server.exe", versionInfo.downloads().windows_server().sha1());
 		}
 		return null;
 	}
 
 	public static Artifact getServerZipFromInfo(VersionInfo versionInfo) {
 		if (versionInfo.downloads().server_zip() != null) {
-			return Artifact.fromURL(versionInfo.downloads().server_zip().url(), versionInfo.downloads().server_zip().sha1());
+			return new Artifact(versionInfo.downloads().server_zip().url(), "server.zip", versionInfo.downloads().server_zip().sha1());
 		}
 		return null;
 	}

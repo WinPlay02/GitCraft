@@ -245,13 +245,13 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 			graph.repoTags.add(String.format("manifest_%s", provider.getInternalName()));
 		}
 		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersions().values());
-		//TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions().values().stream().filter(value -> !MinecraftVersionGraph.isVersionNonLinearSnapshot(value)).toList());
+		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions().values().stream().filter(value -> !provider.shouldExcludeFromMainBranch(value)).toList());
 		Map<String, OrderedVersion> semverMetaVersions = provider.getVersions().values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
-		for (OrderedVersion version : provider.getVersions().values()) {
+		for (OrderedVersion version : metaVersions) {
 			graph.edgesFw.computeIfAbsent(version, value -> new TreeSet<>());
 			List<String> previousVersion = provider.getParentVersion(version);
 			if (previousVersion == null) {
-				OrderedVersion prevLinearVersion = metaVersions.lower(version);
+				OrderedVersion prevLinearVersion = metaVersionsMainline.lower(version);
 				previousVersion = prevLinearVersion != null ? List.of(prevLinearVersion.semanticVersion()) : Collections.emptyList();
 			}
 			if (previousVersion.isEmpty()) {
