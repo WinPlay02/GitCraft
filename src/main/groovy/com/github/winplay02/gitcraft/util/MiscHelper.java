@@ -192,7 +192,7 @@ public class MiscHelper {
 		if (values.size() > 1) {
 			MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value");
 		}
-		return values.size() == 1 ? values.get(0) : null;
+		return values.size() == 1 ? values.getFirst() : null;
 	}
 
 	@Deprecated
@@ -202,7 +202,7 @@ public class MiscHelper {
 		//if (values.size() > 1) {
 		//	   MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value");
 		//}
-		return values.size() >= 1 ? values.get(0) : null;
+		return !values.isEmpty() ? values.getFirst() : null;
 	}
 
 	public static <Source, T extends Comparable<T>> T mergeMaxOrNull(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
