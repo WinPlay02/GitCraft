@@ -1,32 +1,5 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.stream.StreamSupport;
-
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
-
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
@@ -37,9 +10,28 @@ import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 import com.google.gson.JsonSyntaxException;
-
 import groovy.lang.Tuple2;
 import net.fabricmc.loom.util.FileSystemUtil;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.revwalk.RevCommit;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.stream.StreamSupport;
 
 public record Committer(Step step, Config config) implements StepWorker {
 
@@ -51,7 +43,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 		// Check validity of prepared args
 		Objects.requireNonNull(context.repository());
 		// Clean First
-		MiscHelper.executeTimedStep("Clearing working directory...", () -> this.clearWorkingTree(context.repository()));
+		MiscHelper.executeTimedStep("Clearing working directory...", context.repository()::clearWorkingTree);
 		// Switch Branch
 		Optional<String> target_branch = switchBranchIfNeeded(context.minecraftVersion(), context.versionGraph(), context.repository());
 		if (target_branch.isEmpty()) {
@@ -92,31 +84,15 @@ public record Committer(Step step, Config config) implements StepWorker {
 		return StepStatus.SUCCESS;
 	}
 
-	private void clearWorkingTree(RepoWrapper repo) throws IOException {
-		for (Path innerPath : MiscHelper.listDirectly(repo.getRootPath())) {
-			if (!innerPath.toString().endsWith(".git")) {
-				if (Files.isDirectory(innerPath)) {
-					MiscHelper.deleteDirectory(innerPath);
-				} else {
-					Files.deleteIfExists(innerPath);
-				}
-			}
-		}
-	}
-
 	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
 		OrderedVersion branch = GitCraft.versionGraph.walkToPreviousBranchPoint(mcVersion);
 		OrderedVersion root = GitCraft.versionGraph.walkToRoot(mcVersion);
 		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
 		return (branch == null
-			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
+				? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
 				? GitCraft.config.gitMainlineLinearBranch
 				: root.launcherFriendlyVersionName()
-			: branch.launcherFriendlyVersionName()).replace(" ", "-");
-	}
-
-	private void checkoutNewOrphanBranch(RepoWrapper repo, String target_branch) throws GitAPIException {
-		repo.getGit().checkout().setOrphan(true).setName(target_branch).call();
+				: branch.launcherFriendlyVersionName()).replace(" ", "-");
 	}
 
 	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
@@ -125,10 +101,10 @@ public record Committer(Step step, Config config) implements StepWorker {
 			NavigableSet<OrderedVersion> prev_version = new TreeSet<>(versionGraph.getPreviousNodes(mcVersion));
 			target_branch = getBranchNameForVersion(mcVersion);
 			if (versionGraph.getRootVersions().contains(mcVersion)) {
-				if (doesBranchExist(target_branch, repo)) {
+				if (repo.doesBranchExist(target_branch)) {
 					MiscHelper.panic("HEAD is not empty and the target branch already exists, but the current version is the root version, and should be one initial commit");
 				}
-				checkoutNewOrphanBranch(repo, target_branch);
+				repo.checkoutNewOrphanBranch(target_branch);
 				return Optional.of(target_branch);
 			} else if (prev_version.isEmpty()) {
 				MiscHelper.panic("HEAD is not empty, but current version does not have any preceding versions and is not a root version");
@@ -151,9 +127,9 @@ public record Committer(Step step, Config config) implements StepWorker {
 			// Write MERGE_HEAD
 			HashSet<RevCommit> mergeHeadRevs = new HashSet<>();
 			for (OrderedVersion prevVersion : prev_version) {
-				mergeHeadRevs.add(findVersionObjectRev(prevVersion, repo));
+				mergeHeadRevs.add(repo.findVersionObjectRev(prevVersion));
 			}
-			writeMERGE_HEAD(mergeHeadRevs, repo);
+			repo.writeMERGE_HEAD(mergeHeadRevs);
 		} else {
 			if (!versionGraph.getRootVersions().contains(mcVersion)) {
 				MiscHelper.panic("A non-root version is committed as the root commit to the repository");
@@ -161,11 +137,6 @@ public record Committer(Step step, Config config) implements StepWorker {
 			target_branch = GitCraft.config.gitMainlineLinearBranch;
 		}
 		return Optional.of(target_branch);
-	}
-
-	private boolean doesBranchExist(String target_branch, RepoWrapper repo) throws IOException {
-		Ref target_ref = repo.getGit().getRepository().getRefDatabase().findRef(target_branch);
-		return target_ref != null;
 	}
 
 	private void checkoutVersionBranch(String target_branch, OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
@@ -178,7 +149,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 				}
 				target_ref = repo.getGit().branchCreate().setStartPoint(branchPoint.stream().findFirst().orElseThrow()).setName(target_branch).call();
 			}
-			switchHEAD(target_ref, repo);
+			repo.switchHEAD(target_ref);
 		}
 	}
 
@@ -190,33 +161,9 @@ public record Committer(Step step, Config config) implements StepWorker {
 
 		HashSet<RevCommit> resultRevs = new HashSet<>();
 		for (OrderedVersion prevVersion : previousVersion) {
-			resultRevs.add(findVersionObjectRev(prevVersion, repo));
+			resultRevs.add(repo.findVersionObjectRev(prevVersion));
 		}
 		return resultRevs;
-	}
-
-	static RevCommit findVersionObjectRev(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
-		Iterator<RevCommit> iterator = repo.getGit().log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
-		if (iterator.hasNext()) {
-			return iterator.next();
-		}
-		return null;
-	}
-
-	static void switchHEAD(Ref ref, RepoWrapper repo) throws IOException {
-		RefUpdate refUpdate = repo.getGit().getRepository().getRefDatabase().newUpdate(Constants.HEAD, false);
-		RefUpdate.Result result = refUpdate.link(ref.getName());
-		if (result != RefUpdate.Result.FORCED) {
-			MiscHelper.panic("Unsuccessfully changed HEAD to %s, result was: %s", ref, result);
-		}
-	}
-
-	private void writeMERGE_HEAD(HashSet<RevCommit> commits, RepoWrapper repo) throws IOException {
-		if (commits.isEmpty()) {
-			repo.getGit().getRepository().writeMergeHeads(null);
-		} else {
-			repo.getGit().getRepository().writeMergeHeads(commits.stream().toList());
-		}
 	}
 
 	private void copyCode(Pipeline pipeline, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
@@ -333,67 +280,10 @@ public record Committer(Step step, Config config) implements StepWorker {
 	}
 
 	private void createCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException {
-		// Remove removed files from index
-		repo.getGit().add().addFilepattern(".").setRenormalize(false).setUpdate(true).call();
-		// Stage new files
-		repo.getGit().add().addFilepattern(".").setRenormalize(false).call();
-		Date version_date = new Date(mcVersion.timestamp().toInstant().toEpochMilli());
-		PersonIdent author = new PersonIdent(GitCraft.config.gitUser, GitCraft.config.gitMail, version_date, TimeZone.getTimeZone(mcVersion.timestamp().getZone()));
-		repo.getGit().commit().setMessage(mcVersion.toCommitMessage()).setAuthor(author).setCommitter(author).setSign(false).call();
+		repo.createCommitUsingAllChanges(GitCraft.config.gitUser, GitCraft.config.gitMail, new Date(mcVersion.timestamp().toInstant().toEpochMilli()), TimeZone.getTimeZone(mcVersion.timestamp().getZone()), mcVersion.toCommitMessage());
 	}
 
 	private void createBranchFromCurrentCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {
-		String branchName = mcVersion.launcherFriendlyVersionName().replace(" ", "-");
-		try (RevWalk walk = new RevWalk(repo.getGit().getRepository())) {
-			ObjectId commitId = repo.getGit().getRepository().resolve(Constants.HEAD);
-			RevCommit commit = walk.parseCommit(commitId);
-			repo.getGit().branchCreate().setName(branchName).setStartPoint(commit).call();
-		}
-	}
-
-	public static final class CommitMsgFilter extends RevFilter {
-		String msg;
-
-		public CommitMsgFilter(String msg) {
-			this.msg = msg;
-		}
-
-		@Override
-		public boolean include(RevWalk walker, RevCommit c) {
-			return Objects.equals(c.getFullMessage(), this.msg);
-		}
-
-		@Override
-		public RevFilter clone() {
-			return new CommitMsgFilter(this.msg);
-		}
-
-		@Override
-		public String toString() {
-			return "MSG_FILTER";
-		}
-	}
-
-	public static final class CommitRevFilter extends RevFilter {
-		ObjectId revId;
-
-		public CommitRevFilter(ObjectId revId) {
-			this.revId = revId;
-		}
-
-		@Override
-		public boolean include(RevWalk walker, RevCommit c) {
-			return Objects.equals(c.getId(), this.revId);
-		}
-
-		@Override
-		public RevFilter clone() {
-			return new CommitRevFilter(this.revId);
-		}
-
-		@Override
-		public String toString() {
-			return "MSG_FILTER";
-		}
+		repo.createBranchFromCurrentCommit(mcVersion.launcherFriendlyVersionName().replace(" ", "-"));
 	}
 }

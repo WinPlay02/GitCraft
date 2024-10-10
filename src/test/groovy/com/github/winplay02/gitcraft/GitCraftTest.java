@@ -2,7 +2,6 @@ package com.github.winplay02.gitcraft;
 
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.pipeline.Committer;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -248,7 +247,7 @@ public class GitCraftTest {
 	}
 
 	protected static RevCommit findCommit(RepoWrapper repoWrapper, OrderedVersion mcVersion) throws IOException, GitAPIException {
-		Iterator<RevCommit> iterator = repoWrapper.getGit().log().all().setRevFilter(new Committer.CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
+		Iterator<RevCommit> iterator = repoWrapper.getGit().log().all().setRevFilter(new RepoWrapper.CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
 		if (iterator.hasNext()) {
 			return iterator.next();
 		}
