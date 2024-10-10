@@ -67,7 +67,7 @@ public class GitCraftConfig {
 	public String[] excludedVersion = null;
 
 	/// Mapping quirks
-	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.15.11";
+	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.16.2";
 
 	public static final String FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID = "18w43b"; // 1.14 snapshot
 	public static final String YARN_MAPPINGS_START_VERSION_ID = "18w49a"; // 1.14 snapshot
