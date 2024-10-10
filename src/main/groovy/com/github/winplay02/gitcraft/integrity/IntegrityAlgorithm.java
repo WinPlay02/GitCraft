@@ -66,7 +66,7 @@ public abstract class IntegrityAlgorithm {
 	}
 
 	protected static String formatBytesHex(byte[] bytes) {
-		StringBuilder hexsum = new StringBuilder();
+		StringBuilder hexsum = new StringBuilder(bytes.length * 2);
 		for (byte b : bytes) {
 			hexsum.append(toHex(b));
 		}
