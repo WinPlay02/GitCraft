@@ -146,7 +146,7 @@ public class Pipeline {
 
 	public static void run(RepoWrapper repository, MinecraftVersionGraph versionGraph) throws Exception {
 		for (OrderedVersion mcVersion : versionGraph) {
-			if (repository == null || !repository.findVersionRev(mcVersion)) {
+			if (repository == null || !repository.existsRevWithCommitMessage(mcVersion.toCommitMessage())) {
 				new Pipeline().run(repository, versionGraph, mcVersion);
 			}
 		}

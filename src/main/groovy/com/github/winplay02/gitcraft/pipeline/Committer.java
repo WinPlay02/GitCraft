@@ -111,7 +111,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 			} else {
 				checkoutVersionBranch(target_branch, mcVersion, versionGraph, repo);
 			}
-			if (repo.findVersionRev(mcVersion)) {
+			if (repo.existsRevWithCommitMessage(mcVersion.toCommitMessage())) {
 				MiscHelper.println("Version %s already exists in repo, skipping", mcVersion.launcherFriendlyVersionName());
 				return Optional.empty();
 			}
@@ -127,7 +127,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 			// Write MERGE_HEAD
 			HashSet<RevCommit> mergeHeadRevs = new HashSet<>();
 			for (OrderedVersion prevVersion : prev_version) {
-				mergeHeadRevs.add(repo.findVersionObjectRev(prevVersion));
+				mergeHeadRevs.add(repo.findRevByCommitMessage(prevVersion.toCommitMessage()));
 			}
 			repo.writeMERGE_HEAD(mergeHeadRevs);
 		} else {
@@ -161,7 +161,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 
 		HashSet<RevCommit> resultRevs = new HashSet<>();
 		for (OrderedVersion prevVersion : previousVersion) {
-			resultRevs.add(repo.findVersionObjectRev(prevVersion));
+			resultRevs.add(repo.findRevByCommitMessage(prevVersion.toCommitMessage()));
 		}
 		return resultRevs;
 	}

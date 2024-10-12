@@ -1,7 +1,6 @@
 package com.github.winplay02.gitcraft.util;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -61,15 +60,15 @@ public class RepoWrapper implements Closeable {
 		}
 	}
 
-	public boolean findVersionRev(OrderedVersion mcVersion) throws GitAPIException, IOException {
+	public boolean existsRevWithCommitMessage(String commitMessage) throws GitAPIException, IOException {
 		if (this.git.getRepository().resolve(Constants.HEAD) == null) {
 			return false;
 		}
-		return this.git.log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator().hasNext();
+		return this.git.log().all().setRevFilter(new CommitMsgFilter(commitMessage)).call().iterator().hasNext();
 	}
 
-	public RevCommit findVersionObjectRev(OrderedVersion mcVersion) throws GitAPIException, IOException {
-		Iterator<RevCommit> iterator = this.git.log().all().setRevFilter(new CommitMsgFilter(mcVersion.toCommitMessage())).call().iterator();
+	public RevCommit findRevByCommitMessage(String commitMessage) throws GitAPIException, IOException {
+		Iterator<RevCommit> iterator = this.git.log().all().setRevFilter(new CommitMsgFilter(commitMessage)).call().iterator();
 		if (iterator.hasNext()) {
 			return iterator.next();
 		}

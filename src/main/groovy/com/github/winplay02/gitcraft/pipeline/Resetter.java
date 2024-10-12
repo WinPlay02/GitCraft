@@ -41,7 +41,7 @@ public record Resetter(Step step, Config config) implements StepWorker {
 		}
 		// Always refresh repo, if any refresh flag is set
 		// delete all non-main refs that contain this commit (including remotes, tags, ...)
-		RevCommit commitToRemove = context.repository().findVersionObjectRev(context.minecraftVersion());
+		RevCommit commitToRemove = context.repository().findRevByCommitMessage(context.minecraftVersion().toCommitMessage());
 		if (commitToRemove != null) {
 			context.repository().checkoutBranch(GitCraft.config.gitMainlineLinearBranch);
 			for (Ref ref : context.repository().getRefsContainingCommit(commitToRemove)) {
@@ -62,7 +62,7 @@ public record Resetter(Step step, Config config) implements StepWorker {
 				MiscHelper.panic("Previous mainline version for '%s' does not exist, but it is not a root node. This should never happen", context.minecraftVersion());
 			}
 			OrderedVersion newMainlineRoot = previousVersions.stream().filter(GitCraft.versionGraph::isOnMainBranch).findFirst().orElseThrow();
-			RevCommit commit = context.repository().findVersionObjectRev(newMainlineRoot);
+			RevCommit commit = context.repository().findRevByCommitMessage(newMainlineRoot.toCommitMessage());
 			context.repository().resetRef(GitCraft.config.gitMainlineLinearBranch, commit);
 		}
 		return StepStatus.SUCCESS;
