@@ -34,4 +34,8 @@ public enum StepStatus implements Comparator<StepStatus> {
 	public boolean hasRun() {
 		return this != NOT_RUN;
 	}
+
+	public boolean isSuccessful() {
+		return this == SUCCESS || this == UP_TO_DATE;
+	}
 }

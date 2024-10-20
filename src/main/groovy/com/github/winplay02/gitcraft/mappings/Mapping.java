@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.mappings;
 
-import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -36,7 +36,7 @@ public abstract class Mapping {
 	 * These versions have different obfuscation for the client and server jars,
 	 * thus the obfuscated jars cannot be merged. Some mapping sets are specifically
 	 * designed such that the remapped jars <i>can</i> be merged.
-	 * 
+	 *
 	 * @return True by default as mappings must be specifically designed to support merging pre-1.3 versions, otherwise false
 	 */
 	public boolean supportsMergingPre1_3Versions() {
@@ -141,6 +141,14 @@ public abstract class Mapping {
 	public Path executeCustomRemappingLogic(Path previousFile, OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return null;
 	}
+
+	/**
+	 * Delete mappings of a specific version, if they exist. This forces the implementation to download the mappings again in the future.
+	 * If the mappings have been updated in the meantime, newer versions will be used.
+	 *
+	 * @param mcVersion Version
+	 */
+	// public abstract void resetExistingMappings(OrderedVersion mcVersion);
 
 	protected static boolean validateMappings(Path mappingsTinyPath) {
 		try {

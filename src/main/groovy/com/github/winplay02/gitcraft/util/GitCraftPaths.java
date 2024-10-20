@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.util;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemRoot;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,16 +14,7 @@ import java.nio.file.StandardOpenOption;
 public class GitCraftPaths {
 	public static Path CURRENT_WORKING_DIRECTORY = null;
 	public static Path MAIN_ARTIFACT_STORE = null;
-	public static Path DECOMPILED_WORKINGS = null;
-	public static Path MAPPINGS = null;
-	public static Path REPO = null;
-	public static Path MC_VERSION_STORE = null;
-	public static Path MC_VERSION_META_STORE = null;
-	public static Path MC_VERSION_META_DOWNLOADS = null;
-	public static Path LIBRARY_STORE = null;
-	public static Path REMAPPED = null;
-	public static Path ASSETS_INDEX = null;
-	public static Path ASSETS_OBJECTS = null;
+	public static PipelineFilesystemRoot FILESYSTEM_ROOT = null;
 	public static Path SOURCE_EXTRA_VERSIONS = null;
 	protected static Path LEGACY_METADATA_STORE = null;
 	protected static Path GITCRAFT_VERSION_INFO = null;
@@ -38,16 +30,7 @@ public class GitCraftPaths {
 		}
 		CURRENT_WORKING_DIRECTORY = currentWorkingDirectory;
 		MAIN_ARTIFACT_STORE = CURRENT_WORKING_DIRECTORY.resolve("artifact-store");
-		DECOMPILED_WORKINGS = MAIN_ARTIFACT_STORE.resolve("decompiled");
-		MAPPINGS = MAIN_ARTIFACT_STORE.resolve("mappings");
-		REPO = CURRENT_WORKING_DIRECTORY.resolve("minecraft-repo");
-		MC_VERSION_STORE = MAIN_ARTIFACT_STORE.resolve("mc-versions");
-		MC_VERSION_META_STORE = MAIN_ARTIFACT_STORE.resolve("mc-meta");
-		MC_VERSION_META_DOWNLOADS = MAIN_ARTIFACT_STORE.resolve("mc-meta-download");
-		LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve("libraries");
-		REMAPPED = MAIN_ARTIFACT_STORE.resolve("remapped-mc");
-		ASSETS_INDEX = MAIN_ARTIFACT_STORE.resolve("assets-index");
-		ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve("assets-objects");
+		FILESYSTEM_ROOT = new PipelineFilesystemRoot(() -> MAIN_ARTIFACT_STORE);
 		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
 		LEGACY_METADATA_STORE = MAIN_ARTIFACT_STORE.resolve("metadata.json");
 		GITCRAFT_VERSION_INFO = MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
@@ -55,15 +38,7 @@ public class GitCraftPaths {
 		// Warning for breaking changes (the only breaking changes for now)
 		Files.createDirectories(MAIN_ARTIFACT_STORE);
 		upgradeExisting();
-		Files.createDirectories(DECOMPILED_WORKINGS);
-		Files.createDirectories(MAPPINGS);
-		Files.createDirectories(MC_VERSION_STORE);
-		Files.createDirectories(MC_VERSION_META_STORE);
-		Files.createDirectories(MC_VERSION_META_DOWNLOADS);
-		Files.createDirectories(LIBRARY_STORE);
-		Files.createDirectories(REMAPPED);
-		Files.createDirectories(ASSETS_INDEX);
-		Files.createDirectories(ASSETS_OBJECTS);
+		FILESYSTEM_ROOT.initialize();
 		Files.createDirectories(SOURCE_EXTRA_VERSIONS);
 		MiscHelper.tryJavaExecution();
 	}

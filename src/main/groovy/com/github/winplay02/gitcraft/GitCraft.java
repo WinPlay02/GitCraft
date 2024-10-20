@@ -3,11 +3,15 @@ package com.github.winplay02.gitcraft;
 import com.github.winplay02.gitcraft.mappings.IdentityMappings;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
+import com.github.winplay02.gitcraft.mappings.MojangPlusYarnMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.FabricHelper;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -22,9 +26,10 @@ public class GitCraft {
 	/// Every Mapping
 	public static final LazyValue<MojangMappings> MOJANG_MAPPINGS = LazyValue.of(MojangMappings::new);
 	public static final LazyValue<FabricIntermediaryMappings> FABRIC_INTERMEDIARY_MAPPINGS = LazyValue.of(FabricIntermediaryMappings::new);
-	public static final LazyValue<Mapping> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
+	public static final LazyValue<YarnMappings> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
 	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
 	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
+	public static final LazyValue<Mapping> MOJANG_YARN_MAPPINGS = LazyValue.of(() -> new MojangPlusYarnMappings(MOJANG_MAPPINGS.get(), YARN_MAPPINGS.get()));
 
 	/// Other Information
 	public static GitCraftConfig config = null;
@@ -38,7 +43,7 @@ public class GitCraft {
 		if (GitCraft.config == null) {
 			return;
 		}
-		MiscHelper.checkFabricLoaderVersion();
+		FabricHelper.checkFabricLoaderVersion();
 		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
 		// Maven startup
 		RemoteHelper.loadMavenCache();
@@ -56,7 +61,13 @@ public class GitCraft {
 		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
 		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);
 		try (RepoWrapper repo = GitCraft.getRepository()) {
-			Pipeline.run(repo, versionGraph);
+			if (GitCraft.config.refreshDecompilation) {
+				Pipeline.run(PipelineDescription.RESET_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
+			}
+			Pipeline.run(PipelineDescription.DEFAULT_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
+			if (GitCraft.config.gcAfterRun) {
+				Pipeline.run(PipelineDescription.GC_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
+			}
 			if (repo != null) {
 				MiscHelper.println("Repo can be found at: %s", repo.getRootPath().toString());
 			}

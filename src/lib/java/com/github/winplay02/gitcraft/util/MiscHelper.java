@@ -1,11 +1,5 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.GitCraftConfig;
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.impl.FabricLoaderImpl;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -13,11 +7,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -143,18 +141,6 @@ public class MiscHelper {
 		println("\tFinished: %dm %02ds", deltaDuration.toMinutes(), deltaDuration.toSecondsPart());
 	}
 
-	public static void checkFabricLoaderVersion() {
-		try {
-			SemanticVersion actualFabricLoaderVersion = SemanticVersion.parse(FabricLoaderImpl.VERSION);
-			SemanticVersion minRequiredVersion = SemanticVersion.parse(GitCraftConfig.MIN_SUPPORTED_FABRIC_LOADER);
-			if (actualFabricLoaderVersion.compareTo((Version) minRequiredVersion) < 0) {
-				panic("Fabric loader is out of date. Min required version: %s, Actual provided version: %s", GitCraftConfig.MIN_SUPPORTED_FABRIC_LOADER, FabricLoaderImpl.VERSION);
-			}
-		} catch (VersionParsingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	public static void createJavaCpSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
 		List<String> processArgs = new ArrayList<>(List.of("java"));
 		processArgs.addAll(List.of(jvmArgs));
@@ -185,6 +171,42 @@ public class MiscHelper {
 		} catch (IOException | InterruptedException e) {
 			MiscHelper.panicBecause(e, "Could not execute java as subprocess. Make sure, java can be found in the path environment variable or current directory");
 		}
+	}
+
+	public static <T> Set<T> calculateSetIntersection(Set<T> set1, Set<T> set2) {
+		if (set1 == null || set2 == null) {
+			return Set.of();
+		}
+		HashSet<T> intersection = new HashSet<>(set1);
+		intersection.retainAll(set2);
+		return intersection;
+	}
+
+	public static boolean isJarEmpty(Path jarFile) throws IOException {
+		return Files.exists(jarFile) && Files.size(jarFile) <= 22 /* empty jar */;
+	}
+
+	public static void deleteJarIfEmpty(Path jarFile) throws IOException {
+		if (isJarEmpty(jarFile)) {
+			Files.delete(jarFile);
+		}
+	}
+
+	@SafeVarargs
+	public static <K, V> Map<K, V> mergeMaps(Map<K, V> target, Map<K, V>... maps) {
+		Arrays.stream(maps).forEach(target::putAll);
+		return target;
+	}
+
+	@SafeVarargs
+	public static <E> Set<E> mergeSets(Set<E> target, Set<E>... sets) {
+		Arrays.stream(sets).forEach(target::addAll);
+		return target;
+	}
+
+	public static <E> Set<E> mergeSets(Set<E> target, Collection<Set<E>> sets) {
+		sets.forEach(target::addAll);
+		return target;
 	}
 
 	public static <Source, T> T mergeEqualOrNull(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {

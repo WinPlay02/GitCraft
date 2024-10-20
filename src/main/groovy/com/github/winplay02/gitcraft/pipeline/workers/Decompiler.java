@@ -1,4 +1,4 @@
-package com.github.winplay02.gitcraft.pipeline;
+package com.github.winplay02.gitcraft.pipeline.workers;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,9 +11,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.StepOutput;
+import com.github.winplay02.gitcraft.pipeline.StepResults;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
@@ -28,37 +38,41 @@ import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
 import net.fabricmc.loom.util.FileSystemUtil;
 
-public record Decompiler(Step step, Config config) implements StepWorker {
+public record Decompiler(StepWorker.Config config) implements StepWorker<Decompiler.Inputs> {
 
 	@Override
-	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
-		Files.createDirectories(pipeline.initResultFile(step, context, Results.DECOMPILED_JARS_DIRECTORY));
-		StepStatus mergedStatus = decompileJar(pipeline, context, MinecraftJar.MERGED, Results.MINECRAFT_MERGED_JAR);
-		if (mergedStatus.hasRun()) {
+	public StepOutput run(Pipeline pipeline, Context context, Decompiler.Inputs input, StepResults results) throws Exception {
+		Files.createDirectories(pipeline.getStoragePath(PipelineFilesystemStorage.DECOMPILED, context));
+		StepOutput mergedStatus = decompileJar(pipeline, context, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
+		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepStatus clientStatus = decompileJar(pipeline, context, MinecraftJar.CLIENT, Results.MINECRAFT_CLIENT_JAR);
-		StepStatus serverStatus = decompileJar(pipeline, context, MinecraftJar.SERVER, Results.MINECRAFT_SERVER_JAR);
-		return StepStatus.merge(clientStatus, serverStatus);
+		StepOutput clientStatus = decompileJar(pipeline, context, input.clientJar().orElse(null), "client", PipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
+		StepOutput serverStatus = decompileJar(pipeline, context, input.serverJar().orElse(null), "server", PipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
+		return StepOutput.merge(clientStatus, serverStatus);
+	}
+
+	public record Inputs(Optional<StorageKey> mergedJar, Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {
 	}
 
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
-	private StepStatus decompileJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		Path jarIn = pipeline.getMinecraftJar(inFile);
+	private StepOutput decompileJar(Pipeline pipeline, Context context, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
+		Path jarIn = pipeline.getStoragePath(inputFile, context);
 		if (jarIn == null) {
-			return StepStatus.NOT_RUN;
+			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarOut = pipeline.initResultFile(step, context, outFile);
-		if (Files.exists(jarOut) && Files.size(jarOut) > 22 /* not empty jar */) {
-			return StepStatus.UP_TO_DATE;
+		Path jarOut = pipeline.getStoragePath(outputFile, context);
+
+		if (!MiscHelper.isJarEmpty(jarOut)) {
+			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}
 		if (Files.exists(jarOut)) {
 			Files.delete(jarOut);
 		}
-		Path librariesDir = pipeline.getResultFile(LibrariesFetcher.Results.LIBRARIES_DIRECTORY);
+		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context);
 		if (librariesDir == null) {
-			return StepStatus.FAILED;
+			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}
 		// Adapted from loom-quiltflower by Juuxel
 		Map<String, Object> options = new HashMap<>();
@@ -95,7 +109,7 @@ public record Decompiler(Step step, Config config) implements StepWorker {
 			}
 			// TODO add source via NIO
 			ff.addSource(jarIn.toFile());
-			MiscHelper.executeTimedStep(String.format("Decompiling %s...", inFile.name().toLowerCase()), ff::decompileContext);
+			MiscHelper.executeTimedStep(String.format("Decompiling %s...", artifactKind), ff::decompileContext);
 			// Should release file handles, if exists
 			ff.clearContext();
 
@@ -109,10 +123,6 @@ public record Decompiler(Step step, Config config) implements StepWorker {
 
 			SerializationHelper.writeAllToPath(p, SerializationHelper.serialize(c));
 		}
-		return StepStatus.SUCCESS;
-	}
-
-	public enum Results implements StepResult {
-		DECOMPILED_JARS_DIRECTORY, MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR
+		return StepOutput.ofSingle(StepStatus.SUCCESS, outputFile);
 	}
 }

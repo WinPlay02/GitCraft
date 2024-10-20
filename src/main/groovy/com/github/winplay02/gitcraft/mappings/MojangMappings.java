@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;

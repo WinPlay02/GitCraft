@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.util;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.integrity.GitBlobSHA1Algorithm;
 import com.github.winplay02.gitcraft.integrity.IntegrityAlgorithm;
+import com.github.winplay02.gitcraft.integrity.IntegrityConfiguration;
 import com.github.winplay02.gitcraft.integrity.SHA1Algorithm;
 import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
 import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
@@ -34,9 +35,11 @@ public class RemoteHelper {
 	public record LocalFileInfo(Path targetFile, String checksum, String outputFileKind, String outputFileId) {
 	}
 
-	public static final IntegrityAlgorithm SHA1 = new SHA1Algorithm();
+	public static final IntegrityConfiguration INTEGRITY_CONFIGURATION = new IntegrityConfiguration(GitCraft.config.verifyChecksums, true);
 
-	public static final IntegrityAlgorithm GIT_BLOB_SHA1 = new GitBlobSHA1Algorithm();
+	public static final IntegrityAlgorithm SHA1 = new SHA1Algorithm(INTEGRITY_CONFIGURATION);
+
+	public static final IntegrityAlgorithm GIT_BLOB_SHA1 = new GitBlobSHA1Algorithm(INTEGRITY_CONFIGURATION);
 
 	public static boolean checksumCheckFileIsValidAndExists(LocalFileInfo localFileInfo, IntegrityAlgorithm integrityAlgorithm, boolean useRemote) {
 		String fileVerbParticiple = useRemote ? "downloaded" : "read";

@@ -5,7 +5,20 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+/**
+ * Integrity algorithm using plain SHA1.
+ */
 public class SHA1Algorithm extends IntegrityAlgorithm {
+
+	/**
+	 * Construct this algorithm with a configuration.
+	 *
+	 * @param configuration Configuration
+	 */
+	public SHA1Algorithm(IntegrityConfiguration configuration) {
+		super(configuration);
+	}
+
 	@Override
 	public String getAlgorithmName() {
 		return "SHA1";

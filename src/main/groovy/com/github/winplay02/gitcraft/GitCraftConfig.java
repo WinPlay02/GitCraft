@@ -46,6 +46,7 @@ public class GitCraftConfig {
 	public String gitMainlineLinearBranch = "master";
 	public boolean createVersionBranches = false;
     public boolean createStableVersionBranches = false;
+	public boolean gcAfterRun = false;
 
 	/// Refresh settings
 	public boolean refreshDecompilation = false;

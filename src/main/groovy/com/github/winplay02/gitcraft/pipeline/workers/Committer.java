@@ -1,16 +1,21 @@
-package com.github.winplay02.gitcraft.pipeline;
+package com.github.winplay02.gitcraft.pipeline.workers;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
-import com.github.winplay02.gitcraft.types.Artifact;
+import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.StepOutput;
+import com.github.winplay02.gitcraft.pipeline.StepResults;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 import com.google.gson.JsonSyntaxException;
-import groovy.lang.Tuple2;
 import net.fabricmc.loom.util.FileSystemUtil;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
@@ -33,12 +38,12 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
-public record Committer(Step step, Config config) implements StepWorker {
+public record Committer(StepWorker.Config config) implements StepWorker<Committer.Inputs> {
 
 	@Override
-	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
+	public StepOutput run(Pipeline pipeline, Context context, Committer.Inputs input, StepResults results) throws Exception {
 		if (GitCraft.config.noRepo) {
-			return StepStatus.NOT_RUN;
+			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		// Check validity of prepared args
 		Objects.requireNonNull(context.repository());
@@ -47,16 +52,16 @@ public record Committer(Step step, Config config) implements StepWorker {
 		// Switch Branch
 		Optional<String> target_branch = switchBranchIfNeeded(context.minecraftVersion(), context.versionGraph(), context.repository());
 		if (target_branch.isEmpty()) {
-			return StepStatus.UP_TO_DATE;
+			return StepOutput.ofEmptyResultSet(StepStatus.UP_TO_DATE);
 		}
 		// Copy to repository
 		MiscHelper.executeTimedStep("Moving files to repo...", () -> {
 			// Copy decompiled MC code to repo directory
-			copyCode(pipeline, context.minecraftVersion(), context.repository());
+			copyCode(pipeline, context, input);
 			// Copy assets & data (it makes sense to track them, atleast the data)
-			copyAssets(pipeline, context.minecraftVersion(), context.repository());
+			copyAssets(pipeline, context, input);
 			// External Assets
-			copyExternalAssets(pipeline, context.minecraftVersion(), context.repository());
+			copyExternalAssets(pipeline, context, input);
 		});
 		// Optionally sort copied JSON files
 		if (GitCraft.config.sortJsonObjects) {
@@ -81,18 +86,31 @@ public record Committer(Step step, Config config) implements StepWorker {
 			MiscHelper.println("Created branch for stable linear version %s", context.minecraftVersion().launcherFriendlyVersionName());
 		}
 
-		return StepStatus.SUCCESS;
+		return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
 	}
 
-	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
+	public record Inputs(Optional<StorageKey> decompiledMerged,
+						 Optional<StorageKey> decompiledClientOnly,
+						 Optional<StorageKey> decompiledServerOnly,
+						 Optional<StorageKey> serverZip,
+						 Optional<StorageKey> assetsDataJar,
+						 Optional<StorageKey> datagenArtifactsReportsJar,
+						 Optional<StorageKey> datagenExperimentalVanillaDatapack,
+						 Optional<StorageKey> datagenArtifactsSnbtJar,
+						 Optional<StorageKey> assetsIndexPath,
+						 Optional<StorageKey> assetsObjectStore
+	) implements StepInput {
+	}
+
+	private String getBranchNameForVersion(OrderedVersion mcVersion) {
 		OrderedVersion branch = GitCraft.versionGraph.walkToPreviousBranchPoint(mcVersion);
 		OrderedVersion root = GitCraft.versionGraph.walkToRoot(mcVersion);
 		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
 		return (branch == null
-				? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
-				? GitCraft.config.gitMainlineLinearBranch
-				: root.launcherFriendlyVersionName()
-				: branch.launcherFriendlyVersionName()).replace(" ", "-");
+			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
+			? GitCraft.config.gitMainlineLinearBranch
+			: root.launcherFriendlyVersionName()
+			: branch.launcherFriendlyVersionName()).replace(" ", "-");
 	}
 
 	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
@@ -166,40 +184,43 @@ public record Committer(Step step, Config config) implements StepWorker {
 		return resultRevs;
 	}
 
-	private void copyCode(Pipeline pipeline, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
-		Path decompiledJarPath = pipeline.getResultFile(Decompiler.Results.MINECRAFT_MERGED_JAR);
-		if (decompiledJarPath == null) {
-			if (mcVersion.hasClientCode()) {
-				decompiledJarPath = pipeline.getResultFile(Decompiler.Results.MINECRAFT_CLIENT_JAR);
+	private void copyCode(Pipeline pipeline, Context context, Committer.Inputs input) throws IOException {
+		RepoWrapper repo = context.repository();
+		if (input.decompiledMerged().isPresent()) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledMerged().orElseThrow(), context))) {
+				MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("src"));
 			}
-			if (mcVersion.hasServerCode()) {
-				decompiledJarPath = pipeline.getResultFile(Decompiler.Results.MINECRAFT_SERVER_JAR);
-			}
-			if (decompiledJarPath == null) {
-				MiscHelper.panic("A decompiled JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
+			return;
+		}
+		if (input.decompiledClientOnly().isPresent()) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledClientOnly().orElseThrow(), context))) {
+				MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("client"));
 			}
 		}
-		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(decompiledJarPath)) {
-			MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("src"));
+		if (input.decompiledServerOnly().isPresent()) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledServerOnly().orElseThrow(), context))) {
+				MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("server"));
+			}
+		}
+		if (input.decompiledClientOnly().isEmpty() && input.decompiledServerOnly().isEmpty()) {
+			MiscHelper.panic("A decompiled JAR for version %s does not exist", context.minecraftVersion().launcherFriendlyVersionName());
 		}
 	}
 
-	private void copyAssets(Pipeline pipeline, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
+	private void copyAssets(Pipeline pipeline, Context context, Committer.Inputs input) throws IOException {
+		RepoWrapper repo = context.repository();
 		if (GitCraft.config.loadAssets || GitCraft.config.loadIntegratedDatapack) {
-			if (mcVersion.hasServerZip()) {
-				Path artifactRootPath = pipeline.getResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_ZIP);
+			if (input.serverZip().isPresent()) {
+				Path artifactRootPath = pipeline.getStoragePath(input.serverZip().orElseThrow(), context);
+
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifactRootPath)) {
 					for (Path rootPath : fs.get().getRootDirectories()) {
-						MiscHelper.copyLargeDirExcept(rootPath, repo.getRootPath().resolve("server-info"), List.of(rootPath.resolve(ArtifactsUnpacker.SERVER_ZIP_JAR_NAME)));
+						MiscHelper.copyLargeDirExcept(rootPath, repo.getRootPath().resolve("server-info"), List.of(rootPath.resolve(ArtifactsUnpacker.SERVER_ZIP_JAR_NAME))); // TODO fix this, the jar gets copied somehow
 					}
 				}
 			}
-			Path jarPath = pipeline.getResultFile(JarsMerger.Results.OBFUSCATED_MINECRAFT_MERGED_JAR);
-			if (jarPath == null) { // Client JAR could also work, if merge did not happen
-				jarPath = pipeline.getResultFile(ArtifactsFetcher.Results.MINECRAFT_CLIENT_JAR);
-			}
-			if (jarPath != null) {
-				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jarPath)) {
+			if (input.assetsDataJar().isPresent()) {
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.assetsDataJar().orElseThrow(), context))) {
 					if (GitCraft.config.loadAssets) {
 						Path assetsSrcPath = fs.get().getPath("assets");
 						if (Files.exists(assetsSrcPath)) {
@@ -216,23 +237,20 @@ public record Committer(Step step, Config config) implements StepWorker {
 			}
 		}
 		if (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) {
-			Path datagenReportsArchive = pipeline.getResultFile(DataGenerator.Results.ARTIFACTS_REPORTS_ARCHIVE);
-			if (GitCraft.config.loadDatagenRegistry && Files.exists(datagenReportsArchive)) {
+			if (GitCraft.config.loadDatagenRegistry && input.datagenArtifactsReportsJar().isPresent()) {
+				Path datagenReportsArchive = pipeline.getStoragePath(input.datagenArtifactsReportsJar().orElseThrow(), context);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenReportsArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("reports"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
 				}
-				Tuple2<OrderedVersion, Artifact> experimentalWorldgenPack = DataGenerator.EXTERNAL_WORLDGEN_PACKS.get(mcVersion);
-				if (experimentalWorldgenPack != null) {
-					Context dummyContext = new Context(null, null, experimentalWorldgenPack.getV1());
-					Path parentDirectory = Step.FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, dummyContext);
-					Path expWorldgenPackPath = experimentalWorldgenPack.getV2().resolve(parentDirectory);
-					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(expWorldgenPackPath)) {
+				if (input.datagenExperimentalVanillaDatapack().isPresent()) {
+					Path experimentalWorldgenPackPath = pipeline.getStoragePath(input.datagenExperimentalVanillaDatapack().orElseThrow(), context);
+					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(experimentalWorldgenPackPath)) {
 						MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("exp-vanilla-worldgen"));
 					}
 				}
 			}
-			Path datagenSnbtArchive = pipeline.getResultFile(DataGenerator.Results.ARTIFACTS_SNBT_ARCHIVE);
-			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack && Files.exists(datagenSnbtArchive)) {
+			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack && input.datagenArtifactsSnbtJar().isPresent()) {
+				Path datagenSnbtArchive = pipeline.getStoragePath(input.datagenArtifactsSnbtJar().orElseThrow(), context);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenSnbtArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
 				}
@@ -251,16 +269,17 @@ public record Committer(Step step, Config config) implements StepWorker {
 		}
 	}
 
-	private void copyExternalAssets(Pipeline pipeline, OrderedVersion mcVersion, RepoWrapper repo) throws IOException {
+	private void copyExternalAssets(Pipeline pipeline, Context context, Committer.Inputs input) throws IOException {
 		if (GitCraft.config.loadAssets && GitCraft.config.loadAssetsExtern) {
-			Path assetsIndexPath = pipeline.getResultFile(AssetsFetcher.ResultFiles.ASSETS_INDEX);
-			Path artifactObjectStore = pipeline.getResultFile(AssetsFetcher.ResultFiles.ASSETS_OBJECTS_DIRECTORY);
-			if (artifactObjectStore == null) {
-				MiscHelper.panic("Assets for version %s do not exist", mcVersion.launcherFriendlyVersionName());
+			if (input.assetsIndexPath().isEmpty() || input.assetsObjectStore().isEmpty()) {
+				MiscHelper.panic("Assets for version %s do not exist", context.minecraftVersion().launcherFriendlyVersionName());
 			}
+			Path assetsIndexPath = pipeline.getStoragePath(input.assetsIndexPath().orElseThrow(), context);
+			Path artifactObjectStore = pipeline.getStoragePath(input.assetsObjectStore().orElseThrow(), context);
+
 			AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMetadata.class));
 			// Copy Assets
-			Path targetRoot = repo.getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
+			Path targetRoot = context.repository().getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
 			if (GitCraft.config.useHardlinks && artifactObjectStore.getFileSystem().equals(targetRoot.getFileSystem()) && !GitCraft.config.sortJsonObjects) {
 				for (Map.Entry<String, AssetsIndexMetadata.Asset> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = artifactObjectStore.resolve(entry.getValue().hash());
@@ -280,7 +299,7 @@ public record Committer(Step step, Config config) implements StepWorker {
 	}
 
 	private void createCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException {
-		repo.createCommitUsingAllChanges(GitCraft.config.gitUser, GitCraft.config.gitMail, new Date(mcVersion.timestamp().toInstant().toEpochMilli()), TimeZone.getTimeZone(mcVersion.timestamp().getZone()), mcVersion.toCommitMessage());
+		repo.createCommitUsingAllChanges(GitCraft.config.gitUser, GitCraft.config.gitMail, new Date(Objects.requireNonNull(mcVersion.timestamp()).toInstant().toEpochMilli()), TimeZone.getTimeZone(Objects.requireNonNull(mcVersion.timestamp()).getZone()), mcVersion.toCommitMessage());
 	}
 
 	private void createBranchFromCurrentCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {

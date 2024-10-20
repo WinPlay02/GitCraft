@@ -185,7 +185,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	// Version Override
 	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
-		// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be to rc1 versions)
+		// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be two rc1 versions)
 		"1.16-rc1", "1.16-rc.9",
 		// support extra original for 23w13a_or_b
 		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",

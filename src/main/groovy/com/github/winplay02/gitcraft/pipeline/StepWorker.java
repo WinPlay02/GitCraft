@@ -5,15 +5,19 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
-public interface StepWorker {
-
-	Step step();
+public interface StepWorker<S extends StepInput> {
 
 	Config config();
 
-	StepStatus run(Pipeline pipeline, Context context) throws Exception;
+	StepOutput run(Pipeline pipeline, Context context, S input, StepResults results) throws Exception;
 
-	public record Config(MappingFlavour mappingFlavour) {
+	default StepOutput runGeneric(Pipeline pipeline, Context context, StepInput input, StepResults results) throws Exception {
+		@SuppressWarnings("unchecked")
+		S castInput = (S) input;
+		return this.run(pipeline, context, castInput, results);
+	}
+
+	record Config(MappingFlavour mappingFlavour) {
 
 		@Override
 		public String toString() {
@@ -21,7 +25,11 @@ public interface StepWorker {
 		}
 	}
 
-	public record Context(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion) {
+	record Context(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion) {
+
+		public Context withDifferingVersion(OrderedVersion minecraftVersion) {
+			return new Context(repository, versionGraph, minecraftVersion);
+		}
 
 		@Override
 		public String toString() {

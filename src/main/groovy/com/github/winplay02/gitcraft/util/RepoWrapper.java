@@ -35,7 +35,7 @@ public class RepoWrapper implements Closeable {
 	}
 
 	public RepoWrapper(Path root_path) throws Exception {
-		this.root_path = Objects.requireNonNullElse(root_path, GitCraftPaths.REPO);
+		this.root_path = Objects.requireNonNullElse(root_path, GitCraftPaths.FILESYSTEM_ROOT.getDefaultRepository());
 		this.git = Git.init().setInitialBranch(GitCraft.config.gitMainlineLinearBranch).setDirectory(this.root_path.toFile()).call();
 	}
 
@@ -187,6 +187,10 @@ public class RepoWrapper implements Closeable {
 		if (result != RefUpdate.Result.FORCED && result != RefUpdate.Result.NEW) {
 			MiscHelper.panic("Unsuccessfully created symbolic HEAD to %s, result was: %s", refTarget, result);
 		}
+	}
+
+	public void gc() throws GitAPIException {
+		this.git.gc().call();
 	}
 
 	public static final class CommitMsgFilter extends RevFilter {

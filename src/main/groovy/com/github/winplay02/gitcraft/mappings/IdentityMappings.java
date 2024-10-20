@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 

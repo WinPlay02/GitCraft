@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.types;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
 import com.github.winplay02.gitcraft.meta.LibraryMetadata;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
@@ -36,7 +37,7 @@ public record OrderedVersion(
 		Artifact serverMappings,
 		Set<Artifact> libraries,
 		Artifact assetsIndex
-) implements Comparable<OrderedVersion> {
+) implements AbstractVersion<OrderedVersion> {
 
 	/*
 	 * For some old Minecraft versions, the download URLs end in the same
@@ -168,6 +169,12 @@ public record OrderedVersion(
 		return this.versionInfo().assets();
 	}
 
+	@Override
+	public String friendlyVersion() {
+		return this.launcherFriendlyVersionName();
+	}
+
+	@Override
 	public String toCommitMessage() {
 		return this.launcherFriendlyVersionName() + "\n\nSemVer: " + this.semanticVersion();
 	}

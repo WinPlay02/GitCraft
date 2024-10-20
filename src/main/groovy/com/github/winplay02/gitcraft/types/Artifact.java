@@ -34,6 +34,10 @@ public record Artifact(String url, String name, String sha1sum) {
 		return RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(path, sha1sum, artifactKind, name), RemoteHelper.SHA1);
 	}
 
+	public StepStatus fetchArtifactToFile(Path filePath, String artifactKind) {
+		return RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(filePath, sha1sum, artifactKind, name), RemoteHelper.SHA1);
+	}
+
 	public static String nameFromUrl(String url) {
 		if (url == null) {
 			return "";

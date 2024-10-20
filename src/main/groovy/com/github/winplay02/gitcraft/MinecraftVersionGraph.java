@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.MetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
@@ -11,140 +12,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.Stack;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
+public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> {
 
 
 	private MinecraftVersionGraph() {
+		super();
 	}
 
 	private MinecraftVersionGraph(MinecraftVersionGraph previous, Predicate<OrderedVersion> predicate, String... tags) {
-		this.repoTags = new HashSet<>(previous.repoTags);
-		this.edgesBack = new HashMap<>(previous.edgesBack.keySet().stream().filter(predicate).collect(Collectors.toMap(Function.identity(), key -> new TreeSet<OrderedVersion>())));
-		this.edgesFw = new HashMap<>(previous.edgesFw.keySet().stream().filter(predicate).collect(Collectors.toMap(Function.identity(), key -> new TreeSet<OrderedVersion>())));
-		this.repoTags.addAll(Arrays.asList(tags));
-		this.reconnectGraph(previous);
-		this.validateNoCycles();
+		super(previous, predicate, tags);
 		this.findMainBranch();
-	}
-
-	private void validateNoCycles() {
-		OrderedVersion debugInfoMaxVersion = null;
-		Map<OrderedVersion, Integer> visitedInformation = new HashMap<>();
-		Stack<OrderedVersion> nodesStack = new Stack<>();
-		// Roots
-		for (OrderedVersion root : this.findRootVersions()) {
-			nodesStack.push(root);
-			visitedInformation.put(root, 1 /*STARTED*/);
-		}
-		// Depth First Search
-		while (!nodesStack.isEmpty()) {
-			OrderedVersion subject = nodesStack.peek();
-			int pushed = 0;
-			for (OrderedVersion following : this.getFollowingNodes(subject)) {
-				if (!visitedInformation.containsKey(following)) {
-					nodesStack.push(following);
-					visitedInformation.put(following, 1 /*STARTED*/);
-					++pushed;
-					debugInfoMaxVersion = following;
-					break;
-				} else if (visitedInformation.get(following) == 1 /*STARTED*/) {
-					MiscHelper.panic("Found a cycle in version graph at version: %s (%s)", subject.versionInfo().id(), subject.semanticVersion());
-				} else {
-					continue; // ENDED
-				}
-			}
-			if (pushed == 0) {
-				OrderedVersion handled = nodesStack.pop();
-				visitedInformation.put(handled, 2 /*ENDED*/);
-			}
-		}
-		if (visitedInformation.size() != this.edgesBack.size()) {
-			MiscHelper.panic("During validating of the version graph, not all versions were visited. This is most likely caused by an inconsistency, e.g. a cycle in the graph. Last version checked: %s (problem may be near that version)", debugInfoMaxVersion != null ? debugInfoMaxVersion.versionInfo().id() : "<unknown>");
-		}
-	}
-
-	private void reconnectGraph(MinecraftVersionGraph previous) {
-		TreeSet<OrderedVersion> allVersions = new TreeSet<>(this.edgesBack.keySet());
-		for (OrderedVersion version : allVersions) {
-			TreeSet<OrderedVersion> nearestPreviousNodes = new TreeSet<>(previous.getPreviousNodes(version));
-			TreeSet<OrderedVersion> calculatedPreviousNodes = new TreeSet<>();
-			//while (nearestPreviousNodes.stream().anyMatch(anyPreviousVersion -> !this.containsVersion(anyPreviousVersion))) {
-			while (!nearestPreviousNodes.isEmpty()) {
-				TreeSet<OrderedVersion> nextBestNodes = new TreeSet<>();
-				for (OrderedVersion nearestPreviousNode : nearestPreviousNodes) {
-					if (allVersions.contains(nearestPreviousNode)) {
-						calculatedPreviousNodes.add(nearestPreviousNode);
-					} else {
-						nextBestNodes.addAll(previous.getPreviousNodes(nearestPreviousNode));
-					}
-				}
-				nextBestNodes.removeIf(calculatedPreviousNodes::contains);
-				nearestPreviousNodes = nextBestNodes;
-			}
-			// ADD
-			this.edgesBack.computeIfAbsent(version, value -> new TreeSet<>()).addAll(calculatedPreviousNodes);
-			for (OrderedVersion prevVersion : calculatedPreviousNodes) {
-				this.edgesFw.computeIfAbsent(prevVersion, value -> new TreeSet<>()).add(version);
-			}
-		}
-
-		for (OrderedVersion version : allVersions) {
-			TreeSet<OrderedVersion> nearestNextNodes = new TreeSet<>(previous.getFollowingNodes(version));
-			TreeSet<OrderedVersion> calculatedNextNodes = new TreeSet<>();
-			//while (nearestNextNodes.stream().anyMatch(anyNextVersion -> !this.containsVersion(anyNextVersion))) {
-			while (!nearestNextNodes.isEmpty()) {
-				TreeSet<OrderedVersion> nextBestNodes = new TreeSet<>();
-				for (OrderedVersion nearestNextNode : nearestNextNodes) {
-					if (allVersions.contains(nearestNextNode)) {
-						calculatedNextNodes.add(nearestNextNode);
-					} else {
-						nextBestNodes.addAll(previous.getFollowingNodes(nearestNextNode));
-					}
-				}
-				nextBestNodes.removeIf(calculatedNextNodes::contains);
-				nearestNextNodes = nextBestNodes;
-			}
-			// ADD
-			//this.edgesFw.computeIfAbsent(version, value -> new TreeSet<>()).addAll(calculatedNextNodes);
-			//for (OrderedVersion nextVersion : calculatedNextNodes) {
-			//this.edgesBack.computeIfAbsent(nextVersion, value -> new TreeSet<>()).add(version);
-			//}
-		}
-		testGraphConnectivity();
-	}
-
-	private void testGraphConnectivity() {
-		for (OrderedVersion version : this.edgesBack.keySet()) {
-			for (OrderedVersion prevVersion : this.getPreviousNodes(version)) {
-				if (this.edgesFw.get(prevVersion) == null || !this.edgesFw.get(prevVersion).contains(version)) {
-					MiscHelper.panic("VersionGraph is inconsistent. Version %s is not connected (forward direction) to %s", prevVersion.launcherFriendlyVersionName(), version.launcherFriendlyVersionName());
-				}
-			}
-		}
-		for (OrderedVersion version : this.edgesFw.keySet()) {
-			for (OrderedVersion nextVersion : this.getFollowingNodes(version)) {
-				if (this.edgesBack.get(nextVersion) == null || !this.edgesBack.get(nextVersion).contains(version)) {
-					MiscHelper.panic("VersionGraph is inconsistent. Version %s is not connected (backward direction) to %s", nextVersion.launcherFriendlyVersionName(), version.launcherFriendlyVersionName());
-				}
-			}
-		}
-		long amountRootNodes = this.edgesBack.entrySet().stream().filter(entry -> entry.getValue().isEmpty()).count();
-		if (amountRootNodes < 1) {
-			MiscHelper.panic("There is no root node. This either means, that the version graph is empty, or that it contains a cycle.");
-		}
 	}
 
 	private void findMainBranch() {
@@ -230,11 +116,6 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		}
 	}
 
-	public HashSet<String> repoTags = new HashSet<>();
-	/** root nodes of the graph, mapped to the path lengths to the tips of those main branches */
-	public HashMap<OrderedVersion, Integer> roots = new HashMap<>();
-	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesBack = new HashMap<>();
-	public HashMap<OrderedVersion, TreeSet<OrderedVersion>> edgesFw = new HashMap<>();
 	/** nodes that mark new side branches, mapped to the path lengths to the tips of those side branches */
 	public HashMap<OrderedVersion, Integer> branchPoints = new HashMap<>();
 
@@ -307,34 +188,11 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		return new MinecraftVersionGraph(this, OrderedVersion::isSnapshotOrPending, "snapshot");
 	}
 
-	private Set<OrderedVersion> findRootVersions() {
-		return this.edgesBack.entrySet()
-			.stream()
-			.filter(entry -> entry.getValue().isEmpty())
-			.map(Map.Entry::getKey)
-			.collect(Collectors.toSet());
-	}
-
-	public Set<OrderedVersion> getRootVersions() {
-		if (this.roots.isEmpty()) {
-			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
-		}
-		return this.roots.keySet();
-	}
-
 	public OrderedVersion getDeepestRootVersion() {
 		if (this.roots.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
 		}
 		return this.roots.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).get().getKey();
-	}
-
-	public NavigableSet<OrderedVersion> getPreviousNodes(OrderedVersion version) {
-		return Collections.unmodifiableNavigableSet(this.edgesBack.containsKey(version) ? this.edgesBack.get(version) : Collections.emptyNavigableSet());
-	}
-
-	public NavigableSet<OrderedVersion> getFollowingNodes(OrderedVersion version) {
-		return Collections.unmodifiableNavigableSet(this.edgesFw.containsKey(version) ? this.edgesFw.get(version) : Collections.emptyNavigableSet());
 	}
 
 	public boolean isOnMainBranch(OrderedVersion mcVersion) {
@@ -409,10 +267,6 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		return this.edgesBack.keySet().stream().filter(value -> value.semanticVersion().equalsIgnoreCase(semanticVersion)).findFirst().orElse(null);
 	}
 
-	public boolean containsVersion(OrderedVersion version) {
-		return version != null && this.edgesBack.containsKey(version);
-	}
-
 	public String repoTagsIdentifier(MappingFlavour mappingFlavour, MappingFlavour[] mappingFallback) {
 		List<String> sortedTags = new ArrayList<>();
 		sortedTags.add(mappingFlavour.toString());
@@ -421,32 +275,5 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		}
 		sortedTags.addAll(this.repoTags.stream().filter(tag -> !tag.equals(mappingFlavour.toString())).toList());
 		return String.join("-", sortedTags);
-	}
-
-	public Stream<OrderedVersion> stream() {
-		HashSet<OrderedVersion> nextVersions = new HashSet<>(findRootVersions());
-		HashSet<OrderedVersion> emittedVersions = new HashSet<>();
-		HashSet<OrderedVersion> temporarySet = new HashSet<>(findRootVersions());
-		Stream.Builder<OrderedVersion> builder = Stream.builder();
-		while (!nextVersions.isEmpty()) {
-			for (OrderedVersion version : nextVersions) {
-				if (this.getPreviousNodes(version).stream().anyMatch(versionPrev -> !emittedVersions.contains(versionPrev))) {
-					temporarySet.add(version);
-					continue;
-				}
-				builder.accept(version);
-				emittedVersions.add(version);
-				temporarySet.addAll(this.edgesFw.get(version));
-			}
-			nextVersions.clear();
-			nextVersions.addAll(temporarySet.stream().filter(version -> !emittedVersions.contains(version)).toList());
-			temporarySet.clear();
-		}
-		return builder.build();
-	}
-
-	@Override
-	public Iterator<OrderedVersion> iterator() {
-		return stream().iterator();
 	}
 }

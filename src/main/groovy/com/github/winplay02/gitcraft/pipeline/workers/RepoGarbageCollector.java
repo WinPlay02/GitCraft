@@ -1,0 +1,21 @@
+package com.github.winplay02.gitcraft.pipeline.workers;
+
+import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.StepOutput;
+import com.github.winplay02.gitcraft.pipeline.StepResults;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
+
+public record RepoGarbageCollector(StepWorker.Config config) implements StepWorker<StepInput.Empty> {
+
+	@Override
+	public StepOutput run(Pipeline pipeline, Context context, StepInput.Empty input, StepResults results) throws Exception {
+		if (GitCraft.config.noRepo) {
+			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
+		}
+		context.repository().gc();
+		return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
+	}
+}

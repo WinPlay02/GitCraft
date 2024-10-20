@@ -1,4 +1,19 @@
-package com.github.winplay02.gitcraft.pipeline;
+package com.github.winplay02.gitcraft.pipeline.workers;
+
+import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.StepOutput;
+import com.github.winplay02.gitcraft.pipeline.StepResults;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.types.Artifact;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.MiscHelper;
+import groovy.lang.Tuple2;
+import net.fabricmc.loom.util.FileSystemUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,15 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.types.Artifact;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.MiscHelper;
-
-import groovy.lang.Tuple2;
-import net.fabricmc.loom.util.FileSystemUtil;
-
-public record DataGenerator(Step step, Config config) implements StepWorker {
+public record DataGenerator(StepWorker.Config config) implements StepWorker<DataGenerator.Inputs> {
 
 	public static final ExternalWorldgenPacks EXTERNAL_WORLDGEN_PACKS = new ExternalWorldgenPacks();
 	private static final String DATAGEN_AVAILABLE_START_VERSION = "18w01a";
@@ -25,58 +32,63 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 	private static final String EXT_VANILLA_WORLDGEN_PACK_END = "21w44a";
 
 	@Override
-	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
+	public StepOutput run(Pipeline pipeline, Context context, DataGenerator.Inputs input, StepResults results) throws Exception {
 		if (!GitCraft.config.loadDatagenRegistry && (!GitCraft.config.readableNbt || !GitCraft.config.loadIntegratedDatapack)) {
-			return StepStatus.NOT_RUN;
+			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		OrderedVersion mcVersion = context.minecraftVersion();
 		if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_START_VERSION)) < 0) {
-			return StepStatus.NOT_RUN;
+			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		if (!mcVersion.hasServerCode() || !mcVersion.hasServerJar()) {
+		if (input.serverJar == null) {
 			MiscHelper.panic("Cannot execute datagen, no jar available");
 		}
-		Path artifactSnbtArchive = pipeline.initResultFile(step, context, Results.ARTIFACTS_SNBT_ARCHIVE);
-		if (Files.exists(artifactSnbtArchive) && Files.size(artifactSnbtArchive) <= 22 /* empty jar */) {
-			Files.delete(artifactSnbtArchive);
+
+		Path artifactSnbtArchive = null;
+		Path artifactReportsArchive = null;
+
+		if (GitCraft.config.readableNbt) {
+			artifactSnbtArchive = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.DATAGEN_SNBT_ARCHIVE);
+			MiscHelper.deleteJarIfEmpty(artifactSnbtArchive);
 		}
-		Path artifactReportsArchive = pipeline.initResultFile(step, context, Results.ARTIFACTS_REPORTS_ARCHIVE);
-		if (Files.exists(artifactReportsArchive) && Files.size(artifactReportsArchive) <= 22 /* empty jar */) {
-			Files.delete(artifactReportsArchive);
+
+		if (GitCraft.config.loadDatagenRegistry) {
+			artifactReportsArchive = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.DATAGEN_REPORTS_ARCHIVE);
+			MiscHelper.deleteJarIfEmpty(artifactReportsArchive);
 		}
+
 		if ((!GitCraft.config.readableNbt || Files.exists(artifactSnbtArchive))
-				&& (!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
-			return StepStatus.UP_TO_DATE;
+			&& (!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
+			return new StepOutput(StepStatus.UP_TO_DATE, results);
 		}
-		Path executablePath = pipeline.getMinecraftJar(MinecraftJar.SERVER);
-		Path datagenDirectory = pipeline.initResultFile(step, context, Results.DATAGEN_DIRECTORY);
+
+		Path executablePath = pipeline.getStoragePath(input.serverJar(), context);
+		Path datagenDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS_DATAGEN);
 		Files.createDirectories(datagenDirectory);
+
 		if (GitCraft.config.readableNbt) {
 			// Structures (& more)
 			{
-				Path mergedJarPath = pipeline.getMinecraftJar(MinecraftJar.MERGED);
-				if (mergedJarPath == null) { // Client JAR could also work, if merge did not happen
-					MiscHelper.panic("A merged JAR for version %s does not exist", mcVersion.launcherFriendlyVersionName());
-				}
-				Path nbtSourceDataDirectory = pipeline.initResultFile(step, context, Results.DATAGEN_NBT_SOURCE_DATA_DIRECTORY);
-				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(mergedJarPath)) {
+				Path dataJarPath = pipeline.getStoragePath(input.dataJar(), context);
+				Path nbtSourceDataDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DATA_DIRECTORY);
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(dataJarPath)) {
 					MiscHelper.copyLargeDir(fs.get().getPath("data"), nbtSourceDataDirectory);
 				}
 			}
-			Path nbtSourceDirectory = pipeline.initResultFile(step, context, Results.DATAGEN_NBT_SOURCE_DIRECTORY);
+			Path nbtSourceDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DIRECTORY);
 			// Delete Output files, as some versions do not work, when files already exist
-			Path datagenSnbtOutput = pipeline.initResultFile(step, context, Results.DATAGEN_SNBT_DESTINATION_DIRECTORY);
+			Path datagenSnbtOutput = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenSnbtOutput);
 			runDatagen(mcVersion, datagenDirectory, executablePath, "--dev",
-					"--input", nbtSourceDirectory.toAbsolutePath().toString(),
-					"--output", datagenSnbtOutput.toAbsolutePath().toString()
+				"--input", nbtSourceDirectory.toAbsolutePath().toString(),
+				"--output", datagenSnbtOutput.toAbsolutePath().toString()
 			);
 			// Delete input files, as they are no longer needed
 			MiscHelper.deleteDirectory(nbtSourceDirectory);
 			if (!Files.exists(datagenSnbtOutput) || !Files.isDirectory(datagenSnbtOutput)) {
 				MiscHelper.panic("Datagen step was required, but SNBT files were not generated");
 			}
-			Path datagenSnbtOutputData = pipeline.initResultFile(step, context, Results.DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY);
+			Path datagenSnbtOutputData = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY);
 			// Copy to artifact jar
 			try (FileSystemUtil.Delegate snbtArchive = FileSystemUtil.getJarFileSystem(artifactSnbtArchive, true)) {
 				MiscHelper.copyLargeDir(datagenSnbtOutputData, snbtArchive.getPath("data"));
@@ -87,12 +99,11 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 			StepStatus status = null;
 			Tuple2<OrderedVersion, Artifact> worldgenPack = EXTERNAL_WORLDGEN_PACKS.get(mcVersion);
 			if (worldgenPack != null) {
-				Context dummyContext = new Context(null, null, worldgenPack.getV1());
-				Path parentDirectory = Step.FETCH_ARTIFACTS.getResultFile(ArtifactsFetcher.Results.ARTIFACTS_DIRECTORY, dummyContext);
-				status = worldgenPack.getV2().fetchArtifact(parentDirectory, "worldgen datapack");
+				Path vanillaWorldgenDatapack = results.getPathForDifferentVersionKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, worldgenPack.getV1());
+				status = worldgenPack.getV2().fetchArtifactToFile(vanillaWorldgenDatapack, "vanilla worldgen datapack");
 			}
 			// Datagen
-			Path datagenReportsOutput = pipeline.initResultFile(step, context, Results.DATAGEN_REPORTS_DIRECTORY);
+			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenReportsOutput);
 			runDatagen(mcVersion, datagenDirectory, executablePath, "--reports");
 			if (!Files.exists(datagenReportsOutput) || !Files.isDirectory(datagenReportsOutput)) {
@@ -104,10 +115,13 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 			}
 			MiscHelper.deleteDirectory(datagenReportsOutput);
 			MiscHelper.deleteDirectory(datagenDirectory);
-			return status != null ? status : StepStatus.SUCCESS;
+			return new StepOutput(status != null ? status : StepStatus.SUCCESS, results);
 		}
 		MiscHelper.deleteDirectory(datagenDirectory);
-		return StepStatus.SUCCESS;
+		return new StepOutput(StepStatus.SUCCESS, results);
+	}
+
+	public record Inputs(StorageKey serverJar, StorageKey dataJar) implements StepInput {
 	}
 
 	private void runDatagen(OrderedVersion mcVersion, Path cwd, Path executable, String... args) throws IOException, InterruptedException {
@@ -120,10 +134,6 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 			argsList.addAll(List.of(args));
 			MiscHelper.createJavaCpSubprocess(executable, cwd, new String[0], argsList.toArray(String[]::new));
 		}
-	}
-
-	public enum Results implements StepResult {
-		ARTIFACTS_SNBT_ARCHIVE, ARTIFACTS_REPORTS_ARCHIVE, DATAGEN_DIRECTORY, DATAGEN_NBT_SOURCE_DIRECTORY, DATAGEN_NBT_SOURCE_DATA_DIRECTORY, DATAGEN_SNBT_DESTINATION_DIRECTORY, DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY, DATAGEN_REPORTS_DIRECTORY
 	}
 
 	public static class ExternalWorldgenPacks {
@@ -179,7 +189,7 @@ public record DataGenerator(Step step, Config config) implements StepWorker {
 
 		public Tuple2<OrderedVersion, Artifact> get(OrderedVersion mcVersion) {
 			if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START)) >= 0
-					&& mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END)) <= 0) {
+				&& mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END)) <= 0) {
 				Map.Entry<OrderedVersion, Artifact> entry = artifacts.floorEntry(mcVersion);
 				if (entry != null) {
 					return Tuple2.tuple(entry.getKey(), entry.getValue());

@@ -3,7 +3,7 @@ package com.github.winplay02.gitcraft.mappings.yarn;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.mappings.Mapping;
-import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;

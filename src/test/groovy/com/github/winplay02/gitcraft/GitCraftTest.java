@@ -2,7 +2,7 @@ package com.github.winplay02.gitcraft;
 
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;

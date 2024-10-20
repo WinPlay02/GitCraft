@@ -113,7 +113,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
 	}
 
-	private VersionDetails getVersionDetails(String versionId) {
+	public VersionDetails getVersionDetails(String versionId) {
 		return this.versionDetails.get(versionId);
 	}
 }
