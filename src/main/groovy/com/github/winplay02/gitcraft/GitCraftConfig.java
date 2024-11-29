@@ -59,6 +59,7 @@ public class GitCraftConfig {
 	/// Mapping settings
 	public MappingFlavour usedMapping = MappingFlavour.MOJMAP;
 	public MappingFlavour[] fallbackMappings = null;
+	public int ornitheIntermediaryGeneration = 1;
 
 	public ExceptionsFlavour usedExceptions = ExceptionsFlavour.NONE;
 	public SignaturesFlavour usedSignatures = SignaturesFlavour.NONE;
@@ -81,8 +82,9 @@ public class GitCraftConfig {
 	public static final String YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID = "1.14.3";
 	public static final String PARCHMENT_START_VERSION_ID = "1.16.5";
 
-	// use release time to get around 1.3 having different ids in different manifest sources
-	public static final ZonedDateTime FIRST_MERGEABLE_VERSION_RELEASE_TIME = ZonedDateTime.parse("2012-07-25T22:00:00+00:00");
+	public static final ZonedDateTime RELEASE_TIME_1_3 = ZonedDateTime.parse("2012-07-25T22:00:00+00:00");
+	public static final ZonedDateTime RELEASE_TIME_B1_0 = ZonedDateTime.parse("2010-12-20T17:28:00+00:00");
+	public static final ZonedDateTime RELEASE_TIME_A1_0_15 = ZonedDateTime.parse("2010-08-04T00:00:00+00:00");
 
 	public static List<String> intermediaryMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
 

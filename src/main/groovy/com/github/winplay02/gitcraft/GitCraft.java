@@ -7,6 +7,8 @@ import com.github.winplay02.gitcraft.mappings.IdentityMappings;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MojangMappings;
 import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
+import com.github.winplay02.gitcraft.mappings.ornithe.CalamusIntermediaryMappings;
+import com.github.winplay02.gitcraft.mappings.ornithe.FeatherMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.nests.Nest;
@@ -33,6 +35,8 @@ public class GitCraft {
 	public static final LazyValue<FabricIntermediaryMappings> FABRIC_INTERMEDIARY_MAPPINGS = LazyValue.of(FabricIntermediaryMappings::new);
 	public static final LazyValue<Mapping> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
 	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
+	public static final LazyValue<CalamusIntermediaryMappings> CALAMUS_INTERMEDIARY_MAPPINGS = LazyValue.of(CalamusIntermediaryMappings::new);
+	public static final LazyValue<FeatherMappings> FEATHER_MAPPINGS = LazyValue.of(FeatherMappings::new);
 	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
 
 	// Every Exception Patch
@@ -46,6 +50,8 @@ public class GitCraft {
 	// Every Nest
 	public static final LazyValue<Nest> ORNITHE_NESTS = LazyValue.of(OrnitheNests::new);
 	public static final LazyValue<Nest> NONE_NESTS = LazyValue.of(NoneNests::new);
+
+	public static final String ORNITHE_MAVEN = "https://maven.ornithemc.net/releases/";
 
 	/// Other Information
 	public static GitCraftConfig config = null;

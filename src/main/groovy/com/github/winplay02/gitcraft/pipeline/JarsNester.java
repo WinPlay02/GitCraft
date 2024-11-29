@@ -24,9 +24,9 @@ public record JarsNester(Step step, Config config) implements StepWorker {
 	}
 
 	private StepStatus nestJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		Nest nest = config.nestsFlavour().getNestsImpl();
+		Nest nests = config.nestsFlavour().getNestsImpl();
 		MappingFlavour mappingFlavour = config.mappingFlavour();
-		if (!nest.canNestsBeUsedOn(context.minecraftVersion(), inFile, mappingFlavour)) {
+		if (!nests.canNestsBeUsedOn(context.minecraftVersion(), inFile, mappingFlavour)) {
 			return StepStatus.NOT_RUN;
 		}
 		Path jarIn = pipeline.getMinecraftJar(inFile);
@@ -38,7 +38,7 @@ public record JarsNester(Step step, Config config) implements StepWorker {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(jarOut);
-		Nester.nestJar(jarIn, jarOut, nest.getNests(context.minecraftVersion(), inFile, mappingFlavour));
+		Nester.nestJar(jarIn, jarOut, nests.getNests(context.minecraftVersion(), inFile, mappingFlavour));
 		return StepStatus.SUCCESS;
 	}
 

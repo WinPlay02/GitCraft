@@ -1,26 +1,21 @@
 package com.github.winplay02.gitcraft.nests.ornithe;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.Nest;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -29,14 +24,24 @@ import net.ornithemc.nester.nest.Nests;
 
 public class OrnitheNests extends Nest {
 
-	public static final String URL_ORNITHE_NESTS_META = "https://meta.ornithemc.net/v3/versions/nests";
+	private final MetaVersionsSource<GameVersionBuildMeta> nestsVersions;
 
-	private Map<String, OrnitheNestsVersionMeta> nestsVersions = null;
+	public OrnitheNests() {
+		this.nestsVersions = new MetaVersionsSource<>(
+			"https://meta.ornithemc.net/v3/versions/nests",
+			SerializationHelper.TYPE_LIST_GAME_VERSION_BUILD_META,
+			GameVersionBuildMeta::gameVersion
+		);
+	}
 
 	private static String versionKey(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return minecraftJar == MinecraftJar.MERGED
 			? mcVersion.launcherFriendlyVersionName()
 			: mcVersion.launcherFriendlyVersionName() + "-" + minecraftJar.name().toLowerCase();
+	}
+
+	private GameVersionBuildMeta getLatestNestsVersion(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+		return nestsVersions.getLatest(versionKey(mcVersion, minecraftJar));
 	}
 
 	@Override
@@ -51,101 +56,95 @@ public class OrnitheNests extends Nest {
 
 	@Override
 	public boolean doNestsExist(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return nestsVersions.containsKey(versionKey(mcVersion, minecraftJar));
+		try {
+			return getLatestNestsVersion(mcVersion, minecraftJar) != null;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	@Override
 	public boolean canNestsBeUsedOn(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) {
-		return mcVersion.timestamp().isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)
-			// <1.3, nests are provided separately for client and server jars
-			? mappingFlavour.getMappingImpl().supportsMergingPre1_3Versions()
-				// if the mapping allows for it, the mapped nests can be merged and used on any jar
+		return (!mcVersion.hasSharedVersioning() || mcVersion.hasSharedObfuscation())
+			? doNestsExist(mcVersion, MinecraftJar.MERGED)
+			: ((minecraftJar == MinecraftJar.MERGED)
 				? doNestsExist(mcVersion)
-				// otherwise, nests for that jar specifically must be available
-				: doNestsExist(mcVersion, minecraftJar)
-			// >=1.3, nests are provided as merged and can be used on any jar
-			: doNestsExist(mcVersion, MinecraftJar.MERGED);
+				: doNestsExist(mcVersion, minecraftJar));
 	}
 
 	@Override
 	public StepStatus provideNests(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException {
+		GameVersionBuildMeta nestsVersion = getLatestNestsVersion(mcVersion, minecraftJar);
+		if (nestsVersion == null) {
+			return StepStatus.NOT_RUN;
+		}
+		if (!mappingFlavour.getMappingImpl().canMappingsBeUsedOn(mcVersion, minecraftJar)) {
+			return StepStatus.NOT_RUN;
+		}
 		Path mappedNestsFile = getNestsPathInternal(mcVersion, minecraftJar, mappingFlavour);
-		// Try existing mapped
 		if (Files.exists(mappedNestsFile) && validateNests(mappedNestsFile)) {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(mappedNestsFile);
-		StepStatus status = null;
 		Path nestsFile = getNestsPathInternal(mcVersion, minecraftJar, MappingFlavour.IDENTITY_UNMAPPED);
-		// Try existing unmapped
-		if (!Files.exists(nestsFile) || !validateNests(nestsFile)) {
-			Files.deleteIfExists(nestsFile);
-			// Get latest build info
-			OrnitheNestsVersionMeta nestsVersion = getOrnitheNestsLatestBuild(mcVersion, minecraftJar);
-			if (nestsVersion == null) {
-				status = StepStatus.FAILED;
-			} else {
-				// Try latest ornithe nests build
-				Path nestsFileJar = GitCraftPaths.NESTS.resolve(String.format("%s-ornithe-nests-build.%s.jar", versionKey(mcVersion, minecraftJar), nestsVersion.build()));
-				try {
-					StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(nestsVersion.makeMavenURL(), new RemoteHelper.LocalFileInfo(nestsFileJar, null, "ornithe nests", mcVersion.launcherFriendlyVersionName()));
-					try (FileSystem fs = FileSystems.newFileSystem(nestsFileJar)) {
-						Path nestsPathInJar = fs.getPath("nests", "mappings.nest");
-						Files.copy(nestsPathInJar, nestsFile, StandardCopyOption.REPLACE_EXISTING);
-					}
-					status = StepStatus.merge(downloadStatus, StepStatus.SUCCESS);
-				} catch (IOException | RuntimeException ignored) {
-					Files.deleteIfExists(nestsFileJar);
-					status = StepStatus.FAILED;
-				}
+		if (mappingFlavour == MappingFlavour.IDENTITY_UNMAPPED) {
+			if (Files.exists(nestsFile) && validateNests(nestsFile)) {
+				return StepStatus.UP_TO_DATE;
 			}
+			Files.deleteIfExists(nestsFile);
+			Path nestsJarFile = getNestsJarPath(mcVersion, minecraftJar, mappingFlavour);
+			StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(nestsVersion.makeMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(nestsJarFile, null, "ornithe nests", mcVersion.launcherFriendlyVersionName()));
+			try (FileSystem fs = FileSystems.newFileSystem(nestsJarFile)) {
+				Path nestsPathInJar = fs.getPath("nests", "mappings.nest");
+				Files.copy(nestsPathInJar, nestsFile, StandardCopyOption.REPLACE_EXISTING);
+			}
+			return StepStatus.merge(downloadStatus, StepStatus.SUCCESS);
+		} else {
+			StepStatus unmappedStatus = provideNests(mcVersion, minecraftJar, MappingFlavour.IDENTITY_UNMAPPED);
+			if (!Files.exists(nestsFile) || !validateNests(nestsFile)) {
+				return StepStatus.merge(unmappedStatus, StepStatus.FAILED);
+			}
+			StepStatus mapStatus = mapNests(mcVersion, minecraftJar, mappingFlavour, nestsFile, mappedNestsFile);
+			return StepStatus.merge(unmappedStatus, mapStatus, StepStatus.SUCCESS);
 		}
-		if (status != StepStatus.FAILED && mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED) {
-			status = StepStatus.merge(status, mapNests(mcVersion, minecraftJar, mappingFlavour, nestsFile, mappedNestsFile));
-		}
-		return status;
 	}
 
 	@Override
 	protected Path getNestsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) {
-		OrnitheNestsVersionMeta nestsVersion = getOrnitheNestsLatestBuild(mcVersion, minecraftJar);
-		return nestsVersion == null ? null : GitCraftPaths.NESTS.resolve(String.format("%s-ornithe-nests-build.%d%s.nest", versionKey(mcVersion, minecraftJar), nestsVersion.build(), mappingFlavour == MappingFlavour.IDENTITY_UNMAPPED ? "" : mappingFlavour.toString()));
+		try {
+			GameVersionBuildMeta nestsVersion = getLatestNestsVersion(mcVersion, minecraftJar);
+			if (nestsVersion == null) {
+				return null;
+			}
+			return nestsVersion == null ? null : GitCraftPaths.NESTS.resolve(String.format("%s-ornithe-nests-build.%d%s.nest", versionKey(mcVersion, minecraftJar), nestsVersion.build(), mappingFlavour == MappingFlavour.IDENTITY_UNMAPPED ? "" : ("-" + mappingFlavour.toString())));
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private Path getNestsJarPath(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) {
+		try {
+			GameVersionBuildMeta nestsVersion = getLatestNestsVersion(mcVersion, minecraftJar);
+			if (nestsVersion == null) {
+				return null;
+			}
+			return nestsVersion == null ? null : GitCraftPaths.NESTS.resolve(String.format("%s-ornithe-nests-build.%d%s.jar", versionKey(mcVersion, minecraftJar), nestsVersion.build(), mappingFlavour == MappingFlavour.IDENTITY_UNMAPPED ? "" : ("-" + mappingFlavour.toString())));
+		} catch (IOException e) {
+			return null;
+		}
 	}
 
 	@Override
 	public void visit(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour, Nests visitor) throws IOException {
-		if (mcVersion.timestamp().isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)) {
-			// <1.3, nests provided separately for client and server jars
-			switch (minecraftJar) {
-			case CLIENT:
-			case SERVER:
-				if (doNestsExist(mcVersion, minecraftJar)) {
-					NesterIo.read(visitor, getNestsPathInternal(mcVersion, minecraftJar, mappingFlavour));
-				}
-				break;
-			case MERGED:
-				// if the mapping flavour allows for it, the mapped nests can be merged and used on any jar
-				if (mappingFlavour.getMappingImpl().supportsMergingPre1_3Versions()) {
-					visit(mcVersion, MinecraftJar.CLIENT, mappingFlavour, visitor);
-					visit(mcVersion, MinecraftJar.SERVER, mappingFlavour, visitor);
-				}
-				break;
-			}
-		} else {
-			// >=1.3, nests provided merged, can be used on any jar
+		if (!mcVersion.hasSharedVersioning() || mcVersion.hasSharedObfuscation()) {
 			NesterIo.read(visitor, getNestsPathInternal(mcVersion, MinecraftJar.MERGED, mappingFlavour));
-		}
-	}
-
-	private OrnitheNestsVersionMeta getOrnitheNestsLatestBuild(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		if (nestsVersions == null) {
-			try {
-				List<OrnitheNestsVersionMeta> nestsVersionMetas = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(URL_ORNITHE_NESTS_META)), SerializationHelper.TYPE_LIST_ORNITHE_NESTS_VERSION_META);
-				nestsVersions = nestsVersionMetas.stream().collect(Collectors.groupingBy(OrnitheNestsVersionMeta::gameVersion)).values().stream().map(ornitheNestsVersionMetas -> ornitheNestsVersionMetas.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(OrnitheNestsVersionMeta::gameVersion, Function.identity()));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+		} else {
+			if (minecraftJar == MinecraftJar.MERGED) {
+				visit(mcVersion, MinecraftJar.CLIENT, mappingFlavour, visitor);
+				visit(mcVersion, MinecraftJar.SERVER, mappingFlavour, visitor);
+			} else if (doNestsExist(mcVersion, minecraftJar)) {
+				NesterIo.read(visitor, getNestsPathInternal(mcVersion, minecraftJar, mappingFlavour));
 			}
 		}
-		return nestsVersions.get(versionKey(mcVersion, minecraftJar));
 	}
 }

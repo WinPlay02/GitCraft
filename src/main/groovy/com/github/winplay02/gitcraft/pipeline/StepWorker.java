@@ -19,15 +19,15 @@ public interface StepWorker {
 
 	StepStatus run(Pipeline pipeline, Context context) throws Exception;
 
-	public record Config(ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, MappingFlavour mappingFlavour, NestsFlavour nestsFlavour) {
+	public record Config(ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour, MappingFlavour mappingFlavour) {
 
 		@Override
 		public String toString() {
 			List<String> flavours = new ArrayList<>();
 			if (exceptionsFlavour != ExceptionsFlavour.NONE) flavours.add("exceptions: %s".formatted(exceptionsFlavour));
 			if (signaturesFlavour != SignaturesFlavour.NONE) flavours.add("signatures: %s".formatted(signaturesFlavour));
-			if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED) flavours.add("mappings: %s".formatted(mappingFlavour));
 			if (nestsFlavour != NestsFlavour.NONE) flavours.add("nests: %s".formatted(nestsFlavour));
+			if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED) flavours.add("mappings: %s".formatted(mappingFlavour));
 			return String.join(", ", flavours);
 		}
 	}

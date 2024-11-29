@@ -10,6 +10,8 @@ public enum MappingFlavour {
 	FABRIC_INTERMEDIARY(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS),
 	YARN(GitCraft.YARN_MAPPINGS),
 	MOJMAP_PARCHMENT(GitCraft.MOJANG_PARCHMENT_MAPPINGS),
+	CALAMUS_INTERMEDIARY(GitCraft.CALAMUS_INTERMEDIARY_MAPPINGS),
+	FEATHER(GitCraft.FEATHER_MAPPINGS),
 	IDENTITY_UNMAPPED(GitCraft.IDENTITY_UNMAPPED);
 
 	private final LazyValue<? extends Mapping> mappingImpl;
@@ -24,7 +26,10 @@ public enum MappingFlavour {
 
 	@Override
 	public String toString() {
-		return super.toString().toLowerCase(Locale.ROOT);
+		String s = super.toString().toLowerCase(Locale.ROOT);
+		if (this == CALAMUS_INTERMEDIARY || this == FEATHER) {
+			s += "_gen" + GitCraft.config.ornitheIntermediaryGeneration;
+		}
+		return s;
 	}
-
 }

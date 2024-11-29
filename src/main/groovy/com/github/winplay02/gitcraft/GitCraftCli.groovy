@@ -49,6 +49,7 @@ class GitCraftCli {
 				'version', 'Restricts the max. refreshed version to the one provided. This options will cause the git repository to refresh.');
 		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour, argName: "mapping", defaultValue: "mojmap");
 		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
+		cli_args._(longOpt: 'ornithe-intermediary-generation', "Specifies which generation of Ornithe intermediary to use for Ornithe's mapping flavours", type: int, argName: "generation", defaultValue: 1)
 		cli_args._(longOpt: 'exceptions', "Specifies the exceptions patches used to patch throws clauses into method declarations. None is selected by default. Possible values are: ${Arrays.stream(ExceptionsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ExceptionsFlavour, argName: "exceptions", defaultValue: "none");
 		cli_args._(longOpt: 'signatures', "Specifies the signatures patches used to patch generics into class, field, and method declarations. None is selected by default. Possible values are: ${Arrays.stream(SignaturesFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: SignaturesFlavour, argName: "signatures", defaultValue: "none");
 		cli_args._(longOpt: 'nests', "Specifies the nests used to patch inner classes. None is selected by default. Possible values are: ${Arrays.stream(NestsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: NestsFlavour, argName: "nests", defaultValue: "none");
@@ -120,6 +121,10 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
 			MappingFlavour[] fallbackMappings = cli_args_parsed.'fallback-mappings';
 			config.fallbackMappings = fallbackMappings;
+		}
+		if (cli_args_parsed.hasOption("ornithe-intermediary-generation")) {
+			int generation = cli_args_parsed.'ornithe-intermediary-generation';
+			config.ornitheIntermediaryGeneration = generation;
 		}
 		if (cli_args_parsed.hasOption("exceptions")) {
 			ExceptionsFlavour exceptions = cli_args_parsed.'exceptions';

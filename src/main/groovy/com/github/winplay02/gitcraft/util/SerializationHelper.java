@@ -1,9 +1,6 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.exceptions.ornithe.OrnitheRavenVersionMeta;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricYarnVersionMeta;
-import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNestsVersionMeta;
-import com.github.winplay02.gitcraft.signatures.ornithe.OrnitheSparrowVersionMeta;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,13 +42,11 @@ public class SerializationHelper {
 	};
 	public static final TypeToken<TreeMap<String, String>> TYPE_TREE_MAP_STRING_STRING = new TypeToken<TreeMap<String, String>>() {
 	};
+	public static final TypeToken<ArrayList<SimpleVersionMeta>> TYPE_LIST_SIMPLE_VERSION_META = new TypeToken<ArrayList<SimpleVersionMeta>>() {
+	};
+	public static final TypeToken<ArrayList<GameVersionBuildMeta>> TYPE_LIST_GAME_VERSION_BUILD_META = new TypeToken<ArrayList<GameVersionBuildMeta>>() {
+	};
 	public static final TypeToken<ArrayList<FabricYarnVersionMeta>> TYPE_LIST_FABRIC_YARN_VERSION_META = new TypeToken<ArrayList<FabricYarnVersionMeta>>() {
-	};
-	public static final TypeToken<ArrayList<OrnitheRavenVersionMeta>> TYPE_LIST_ORNITHE_RAVEN_VERSION_META = new TypeToken<ArrayList<OrnitheRavenVersionMeta>>() {
-	};
-	public static final TypeToken<ArrayList<OrnitheSparrowVersionMeta>> TYPE_LIST_ORNITHE_SPARROW_VERSION_META = new TypeToken<ArrayList<OrnitheSparrowVersionMeta>>() {
-	};
-	public static final TypeToken<ArrayList<OrnitheNestsVersionMeta>> TYPE_LIST_ORNITHE_NESTS_VERSION_META = new TypeToken<ArrayList<OrnitheNestsVersionMeta>>() {
 	};
 
 	static {

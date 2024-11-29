@@ -1,25 +1,20 @@
 package com.github.winplay02.gitcraft.exceptions.ornithe;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.exceptions.ExceptionsPatch;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -28,14 +23,24 @@ import net.ornithemc.exceptor.io.ExceptorIo;
 
 public class RavenExceptions extends ExceptionsPatch {
 
-	public static final String URL_ORNITHE_EXCEPTIONS_META = "https://meta.ornithemc.net/v3/versions/raven";
+	private final MetaVersionsSource<GameVersionBuildMeta> ravenVersions;
 
-	private Map<String, OrnitheRavenVersionMeta> ravenVersions = null;
+	public RavenExceptions() {
+		this.ravenVersions = new MetaVersionsSource<>(
+			"https://meta.ornithemc.net/v3/versions/raven",
+			SerializationHelper.TYPE_LIST_GAME_VERSION_BUILD_META,
+			GameVersionBuildMeta::gameVersion
+		);
+	}
 
 	private static String versionKey(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return minecraftJar == MinecraftJar.MERGED
 			? mcVersion.launcherFriendlyVersionName()
 			: mcVersion.launcherFriendlyVersionName() + "-" + minecraftJar.name().toLowerCase();
+	}
+
+	private GameVersionBuildMeta getLatestRavenVersion(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+		return ravenVersions.getLatest(versionKey(mcVersion, minecraftJar));
 	}
 
 	@Override
@@ -50,74 +55,70 @@ public class RavenExceptions extends ExceptionsPatch {
 
 	@Override
 	public boolean doExceptionsExist(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return ravenVersions.containsKey(versionKey(mcVersion, minecraftJar));
+		try {
+			return getLatestRavenVersion(mcVersion, minecraftJar) != null;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	@Override
 	public boolean canExceptionsBeUsedOn(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mcVersion.timestamp().isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)
-			// <1.3, exceptions are provided separately for client and server jars
-			? doExceptionsExist(mcVersion, minecraftJar)
-			// >=1.3, exceptions are provided as merged and can be used on any jar
-			: doExceptionsExist(mcVersion, MinecraftJar.MERGED);
+		return (!mcVersion.hasSharedVersioning() || mcVersion.hasSharedObfuscation())
+			? doExceptionsExist(mcVersion, MinecraftJar.MERGED)
+			: doExceptionsExist(mcVersion, minecraftJar);
 	}
 
 	@Override
 	public StepStatus provideExceptions(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+		GameVersionBuildMeta ravenVersion = getLatestRavenVersion(mcVersion, minecraftJar);
+		if (ravenVersion == null) {
+			return StepStatus.NOT_RUN;
+		}
 		Path exceptionsFile = getExceptionsPathInternal(mcVersion, minecraftJar);
-		// Try existing
 		if (Files.exists(exceptionsFile) && validateExceptions(exceptionsFile)) {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(exceptionsFile);
-		// Get latest build info
-		OrnitheRavenVersionMeta ravenVersion = getOrnitheRavenLatestBuild(mcVersion, minecraftJar);
-		if (ravenVersion == null) {
-			return StepStatus.FAILED;
+		Path exceptionsJarFile = getExceptionsJarPath(mcVersion, minecraftJar);
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(ravenVersion.makeMavenJarUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(exceptionsJarFile, null, "ornithe raven", mcVersion.launcherFriendlyVersionName()));
+		try (FileSystem fs = FileSystems.newFileSystem(exceptionsJarFile)) {
+			Path exceptionsPathInJar = fs.getPath("exceptions", "mappings.excs");
+			Files.copy(exceptionsPathInJar, exceptionsFile, StandardCopyOption.REPLACE_EXISTING);
 		}
-		// Try latest ornithe raven build
-		Path exceptionsFileJar = GitCraftPaths.EXCEPTIONS.resolve(String.format("%s-ornithe-raven-build.%s.jar", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
-		try {
-			StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(ravenVersion.makeMavenURL(), new RemoteHelper.LocalFileInfo(exceptionsFileJar, null, "ornithe raven", mcVersion.launcherFriendlyVersionName()));
-			try (FileSystem fs = FileSystems.newFileSystem(exceptionsFileJar)) {
-				Path exceptionsPathInJar = fs.getPath("exceptions", "mappings.excs");
-				Files.copy(exceptionsPathInJar, exceptionsFile, StandardCopyOption.REPLACE_EXISTING);
-			}
-			return StepStatus.merge(downloadStatus, StepStatus.SUCCESS);
-		} catch (IOException | RuntimeException ignored) {
-			Files.deleteIfExists(exceptionsFileJar);
-		}
-		return StepStatus.FAILED;
+		return StepStatus.merge(downloadStatus, StepStatus.SUCCESS);
 	}
 
 	@Override
 	protected Path getExceptionsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		OrnitheRavenVersionMeta exceptionsVersion = getOrnitheRavenLatestBuild(mcVersion, minecraftJar);
-		return exceptionsVersion == null ? null : GitCraftPaths.EXCEPTIONS.resolve(String.format("%s-ornithe-raven-build.%d.excs", versionKey(mcVersion, minecraftJar), exceptionsVersion.build()));
+		try {
+			GameVersionBuildMeta ravenVersion = getLatestRavenVersion(mcVersion, minecraftJar);
+			if (ravenVersion == null) {
+				return null;
+			}
+			return ravenVersion == null ? null : GitCraftPaths.EXCEPTIONS.resolve(String.format("%s-ornithe-raven-build.%d.excs", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private Path getExceptionsJarPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+		try {
+			GameVersionBuildMeta ravenVersion = getLatestRavenVersion(mcVersion, minecraftJar);
+			if (ravenVersion == null) {
+				return null;
+			}
+			return ravenVersion == null ? null : GitCraftPaths.EXCEPTIONS.resolve(String.format("%s-ornithe-raven-build.%d.jar", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
+		} catch (IOException e) {
+			return null;
+		}
 	}
 
 	@Override
 	public void visit(OrderedVersion mcVersion, MinecraftJar minecraftJar, ExceptionsFile visitor) throws IOException {
-		if (mcVersion.timestamp().isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)) {
-			// <1.3, exceptions provided separately for client and server jars
-			if (doExceptionsExist(mcVersion, minecraftJar)) {
-				ExceptorIo.read(getExceptionsPathInternal(mcVersion, minecraftJar), visitor);
-			}
-		} else {
-			// >=1.3, exceptions provided merged, can be used on any jar
-			ExceptorIo.read(getExceptionsPathInternal(mcVersion, MinecraftJar.MERGED), visitor);
+		if (!mcVersion.hasSharedVersioning() || mcVersion.hasSharedObfuscation()) {
+			minecraftJar = MinecraftJar.MERGED;
 		}
-	}
-
-	private OrnitheRavenVersionMeta getOrnitheRavenLatestBuild(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		if (ravenVersions == null) {
-			try {
-				List<OrnitheRavenVersionMeta> ravenVersionMetas = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(URL_ORNITHE_EXCEPTIONS_META)), SerializationHelper.TYPE_LIST_ORNITHE_RAVEN_VERSION_META);
-				ravenVersions = ravenVersionMetas.stream().collect(Collectors.groupingBy(OrnitheRavenVersionMeta::gameVersion)).values().stream().map(ornitheRavenVersionMetas -> ornitheRavenVersionMetas.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(OrnitheRavenVersionMeta::gameVersion, Function.identity()));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return ravenVersions.get(versionKey(mcVersion, minecraftJar));
+		ExceptorIo.read(getExceptionsPathInternal(mcVersion, minecraftJar), visitor);
 	}
 }
