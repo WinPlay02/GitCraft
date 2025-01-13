@@ -10,9 +10,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 ## Contributors
 
-- @Kas-tle
-- @A11v1r15
-- @SpaceWalkerRS
+- [Kas-tle](https://github.com/Kas-tle)
+- [A11v1r15](https://github.com/A11v1r15)
+- [SpaceWalkerRS](https://github.com/SpaceWalkerRS)
 
 ## General
 
