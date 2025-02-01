@@ -21,7 +21,7 @@ public record JarsMerger(Step step, Config config) implements StepWorker {
 		if (obfuscated != mcVersion.hasSharedObfuscation()) {
 			return StepStatus.NOT_RUN;
 		}
-		if (!obfuscated && config.mappingFlavour().getMappingImpl().supportsMergingPre1_3Versions()) {
+		if (!obfuscated && config.mappingFlavour().supportsMergingPre1_3Versions()) {
 			return StepStatus.NOT_RUN;
 		}
 		StepResult jarFile = obfuscated ? Results.OBFUSCATED_MINECRAFT_MERGED_JAR : Results.REMAPPED_MINECRAFT_MERGED_JAR;

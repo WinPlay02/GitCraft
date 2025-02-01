@@ -78,7 +78,7 @@ public class OrnitheNests extends Nest {
 		if (nestsVersion == null) {
 			return StepStatus.NOT_RUN;
 		}
-		if (!mappingFlavour.getMappingImpl().canMappingsBeUsedOn(mcVersion, minecraftJar)) {
+		if (!mappingFlavour.canBeUsedOn(mcVersion, minecraftJar)) {
 			return StepStatus.NOT_RUN;
 		}
 		Path mappedNestsFile = getNestsPathInternal(mcVersion, minecraftJar, mappingFlavour);

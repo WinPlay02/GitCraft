@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
@@ -52,13 +51,11 @@ public abstract class Nest {
 			Nests src = Nests.of(srcPath);
 			Nests dst = Nests.empty();
 
-			Mapping mapping = mappingFlavour.getMappingImpl();
-
-			if (mapping.canMappingsBeUsedOn(mcVersion, minecraftJar)) {
+			if (mappingFlavour.canBeUsedOn(mcVersion, minecraftJar)) {
 				MemoryMappingTree mappings = new MemoryMappingTree();
-				mapping.visit(mcVersion, minecraftJar, mappings);
+				mappingFlavour.visit(mcVersion, minecraftJar, mappings);
 
-				return NestsMapper.mapNests(src, dst, mappings, mapping.getDestinationNS());
+				return NestsMapper.mapNests(src, dst, mappings, mappingFlavour.getDestinationNS());
 			} else {
 				Files.copy(srcPath, dstPath, StandardCopyOption.REPLACE_EXISTING);
 				return StepStatus.SUCCESS;

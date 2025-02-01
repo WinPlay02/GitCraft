@@ -207,12 +207,12 @@ public class GitCraftConfig {
 	}
 
 	public Optional<MappingFlavour> getMappingsForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedMapping.getMappingImpl().doMappingsExist(mcVersion)) {
+		if (this.usedMapping.exists(mcVersion)) {
 			return Optional.of(this.usedMapping);
 		}
 		if (this.fallbackMappings != null && this.fallbackMappings.length != 0) {
 			for (MappingFlavour nextBestFallbackMapping : this.fallbackMappings) {
-				if (nextBestFallbackMapping.getMappingImpl().doMappingsExist(mcVersion)) {
+				if (nextBestFallbackMapping.exists(mcVersion)) {
 					MiscHelper.println("WARNING: %s mappings do not exist for %s. Falling back to %s", this.usedMapping, mcVersion.launcherFriendlyVersionName(), nextBestFallbackMapping);
 					return Optional.of(nextBestFallbackMapping);
 				}

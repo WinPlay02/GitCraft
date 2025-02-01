@@ -235,7 +235,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 	}
 
 	public MinecraftVersionGraph filterMapping(MappingFlavour mappingFlavour, MappingFlavour[] mappingFallback) {
-		return new MinecraftVersionGraph(this, (entry -> mappingFlavour.getMappingImpl().doMappingsExist(entry) || (mappingFallback != null && mappingFallback.length > 0 && Arrays.stream(mappingFallback).anyMatch(mapping -> mapping.getMappingImpl().doMappingsExist(entry)))));
+		return new MinecraftVersionGraph(this, (entry -> mappingFlavour.exists(entry) || (mappingFallback != null && mappingFallback.length > 0 && Arrays.stream(mappingFallback).anyMatch(mapping -> mapping.exists(entry)))));
 	}
 
 	public MinecraftVersionGraph filterMainlineVersions() {

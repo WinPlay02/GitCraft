@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import com.github.winplay02.gitcraft.mappings.Mapping;
+import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 
 public record Unpicker(Step step, Config config) implements StepWorker {
 
@@ -23,11 +24,11 @@ public record Unpicker(Step step, Config config) implements StepWorker {
 	}
 
 	private StepStatus unpickJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		if (!mapping.canMappingsBeUsedOn(context.minecraftVersion(), inFile) || !mapping.supportsConstantUnpicking()) {
+		MappingFlavour mapping = config.mappingFlavour();
+		if (!mapping.canBeUsedOn(context.minecraftVersion(), inFile) || !mapping.supportsConstantUnpicking()) {
 			return StepStatus.NOT_RUN;
 		}
-		Map<String, Path> additionalMappingPaths = mapping.getAdditionalMappingInformation(context.minecraftVersion(), inFile);
+		Map<String, Path> additionalMappingPaths = mapping.getAdditionalInformation(context.minecraftVersion(), inFile);
 		if (!additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_CONSTANTS) || !additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_DEFINITIONS)) {
 			return StepStatus.NOT_RUN;
 		}
