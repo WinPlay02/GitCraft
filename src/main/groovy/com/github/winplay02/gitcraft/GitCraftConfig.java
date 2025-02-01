@@ -233,7 +233,7 @@ public class GitCraftConfig {
 	}
 
 	public Optional<SignaturesFlavour> getSignaturesForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedSignatures.getSignaturesImpl().doSignaturesExist(mcVersion)) {
+		if (this.usedSignatures.exists(mcVersion)) {
 			return Optional.of(this.usedSignatures);
 		} else {
 			return Optional.empty();

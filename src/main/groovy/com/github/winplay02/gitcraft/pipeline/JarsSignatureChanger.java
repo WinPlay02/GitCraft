@@ -5,8 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import com.github.winplay02.gitcraft.signatures.SignaturesPatch;
-
 import io.github.gaming32.signaturechanger.cli.ApplyAction;
 
 public record JarsSignatureChanger(Step step, Config config) implements StepWorker {
@@ -24,8 +22,7 @@ public record JarsSignatureChanger(Step step, Config config) implements StepWork
 	}
 
 	private StepStatus patchJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		SignaturesPatch signatures = config.signaturesFlavour().getSignaturesImpl();
-		if (!signatures.canSignaturesBeUsedOn(context.minecraftVersion(), inFile)) {
+		if (!config.signaturesFlavour().canBeUsedOn(context.minecraftVersion(), inFile)) {
 			return StepStatus.NOT_RUN;
 		}
 		Path jarIn = pipeline.getMinecraftJar(inFile);
@@ -38,7 +35,7 @@ public record JarsSignatureChanger(Step step, Config config) implements StepWork
 		}
 		Files.deleteIfExists(jarOut);
 		Files.copy(jarIn, jarOut);
-		ApplyAction.run(signatures.getSignatures(context.minecraftVersion(), inFile), List.of(jarOut));
+		ApplyAction.run(config.signaturesFlavour().getSignatures(context.minecraftVersion(), inFile), List.of(jarOut));
 		return StepStatus.SUCCESS;
 	}
 
