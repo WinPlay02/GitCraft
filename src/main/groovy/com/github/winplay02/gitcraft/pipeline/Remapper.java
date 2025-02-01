@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -30,8 +29,7 @@ public record Remapper(Step step, Config config) implements StepWorker {
 	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
 
 	private StepStatus remapJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		MappingFlavour mapping = config.mappingFlavour();
-		if (!mapping.canBeUsedOn(context.minecraftVersion(), inFile)) {
+		if (!config.mappingFlavour().canBeUsedOn(context.minecraftVersion(), inFile)) {
 			return StepStatus.NOT_RUN;
 		}
 		Path jarIn = pipeline.getMinecraftJar(inFile);
@@ -45,7 +43,7 @@ public record Remapper(Step step, Config config) implements StepWorker {
 		if (Files.exists(jarOut)) {
 			Files.delete(jarOut);
 		}
-		IMappingProvider mappingProvider = mapping.getProvider(context.minecraftVersion(), inFile);
+		IMappingProvider mappingProvider = config.mappingFlavour().getProvider(context.minecraftVersion(), inFile);
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
 			.renameInvalidLocals(true)
 			.rebuildSourceFilenames(true)
