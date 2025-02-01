@@ -225,7 +225,7 @@ public class GitCraftConfig {
 	}
 
 	public Optional<ExceptionsFlavour> getExceptionsForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedExceptions.getExceptionsImpl().doExceptionsExist(mcVersion)) {
+		if (this.usedExceptions.exists(mcVersion)) {
 			return Optional.of(this.usedExceptions);
 		} else {
 			return Optional.empty();

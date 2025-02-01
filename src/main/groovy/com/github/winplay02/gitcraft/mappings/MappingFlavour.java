@@ -24,10 +24,10 @@ public enum MappingFlavour {
 	FEATHER(GitCraft.FEATHER_MAPPINGS),
 	IDENTITY_UNMAPPED(GitCraft.IDENTITY_UNMAPPED);
 
-	private final LazyValue<? extends Mapping> mappingImpl;
+	private final LazyValue<? extends Mapping> impl;
 
 	MappingFlavour(LazyValue<? extends Mapping> mapping) {
-		this.mappingImpl = mapping;
+		this.impl = mapping;
 	}
 
 	@Override
@@ -40,66 +40,66 @@ public enum MappingFlavour {
 	}
 
 	public String getName() {
-		return mappingImpl.get().getName();
+		return impl.get().getName();
 	}
 
 	public boolean supportsComments() {
-		return mappingImpl.get().supportsComments();
+		return impl.get().supportsComments();
 	}
 
 	public boolean supportsConstantUnpicking() {
-		return mappingImpl.get().supportsConstantUnpicking();
+		return impl.get().supportsConstantUnpicking();
 	}
 
 	public boolean supportsMergingPre1_3Versions() {
-		return mappingImpl.get().supportsMergingPre1_3Versions();
+		return impl.get().supportsMergingPre1_3Versions();
 	}
 
 	public boolean isMappingFileRequired() {
-		return mappingImpl.get().isMappingFileRequired();
+		return impl.get().isMappingFileRequired();
 	}
 
 	public String getSourceNS() {
-		return mappingImpl.get().getSourceNS();
+		return impl.get().getSourceNS();
 	}
 
 	public String getDestinationNS() {
-		return mappingImpl.get().getDestinationNS();
+		return impl.get().getDestinationNS();
 	}
 
 	public boolean exists(OrderedVersion mcVersion) {
-		return mappingImpl.get().doMappingsExist(mcVersion);
+		return impl.get().doMappingsExist(mcVersion);
 	}
 
 	public boolean exists(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mappingImpl.get().doMappingsExist(mcVersion, minecraftJar);
+		return impl.get().doMappingsExist(mcVersion, minecraftJar);
 	}
 
 	public boolean canBeUsedOn(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mappingImpl.get().canMappingsBeUsedOn(mcVersion, minecraftJar);
+		return impl.get().canMappingsBeUsedOn(mcVersion, minecraftJar);
 	}
 
 	public StepStatus provide(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
-		return mappingImpl.get().provideMappings(mcVersion, minecraftJar);
+		return impl.get().provideMappings(mcVersion, minecraftJar);
 	}
 
 	public Optional<Path> getPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mappingImpl.get().getMappingsPath(mcVersion, minecraftJar);
+		return impl.get().getMappingsPath(mcVersion, minecraftJar);
 	}
 
 	public Map<String, Path> getAdditionalInformation(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mappingImpl.get().getAdditionalMappingInformation(mcVersion, minecraftJar);
+		return impl.get().getAdditionalMappingInformation(mcVersion, minecraftJar);
 	}
 
 	public void visit(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingVisitor visitor) throws IOException {
-		mappingImpl.get().visit(mcVersion, minecraftJar, visitor);
+		impl.get().visit(mcVersion, minecraftJar, visitor);
 	}
 
 	public IMappingProvider getProvider(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mappingImpl.get().getMappingsProvider(mcVersion, minecraftJar);
+		return impl.get().getMappingsProvider(mcVersion, minecraftJar);
 	}
 
 	public Path executeCustomLogic(Path previousFile, OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return mappingImpl.get().executeCustomRemappingLogic(previousFile, mcVersion, minecraftJar);
+		return impl.get().executeCustomRemappingLogic(previousFile, mcVersion, minecraftJar);
 	}
 }

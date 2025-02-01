@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.github.winplay02.gitcraft.exceptions.ExceptionsPatch;
-
 import net.ornithemc.exceptor.Exceptor;
 
 public record JarsExceptor(Step step, Config config) implements StepWorker {
@@ -23,8 +21,7 @@ public record JarsExceptor(Step step, Config config) implements StepWorker {
 	}
 
 	private StepStatus patchJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		ExceptionsPatch exceptions = config.exceptionsFlavour().getExceptionsImpl();
-		if (!exceptions.canExceptionsBeUsedOn(context.minecraftVersion(), inFile)) {
+		if (!config.exceptionsFlavour().canBeUsedOn(context.minecraftVersion(), inFile)) {
 			return StepStatus.NOT_RUN;
 		}
 		Path jarIn = pipeline.getMinecraftJar(inFile);
@@ -37,7 +34,7 @@ public record JarsExceptor(Step step, Config config) implements StepWorker {
 		}
 		Files.deleteIfExists(jarOut);
 		Files.copy(jarIn, jarOut);
-		Exceptor.apply(jarOut, exceptions.getExceptions(context.minecraftVersion(), inFile));
+		Exceptor.apply(jarOut, config.exceptionsFlavour().getExceptions(context.minecraftVersion(), inFile));
 		return StepStatus.SUCCESS;
 	}
 
