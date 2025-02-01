@@ -81,10 +81,10 @@ public class Pipeline {
 	public void run(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion) {
 		StepWorker.Context context = new StepWorker.Context(repository, versionGraph, minecraftVersion);
 		StepWorker.Config config = new StepWorker.Config(
+			GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED),
 			GitCraft.config.getExceptionsForMinecraftVersion(minecraftVersion).orElse(ExceptionsFlavour.NONE),
 			GitCraft.config.getSignaturesForMinecraftVersion(minecraftVersion).orElse(SignaturesFlavour.NONE),
-			GitCraft.config.getNestsForMinecraftVersion(minecraftVersion).orElse(NestsFlavour.NONE),
-			GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED)
+			GitCraft.config.getNestsForMinecraftVersion(minecraftVersion).orElse(NestsFlavour.NONE)
 		);
 
 		Set<Step> completed = EnumSet.noneOf(Step.class);

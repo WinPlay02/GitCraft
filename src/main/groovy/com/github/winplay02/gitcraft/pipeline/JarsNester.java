@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.nests.Nest;
 
 import net.ornithemc.nester.Nester;
 
@@ -24,9 +23,8 @@ public record JarsNester(Step step, Config config) implements StepWorker {
 	}
 
 	private StepStatus nestJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		Nest nests = config.nestsFlavour().getNestsImpl();
 		MappingFlavour mappingFlavour = config.mappingFlavour();
-		if (!nests.canNestsBeUsedOn(context.minecraftVersion(), inFile, mappingFlavour)) {
+		if (!config.nestsFlavour().canBeUsedOn(context.minecraftVersion(), inFile, mappingFlavour)) {
 			return StepStatus.NOT_RUN;
 		}
 		Path jarIn = pipeline.getMinecraftJar(inFile);
@@ -38,7 +36,7 @@ public record JarsNester(Step step, Config config) implements StepWorker {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(jarOut);
-		Nester.nestJar(jarIn, jarOut, nests.getNests(context.minecraftVersion(), inFile, mappingFlavour));
+		Nester.nestJar(jarIn, jarOut, config.nestsFlavour().getNests(context.minecraftVersion(), inFile, mappingFlavour));
 		return StepStatus.SUCCESS;
 	}
 

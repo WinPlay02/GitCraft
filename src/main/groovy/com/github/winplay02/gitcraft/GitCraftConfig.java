@@ -241,7 +241,7 @@ public class GitCraftConfig {
 	}
 
 	public Optional<NestsFlavour> getNestsForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedNests.getNestsImpl().doNestsExist(mcVersion)) {
+		if (this.usedNests.exists(mcVersion)) {
 			return Optional.of(this.usedNests);
 		} else {
 			return Optional.empty();
