@@ -14,6 +14,10 @@ public record ArtifactsUnpacker(Step step, Config config) implements StepWorker 
 		if (!context.minecraftVersion().hasServerWindows()) {
 			return StepStatus.NOT_RUN;
 		}
+		Path fetchedServerJar = pipeline.getResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_JAR);
+		if (fetchedServerJar != null) {
+			return StepStatus.NOT_RUN;
+		}
 		Path serverZip = pipeline.getResultFile(ArtifactsFetcher.Results.MINECRAFT_SERVER_ZIP);
 		Path serverJar = pipeline.initResultFile(step, context, Results.MINECRAFT_SERVER_JAR);
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(serverZip)) {
