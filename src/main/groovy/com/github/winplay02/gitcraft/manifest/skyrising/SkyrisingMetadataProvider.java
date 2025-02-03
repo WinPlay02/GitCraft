@@ -45,7 +45,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	protected OrderedVersion loadVersionFromManifest(SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		VersionInfo info = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir.resolve("info"), "version info", VersionInfo.class);
+		VersionInfo info = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.url(), null, targetDir.resolve("info"), "version info", VersionInfo.class);
 		VersionDetails details = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"), "version details", VersionDetails.class);
 		this.versionDetails.put(details.id(), details);
 		return OrderedVersion.from(info, details.normalizedVersion());
@@ -89,7 +89,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	protected boolean isExistingVersionMetadataValid(SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		return this.isExistingVersionMetadataValid(manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir.resolve("info"))
+		return this.isExistingVersionMetadataValid(manifestEntry.id(), manifestEntry.url(), null, targetDir.resolve("info"))
 			&& this.isExistingVersionMetadataValid(manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"));
 	}
 
