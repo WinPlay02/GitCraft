@@ -32,11 +32,7 @@ public enum MappingFlavour {
 
 	@Override
 	public String toString() {
-		String s = super.toString().toLowerCase(Locale.ROOT);
-		if (this == CALAMUS_INTERMEDIARY || this == FEATHER) {
-			s += "_gen" + GitCraft.config.ornitheIntermediaryGeneration;
-		}
-		return s;
+		return super.toString().toLowerCase(Locale.ROOT);
 	}
 
 	public String getName() {
