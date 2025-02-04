@@ -89,6 +89,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	public final Map<String, OrderedVersion> getVersions() throws IOException {
 		if (!this.versionsLoaded) {
 			this.loadVersions();
+			this.postLoadVersions();
 			this.writeSemverCache();
 		}
 		return Collections.unmodifiableMap(this.versionsById);
@@ -102,7 +103,10 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			M manifest = this.fetchVersionsManifest(manifestSource);
 			for (E versionEntry : manifest.versions()) {
 				if (!this.versionsById.containsKey(versionEntry.id())) {
-					this.versionsById.put(versionEntry.id(), this.loadVersionFromManifest(versionEntry, this.manifestMetadata));
+					OrderedVersion version = this.loadVersionFromManifest(versionEntry, this.manifestMetadata);
+					if (!this.shouldExclude(version)) {
+						this.versionsById.put(versionEntry.id(), version);
+					}
 				} else {
 					if (this.isExistingVersionMetadataValid(versionEntry, this.manifestMetadata)) {
 						MiscHelper.println("WARNING: Found duplicate manifest version entry: %s (Matches previous entry)", versionEntry.id());
@@ -116,7 +120,10 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			MiscHelper.println("Reading extra metadata for %s...", metadataSource.versionEntry().id());
 			E versionEntry = metadataSource.versionEntry();
 			if (!this.versionsById.containsKey(versionEntry.id())) {
-				this.versionsById.put(versionEntry.id(), this.loadVersionFromManifest(versionEntry, this.remoteMetadata));
+				OrderedVersion version = this.loadVersionFromManifest(versionEntry, this.remoteMetadata);
+				if (!this.shouldExclude(version)) {
+					this.versionsById.put(versionEntry.id(), version);
+				}
 			} else {
 				MiscHelper.panic("Found duplicate extra version entry: %s (Differs from previous)", versionEntry.id());
 			}
@@ -125,15 +132,20 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			MiscHelper.println("Reading extra metadata repository from %s...", repository.directory());
 			Path dir = repository.directory();
 			this.loadVersionsFromRepository(dir, mcVersion -> {
-				String versionId = mcVersion.launcherFriendlyVersionName();
-				if (!this.versionsById.containsKey(versionId)) {
-					this.versionsById.put(versionId, mcVersion);
-				} else {
-					MiscHelper.panic("Found duplicate repository version entry: %s", versionId);
+				if (!this.shouldExclude(mcVersion)) {
+					String versionId = mcVersion.launcherFriendlyVersionName();
+					if (!this.versionsById.containsKey(versionId)) {
+						this.versionsById.put(versionId, mcVersion);
+					} else {
+						MiscHelper.panic("Found duplicate repository version entry: %s", versionId);
+					}
 				}
 			});
 		}
 		this.versionsLoaded = true;
+	}
+
+	protected void postLoadVersions() {
 	}
 
 	private final M fetchVersionsManifest(MetadataSources.RemoteVersionsManifest<M, E> manifestSource) throws IOException {
@@ -207,6 +219,11 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
 			return null;
 		}
+	}
+
+	@Override
+	public boolean shouldExclude(OrderedVersion mcVersion) {
+		return false;
 	}
 
 	@Override

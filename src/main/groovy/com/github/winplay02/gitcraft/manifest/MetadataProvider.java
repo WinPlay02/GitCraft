@@ -39,6 +39,11 @@ public interface MetadataProvider {
 	OrderedVersion getVersionByVersionID(String versionId);
 
 	/**
+	 * @return whether this Minecraft version should be excluded from the version graph
+	 */
+	boolean shouldExclude(OrderedVersion mcVersion);
+
+	/**
 	 * @return whether this Minecraft version should <i>definitely</i> not appear in a main branch of the version graph
 	 */
 	boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion);
