@@ -25,7 +25,11 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	private final Map<String, VersionDetails> versionDetails = new HashMap<>();
 
 	public SkyrisingMetadataProvider() {
-		this.addManifestSource("https://skyrising.github.io/mc-versions/version_manifest.json", SkyrisingManifest.class);
+		this("https://skyrising.github.io/mc-versions/version_manifest.json");
+	}
+
+	protected SkyrisingMetadataProvider(String manifestUrl) {
+		this.addManifestSource(manifestUrl, SkyrisingManifest.class);
 	}
 
 	@Override
