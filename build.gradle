@@ -41,7 +41,7 @@ dependencies {
 	implementation "org.ow2.asm:asm-tree:${project.asm_version}"
 	implementation "org.ow2.asm:asm-util:${project.asm_version}"
 
-	implementation("net.fabricmc:stitch:${stitch_version}") {
+	implementation("net.ornithemc:stitch:${stitch_version}") {
 		exclude module: 'enigma'
 	}
 
