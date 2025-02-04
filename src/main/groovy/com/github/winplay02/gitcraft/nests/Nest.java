@@ -48,14 +48,11 @@ public abstract class Nest {
 
 	protected final StepStatus mapNests(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour, Path srcPath, Path dstPath) {
 		try {
-			Nests src = Nests.of(srcPath);
-			Nests dst = Nests.empty();
-
 			if (mappingFlavour.canBeUsedOn(mcVersion, minecraftJar)) {
 				MemoryMappingTree mappings = new MemoryMappingTree();
 				mappingFlavour.visit(mcVersion, minecraftJar, mappings);
 
-				return NestsMapper.mapNests(src, dst, mappings, mappingFlavour.getDestinationNS());
+				return NestsMapper.mapNests(srcPath, dstPath, mappings, mappingFlavour.getDestinationNS());
 			} else {
 				Files.copy(srcPath, dstPath, StandardCopyOption.REPLACE_EXISTING);
 				return StepStatus.SUCCESS;

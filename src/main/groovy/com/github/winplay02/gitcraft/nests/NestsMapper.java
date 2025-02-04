@@ -1,11 +1,18 @@
 package com.github.winplay02.gitcraft.nests;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MappingTree.MethodMapping;
+
 import net.ornithemc.nester.nest.Nest;
 import net.ornithemc.nester.nest.NestType;
+import net.ornithemc.nester.nest.NesterIo;
 import net.ornithemc.nester.nest.Nests;
 
 /**
@@ -13,28 +20,41 @@ import net.ornithemc.nester.nest.Nests;
  */
 class NestsMapper {
 
-	static StepStatus mapNests(Nests src, Nests dst, MappingTree mappings, String targetNamespace) {
-		return new NestsMapper(src, dst, mappings, targetNamespace).run();
+	static StepStatus mapNests(Path srcPath, Path dstPath, MappingTree mappings, String targetNamespace) {
+		return new NestsMapper(srcPath, dstPath, mappings, targetNamespace).run();
 	}
 
-	private final Nests src;
-	private final Nests dst;
+	private final Path srcPath;
+	private final Path dstPath;
 	private final MappingTree mappings;
 	private final int dstNs;
 
-	private NestsMapper(Nests src, Nests dst, MappingTree mappings, String targetNamespace) {
-		this.src = src;
-		this.dst = dst;
+	private NestsMapper(Path srcPath, Path dstPath, MappingTree mappings, String targetNamespace) {
+		this.srcPath = srcPath;
+		this.dstPath = dstPath;
 		this.mappings = mappings;
 		this.dstNs = this.mappings.getNamespaceId(targetNamespace);
 	}
 
 	private StepStatus run() {
+		Nests src = Nests.of(srcPath);
+		Nests dst = Nests.empty();
+
 		for (Nest nest : src) {
 			dst.add(map(nest));
 		}
 
-		return StepStatus.SUCCESS;
+		try {
+			NesterIo.write(dst, dstPath);
+			return StepStatus.SUCCESS;
+		} catch (IOException e) {
+			try {
+				Files.deleteIfExists(dstPath);
+			} catch (IOException e1) {
+				MiscHelper.panicBecause(e1, "unable to delete corrupted nests file!");
+			}
+			return StepStatus.FAILED;
+		}
 	}
 
 	private Nest map(Nest nest) {
