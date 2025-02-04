@@ -7,7 +7,7 @@ public record GameVersionBuildMeta(String gameVersion, String separator, int bui
 	}
 
 	@Override
-	public String makeMavenUrl(String baseUrl) {
-		return baseUrl + maven.substring(0, maven.indexOf(':')).replace('.', '/') + "/" + maven.substring(maven.indexOf(':') + 1, maven.lastIndexOf(':')) + "/" + maven.substring(maven.lastIndexOf(':') + 1) + "/" + maven.substring(maven.indexOf(':') + 1).replace(':', '-');
+	public String makeMavenUrl(String baseUrl, String ext) {
+		return baseUrl + maven.substring(0, maven.indexOf(':')).replace('.', '/') + "/" + maven.substring(maven.indexOf(':') + 1, maven.lastIndexOf(':')) + "/" + maven.substring(maven.lastIndexOf(':') + 1) + "/" + maven.substring(maven.indexOf(':') + 1).replace(':', '-') + ext;
 	}
 }
