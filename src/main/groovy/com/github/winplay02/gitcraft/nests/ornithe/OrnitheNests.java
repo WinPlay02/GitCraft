@@ -93,7 +93,7 @@ public class OrnitheNests extends Nest {
 			}
 			Files.deleteIfExists(nestsFile);
 			Path nestsJarFile = getNestsJarPath(mcVersion, minecraftJar, mappingFlavour);
-			StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(nestsVersion.makeMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(nestsJarFile, null, "ornithe nests", mcVersion.launcherFriendlyVersionName()));
+			StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(nestsVersion.makeMavenJarUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(nestsJarFile, null, "ornithe nests", mcVersion.launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(nestsJarFile)) {
 				Path nestsPathInJar = fs.getPath("nests", "mappings.nest");
 				Files.copy(nestsPathInJar, nestsFile, StandardCopyOption.REPLACE_EXISTING);

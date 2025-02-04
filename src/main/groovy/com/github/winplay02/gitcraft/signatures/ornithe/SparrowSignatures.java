@@ -82,7 +82,7 @@ public class SparrowSignatures extends SignaturesPatch {
 		}
 		Files.deleteIfExists(signaturesFile);
 		Path signaturesJarFile = getSignaturesJarPath(mcVersion, minecraftJar);
-		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(sparrowVersion.makeMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(signaturesJarFile, null, "ornithe sparrow", mcVersion.launcherFriendlyVersionName()));
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(sparrowVersion.makeMavenJarUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(signaturesJarFile, null, "ornithe sparrow", mcVersion.launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(signaturesJarFile)) {
 			Path signaturesPathInJar = fs.getPath("signatures", "mappings.sigs");
 			Files.copy(signaturesPathInJar, signaturesFile, StandardCopyOption.REPLACE_EXISTING);
