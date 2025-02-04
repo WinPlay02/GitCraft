@@ -156,6 +156,10 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 				// from the main branch
 				this.branchPoints.put(nextBranch, nextBranchLength);
 			}
+			// update branch length
+			if (nextBranchLength > branchLength) {
+				branchLength = nextBranchLength;
+			}
 		}
 
 		return branchLength + 1;
