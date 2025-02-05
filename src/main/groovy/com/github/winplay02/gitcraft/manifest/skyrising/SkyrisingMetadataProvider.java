@@ -111,7 +111,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 			.toList();
 	}
 
-	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)(-\\d+|\\d+)|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)((-\\d+|\\d+)(-\\d+)?)?|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
 
 	@Override
 	public boolean shouldExclude(OrderedVersion mcVersion) {
@@ -124,9 +124,12 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// ensure the main branch goes through 12w32a rather than 1.3.2
 			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "1.3.2")
-			// filter out april fools snapshots and experimental versions,
-			// which often have typical ids that do not match normal snapshots
-			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
+			|| (mcVersion.isSnapshotOrPending()
+				// filter out april fools snapshots and experimental versions,
+				// which often have typical ids that do not match normal snapshots
+				&& !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches()
+				// allow 13w12~ anyway as the changes in it carry over to 1.5.1
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "13w12~"));
 	}
 
 	private VersionDetails getVersionDetails(String versionId) {
