@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-
 import net.ornithemc.nester.Nester;
 
 public record JarsNester(Step step, Config config) implements StepWorker {
