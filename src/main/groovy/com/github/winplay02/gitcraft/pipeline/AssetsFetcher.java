@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.util.SerializationHelper;

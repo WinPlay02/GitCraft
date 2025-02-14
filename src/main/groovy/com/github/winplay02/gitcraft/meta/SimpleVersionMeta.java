@@ -1,9 +1,9 @@
-package com.github.winplay02.gitcraft.util;
+package com.github.winplay02.gitcraft.meta;
 
-public record GameVersionBuildMeta(String gameVersion, String separator, int build, String maven, String version, boolean stable) implements VersionMeta, Comparable<GameVersionBuildMeta> {
+public record SimpleVersionMeta(String maven, String version, boolean stable) implements VersionMeta<SimpleVersionMeta> {
 	@Override
-	public int compareTo(GameVersionBuildMeta o) {
-		return Integer.compare(this.build, o.build);
+	public int compareTo(SimpleVersionMeta o) {
+		return 0;
 	}
 
 	@Override

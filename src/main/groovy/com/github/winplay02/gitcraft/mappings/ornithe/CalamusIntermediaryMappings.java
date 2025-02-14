@@ -2,14 +2,16 @@ package com.github.winplay02.gitcraft.mappings.ornithe;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.mappings.Mapping;
+import com.github.winplay02.gitcraft.meta.MetaUrls;
+import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
+import com.github.winplay02.gitcraft.meta.SimpleVersionMeta;
+import com.github.winplay02.gitcraft.meta.VersionMetaSource;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
-import com.github.winplay02.gitcraft.util.SimpleVersionMeta;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
@@ -28,7 +30,7 @@ import java.util.Map;
 
 public class CalamusIntermediaryMappings extends Mapping {
 	private final int generation;
-	private final MetaVersionsSource<SimpleVersionMeta> calamusVersions;
+	private final VersionMetaSource<SimpleVersionMeta> calamusVersions;
 
 	public CalamusIntermediaryMappings() {
 		if (GitCraft.config.ornitheIntermediaryGeneration < 1) {
@@ -36,8 +38,8 @@ public class CalamusIntermediaryMappings extends Mapping {
 		}
 
 		this.generation = GitCraft.config.ornitheIntermediaryGeneration;
-		this.calamusVersions = new MetaVersionsSource<>(
-			"https://meta.ornithemc.net/v3/versions/gen" + this.generation + "/intermediary",
+		this.calamusVersions = new RemoteVersionMetaSource<>(
+			MetaUrls.ornitheCalamusIntermediary(this.generation),
 			SerializationHelper.TYPE_LIST_SIMPLE_VERSION_META,
 			SimpleVersionMeta::version
 		);
@@ -101,7 +103,7 @@ public class CalamusIntermediaryMappings extends Mapping {
 		}
 		Files.deleteIfExists(mappingsFile);
 		Path mappingsJarFile = getMappingsJarPath(mcVersion, minecraftJar);
-		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(calamusVersion.makeMavenJarV2Url(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(mappingsJarFile, null, "calamus intermediary gen " + generation + " mapping", mcVersion.launcherFriendlyVersionName()));
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(calamusVersion.makeV2JarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(mappingsJarFile, null, "calamus intermediary gen " + generation + " mapping", mcVersion.launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(mappingsJarFile)) {
 			Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 			Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);

@@ -9,12 +9,14 @@ import java.nio.file.StandardCopyOption;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.exceptions.ExceptionsPatch;
+import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
+import com.github.winplay02.gitcraft.meta.MetaUrls;
+import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
+import com.github.winplay02.gitcraft.meta.VersionMetaSource;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -23,11 +25,11 @@ import net.ornithemc.exceptor.io.ExceptorIo;
 
 public class RavenExceptions extends ExceptionsPatch {
 
-	private final MetaVersionsSource<GameVersionBuildMeta> ravenVersions;
+	private final VersionMetaSource<GameVersionBuildMeta> ravenVersions;
 
 	public RavenExceptions() {
-		this.ravenVersions = new MetaVersionsSource<>(
-			"https://meta.ornithemc.net/v3/versions/raven",
+		this.ravenVersions = new RemoteVersionMetaSource<>(
+			MetaUrls.ORNITHE_RAVEN,
 			SerializationHelper.TYPE_LIST_GAME_VERSION_BUILD_META,
 			GameVersionBuildMeta::gameVersion
 		);
@@ -81,7 +83,7 @@ public class RavenExceptions extends ExceptionsPatch {
 		}
 		Files.deleteIfExists(exceptionsFile);
 		Path exceptionsJarFile = getExceptionsJarPath(mcVersion, minecraftJar);
-		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(ravenVersion.makeMavenJarUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(exceptionsJarFile, null, "ornithe raven", mcVersion.launcherFriendlyVersionName()));
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(ravenVersion.makeJarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(exceptionsJarFile, null, "ornithe raven", mcVersion.launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(exceptionsJarFile)) {
 			Path exceptionsPathInJar = fs.getPath("exceptions", "mappings.excs");
 			Files.copy(exceptionsPathInJar, exceptionsFile, StandardCopyOption.REPLACE_EXISTING);

@@ -9,12 +9,14 @@ import java.nio.file.StandardCopyOption;
 
 import com.github.winplay02.gitcraft.signatures.SignaturesPatch;
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
+import com.github.winplay02.gitcraft.meta.MetaUrls;
+import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
+import com.github.winplay02.gitcraft.meta.VersionMetaSource;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -24,11 +26,11 @@ import io.github.gaming32.signaturechanger.visitor.SigsReader;
 
 public class SparrowSignatures extends SignaturesPatch {
 
-	private final MetaVersionsSource<GameVersionBuildMeta> sparrowVersions;
+	private final VersionMetaSource<GameVersionBuildMeta> sparrowVersions;
 
 	public SparrowSignatures() {
-		this.sparrowVersions = new MetaVersionsSource<>(
-			"https://meta.ornithemc.net/v3/versions/sparrow",
+		this.sparrowVersions = new RemoteVersionMetaSource<>(
+			MetaUrls.ORNITHE_SPARROW,
 			SerializationHelper.TYPE_LIST_GAME_VERSION_BUILD_META,
 			GameVersionBuildMeta::gameVersion
 		);
@@ -82,7 +84,7 @@ public class SparrowSignatures extends SignaturesPatch {
 		}
 		Files.deleteIfExists(signaturesFile);
 		Path signaturesJarFile = getSignaturesJarPath(mcVersion, minecraftJar);
-		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(sparrowVersion.makeMavenJarUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(signaturesJarFile, null, "ornithe sparrow", mcVersion.launcherFriendlyVersionName()));
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(sparrowVersion.makeJarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(signaturesJarFile, null, "ornithe sparrow", mcVersion.launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(signaturesJarFile)) {
 			Path signaturesPathInJar = fs.getPath("signatures", "mappings.sigs");
 			Files.copy(signaturesPathInJar, signaturesFile, StandardCopyOption.REPLACE_EXISTING);

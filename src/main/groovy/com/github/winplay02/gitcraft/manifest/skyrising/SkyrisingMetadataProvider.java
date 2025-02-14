@@ -2,8 +2,8 @@ package com.github.winplay02.gitcraft.manifest.skyrising;
 
 import com.github.winplay02.gitcraft.manifest.BaseMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
-import com.github.winplay02.gitcraft.meta.VersionDetails;
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionDetails;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 

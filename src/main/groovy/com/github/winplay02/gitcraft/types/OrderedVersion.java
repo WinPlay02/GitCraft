@@ -1,9 +1,9 @@
 package com.github.winplay02.gitcraft.types;
 
 import com.github.winplay02.gitcraft.GitCraftConfig;
-import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
-import com.github.winplay02.gitcraft.meta.LibraryMetadata;
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.LibraryMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;

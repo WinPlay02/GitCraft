@@ -2,12 +2,14 @@ package com.github.winplay02.gitcraft.mappings.ornithe;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.mappings.Mapping;
+import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
+import com.github.winplay02.gitcraft.meta.MetaUrls;
+import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
+import com.github.winplay02.gitcraft.meta.VersionMetaSource;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -28,7 +30,7 @@ import java.util.Map;
 
 public class FeatherMappings extends Mapping {
 	private final int generation;
-	private final MetaVersionsSource<GameVersionBuildMeta> featherVersions;
+	private final VersionMetaSource<GameVersionBuildMeta> featherVersions;
 
 	public FeatherMappings() {
 		if (GitCraft.config.ornitheIntermediaryGeneration < 1) {
@@ -36,8 +38,8 @@ public class FeatherMappings extends Mapping {
 		}
 
 		this.generation = GitCraft.config.ornitheIntermediaryGeneration;
-		this.featherVersions = new MetaVersionsSource<>(
-			"https://meta.ornithemc.net/v3/versions/gen" + this.generation + "/feather",
+		this.featherVersions = new RemoteVersionMetaSource<>(
+			MetaUrls.ornitheFeather(this.generation),
 			SerializationHelper.TYPE_LIST_GAME_VERSION_BUILD_META,
 			GameVersionBuildMeta::gameVersion
 		);
@@ -101,7 +103,7 @@ public class FeatherMappings extends Mapping {
 		}
 		Files.deleteIfExists(mappingsFile);
 		Path mappingsJarFile = getMappingsJarPath(mcVersion, minecraftJar);
-		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(featherVersion.makeMavenJarMergedV2Url(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(mappingsJarFile, null, "feather gen " + generation + " mapping", mcVersion.launcherFriendlyVersionName()));
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(featherVersion.makeMergedV2JarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(mappingsJarFile, null, "feather gen " + generation + " mapping", mcVersion.launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(mappingsJarFile)) {
 			Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 			Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);

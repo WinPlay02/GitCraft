@@ -9,13 +9,15 @@ import java.nio.file.StandardCopyOption;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
+import com.github.winplay02.gitcraft.meta.MetaUrls;
+import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
+import com.github.winplay02.gitcraft.meta.VersionMetaSource;
 import com.github.winplay02.gitcraft.nests.Nest;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.MetaVersionsSource;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 
@@ -24,11 +26,11 @@ import net.ornithemc.nester.nest.Nests;
 
 public class OrnitheNests extends Nest {
 
-	private final MetaVersionsSource<GameVersionBuildMeta> nestsVersions;
+	private final VersionMetaSource<GameVersionBuildMeta> nestsVersions;
 
 	public OrnitheNests() {
-		this.nestsVersions = new MetaVersionsSource<>(
-			"https://meta.ornithemc.net/v3/versions/nests",
+		this.nestsVersions = new RemoteVersionMetaSource<>(
+			MetaUrls.ORNITHE_NESTS,
 			SerializationHelper.TYPE_LIST_GAME_VERSION_BUILD_META,
 			GameVersionBuildMeta::gameVersion
 		);
@@ -93,7 +95,7 @@ public class OrnitheNests extends Nest {
 			}
 			Files.deleteIfExists(nestsFile);
 			Path nestsJarFile = getNestsJarPath(mcVersion, minecraftJar, mappingFlavour);
-			StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(nestsVersion.makeMavenJarUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(nestsJarFile, null, "ornithe nests", mcVersion.launcherFriendlyVersionName()));
+			StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(nestsVersion.makeJarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(nestsJarFile, null, "ornithe nests", mcVersion.launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(nestsJarFile)) {
 				Path nestsPathInJar = fs.getPath("nests", "mappings.nest");
 				Files.copy(nestsPathInJar, nestsFile, StandardCopyOption.REPLACE_EXISTING);

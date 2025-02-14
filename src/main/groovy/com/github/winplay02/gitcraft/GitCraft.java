@@ -51,6 +51,7 @@ public class GitCraft {
 	public static final LazyValue<Nest> ORNITHE_NESTS = LazyValue.of(OrnitheNests::new);
 	public static final LazyValue<Nest> NONE_NESTS = LazyValue.of(NoneNests::new);
 
+	public static final String FABRIC_MAVEN = "https://maven.fabricmc.net/";
 	public static final String ORNITHE_MAVEN = "https://maven.ornithemc.net/releases/";
 
 	/// Other Information
