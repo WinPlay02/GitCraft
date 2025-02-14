@@ -36,7 +36,7 @@ public class MinecraftVersionGraph implements Iterable<OrderedVersion> {
 		this.edgesBack = new HashMap<>(previous.edgesBack.keySet().stream().filter(predicate).collect(Collectors.toMap(Function.identity(), key -> new TreeSet<OrderedVersion>())));
 		this.edgesFw = new HashMap<>(previous.edgesFw.keySet().stream().filter(predicate).collect(Collectors.toMap(Function.identity(), key -> new TreeSet<OrderedVersion>())));
 		this.repoTags.addAll(Arrays.asList(tags));
-		this.reconnectGraph(previous):
+		this.reconnectGraph(previous);
 		this.validateNoCycles();
 		this.findBranchStructure();
 	}
