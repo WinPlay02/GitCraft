@@ -28,6 +28,7 @@ public class GitCraftPaths {
 	public static Path REMAPPED = null;
 	public static Path UNPICKED = null;
 	public static Path NESTS_APPLIED = null;
+	public static Path PREENED = null;
 	public static Path ASSETS_INDEX = null;
 	public static Path ASSETS_OBJECTS = null;
 	public static Path SOURCE_EXTRA_VERSIONS = null;
@@ -60,6 +61,7 @@ public class GitCraftPaths {
 		REMAPPED = MAIN_ARTIFACT_STORE.resolve("remapped-mc");
 		UNPICKED = MAIN_ARTIFACT_STORE.resolve("unpicked-mc");
 		NESTS_APPLIED = MAIN_ARTIFACT_STORE.resolve("nests-applied-mc");
+		PREENED = MAIN_ARTIFACT_STORE.resolve("preened-mc");
 		ASSETS_INDEX = MAIN_ARTIFACT_STORE.resolve("assets-index");
 		ASSETS_OBJECTS = MAIN_ARTIFACT_STORE.resolve("assets-objects");
 		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
@@ -83,6 +85,7 @@ public class GitCraftPaths {
 		Files.createDirectories(REMAPPED);
 		Files.createDirectories(UNPICKED);
 		Files.createDirectories(NESTS_APPLIED);
+		Files.createDirectories(PREENED);
 		Files.createDirectories(ASSETS_INDEX);
 		Files.createDirectories(ASSETS_OBJECTS);
 		Files.createDirectories(SOURCE_EXTRA_VERSIONS);
