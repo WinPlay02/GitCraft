@@ -23,6 +23,7 @@ public class GitCraftPaths {
 	public static Path MC_VERSION_META_STORE = null;
 	public static Path MC_VERSION_META_DOWNLOADS = null;
 	public static Path LIBRARY_STORE = null;
+	public static Path LVT_PATCHED = null;
 	public static Path EXCEPTIONS_APPLIED = null;
 	public static Path SIGNATURES_APPLIED = null;
 	public static Path REMAPPED = null;
@@ -56,6 +57,7 @@ public class GitCraftPaths {
 		MC_VERSION_META_STORE = MAIN_ARTIFACT_STORE.resolve("mc-meta");
 		MC_VERSION_META_DOWNLOADS = MAIN_ARTIFACT_STORE.resolve("mc-meta-download");
 		LIBRARY_STORE = MAIN_ARTIFACT_STORE.resolve("libraries");
+		LVT_PATCHED = MAIN_ARTIFACT_STORE.resolve("local-variable-tables-patched-mc");
 		EXCEPTIONS_APPLIED = MAIN_ARTIFACT_STORE.resolve("exceptions-applied-mc");
 		SIGNATURES_APPLIED = MAIN_ARTIFACT_STORE.resolve("signatures-applied-mc");
 		REMAPPED = MAIN_ARTIFACT_STORE.resolve("remapped-mc");
@@ -80,6 +82,7 @@ public class GitCraftPaths {
 		Files.createDirectories(MC_VERSION_META_STORE);
 		Files.createDirectories(MC_VERSION_META_DOWNLOADS);
 		Files.createDirectories(LIBRARY_STORE);
+		Files.createDirectories(LVT_PATCHED);
 		Files.createDirectories(EXCEPTIONS_APPLIED);
 		Files.createDirectories(SIGNATURES_APPLIED);
 		Files.createDirectories(REMAPPED);

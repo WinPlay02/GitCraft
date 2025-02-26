@@ -61,6 +61,8 @@ public class GitCraftConfig {
 	public MappingFlavour[] fallbackMappings = null;
 	public int ornitheIntermediaryGeneration = 1;
 
+	/// Jar processing settings
+	public boolean patchLvt;
 	public ExceptionsFlavour usedExceptions = ExceptionsFlavour.NONE;
 	public SignaturesFlavour usedSignatures = SignaturesFlavour.NONE;
 	public NestsFlavour usedNests = NestsFlavour.NONE;
@@ -161,6 +163,7 @@ public class GitCraftConfig {
 		if (fallbackMappings != null && fallbackMappings.length > 0) {
 			MiscHelper.println("Mappings used as fallback: %s", Arrays.stream(fallbackMappings).map(Object::toString).collect(Collectors.joining(", ")));
 		}
+		MiscHelper.println("LVT patching is %s", patchLvt ? "enabled" : "disabled");
 		MiscHelper.println("Exceptions used: %s", usedExceptions);
 		MiscHelper.println("Signatures used: %s", usedSignatures);
 		MiscHelper.println("Nests used: %s", usedNests);
