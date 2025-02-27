@@ -12,6 +12,7 @@ import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 public record ArtifactsUnpacker(StepWorker.Config config) implements StepWorker<ArtifactsUnpacker.Inputs> {
@@ -25,6 +26,13 @@ public record ArtifactsUnpacker(StepWorker.Config config) implements StepWorker<
 		}
 		Path serverZip = pipeline.getStoragePath(input.serverZip().orElseThrow(), context);
 		Path unpackedServerJar = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.UNPACKED_SERVER_JAR);
+
+		if (Files.exists(unpackedServerJar) && !MiscHelper.isJarEmpty(unpackedServerJar)) {
+			return new StepOutput(StepStatus.UP_TO_DATE, results);
+		}
+		if (Files.exists(unpackedServerJar)) {
+			Files.delete(unpackedServerJar);
+		}
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(serverZip)) {
 			Files.copy(Files.newInputStream(fs.get().getPath(SERVER_ZIP_JAR_NAME)), unpackedServerJar);

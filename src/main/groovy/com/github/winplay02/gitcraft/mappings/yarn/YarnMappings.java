@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.mappings.yarn;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.mappings.Mapping;
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -130,7 +131,7 @@ public class YarnMappings extends Mapping {
 		}
 		// Try latest yarn merged v2 JAR build
 		{
-			Path mappingsFileJar = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 			try {
 				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLMergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileJar, null, "yarn mapping", mcVersion.launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileJar)) {
@@ -194,7 +195,7 @@ public class YarnMappings extends Mapping {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	@Override
@@ -222,7 +223,7 @@ public class YarnMappings extends Mapping {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s-unpick-definitions.unpick", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s-unpick-definitions.unpick", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	protected Path getUnpickConstantsPath(OrderedVersion mcVersion) {
@@ -230,7 +231,7 @@ public class YarnMappings extends Mapping {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-build.%s-constants.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s-constants.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	private FabricYarnVersionMeta getYarnLatestBuild(OrderedVersion mcVersion) {
@@ -255,11 +256,11 @@ public class YarnMappings extends Mapping {
 
 	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(OrderedVersion mcVersion, FabricYarnVersionMeta yarnVersion) {
 		try {
-			Path mappingsFileUnmerged = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileUnmerged = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 			if (Files.exists(mappingsFileUnmerged) && validateMappings(mappingsFileUnmerged)) {
 				return Tuple2.tuple(mappingsFileUnmerged, StepStatus.UP_TO_DATE);
 			}
-			Path mappingsFileUnmergedJar = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileUnmergedJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLUnmergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileUnmergedJar, null, "unmerged yarn mapping", mcVersion.launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJar)) {
 				Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
@@ -269,11 +270,11 @@ public class YarnMappings extends Mapping {
 		} catch (IOException | RuntimeException e) {
 			MiscHelper.println("Yarn mappings in tiny-v2 format do not exist for %s, falling back to tiny-v1 mappings...", mcVersion.launcherFriendlyVersionName());
 			try {
-				Path mappingsFileUnmergedv1 = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+				Path mappingsFileUnmergedv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 				if (Files.exists(mappingsFileUnmergedv1) && validateMappings(mappingsFileUnmergedv1)) {
 					return Tuple2.tuple(mappingsFileUnmergedv1, StepStatus.UP_TO_DATE);
 				}
-				Path mappingsFileUnmergedJarv1 = GitCraftPaths.MAPPINGS.resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+				Path mappingsFileUnmergedJarv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLUnmergedV1(), new RemoteHelper.LocalFileInfo(mappingsFileUnmergedJarv1, null, "unmerged yarn mapping (v1 fallback)", mcVersion.launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJarv1)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");

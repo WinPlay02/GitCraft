@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.manifest;
 import com.github.winplay02.gitcraft.manifest.historic.HistoricMojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.LazyValue;
 
 import java.util.Locale;
@@ -14,13 +15,13 @@ public enum ManifestSource {
 	SKYRISING(SkyrisingMetadataProvider::new),
 	MOJANG_HISTORIC(() -> new HistoricMojangLauncherMetadataProvider((MojangLauncherMetadataProvider) MOJANG.getMetadataProvider(), (SkyrisingMetadataProvider) SKYRISING.getMetadataProvider()));
 
-	private final LazyValue<? extends MetadataProvider> metadataProvider;
+	private final LazyValue<? extends MetadataProvider<OrderedVersion>> metadataProvider;
 
-	ManifestSource(Supplier<? extends MetadataProvider> metadataProvider) {
+	ManifestSource(Supplier<? extends MetadataProvider<OrderedVersion>> metadataProvider) {
 		this.metadataProvider = LazyValue.of(metadataProvider);
 	}
 
-	public MetadataProvider getMetadataProvider() {
+	public MetadataProvider<OrderedVersion> getMetadataProvider() {
 		return this.metadataProvider.get();
 	}
 

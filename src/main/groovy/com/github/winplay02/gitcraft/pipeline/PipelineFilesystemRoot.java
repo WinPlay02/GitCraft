@@ -30,6 +30,10 @@ public record PipelineFilesystemRoot(Supplier<Path> root) {
 		return this.getRoot().resolve("mc-meta");
 	}
 
+	public Path getMcExtraVersionStore() {
+		return this.getRoot().resolve("extra-versions");
+	}
+
 	public Path getMcMetaDownloads() {
 		return this.getRoot().resolve("mc-meta-download");
 	}
@@ -56,6 +60,7 @@ public record PipelineFilesystemRoot(Supplier<Path> root) {
 		Files.createDirectories(getMcVersionStore());
 		Files.createDirectories(getMcMetaStore());
 		Files.createDirectories(getMcMetaDownloads());
+		Files.createDirectories(getMcExtraVersionStore());
 		Files.createDirectories(getLibraryStore());
 		Files.createDirectories(getRemapped());
 		Files.createDirectories(getAssetsIndex());

@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 
-public interface MetadataProvider {
+public interface MetadataProvider<E extends AbstractVersion<E>> {
 	ManifestSource getSource();
 
 	/**
@@ -26,20 +26,20 @@ public interface MetadataProvider {
 	/**
 	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id VersionInfo.id}).
 	 */
-	Map<String, OrderedVersion> getVersions() throws IOException;
+	Map<String, E> getVersions() throws IOException;
 
 	/**
-	 * Finds parent nodes to the provided version. Used to construct the {@link com.github.winplay02.gitcraft.MinecraftVersionGraph}.
+	 * Finds parent nodes to the provided version. Used to construct the {@link com.github.winplay02.gitcraft.graph.AbstractVersionGraph}.
 	 *
 	 * @param mcVersion Subject version
-	 * @return List of parent versions, or an empty list, if the provided version is the root version. {@code null} is returned, if the default ordering should be used (specified by {@link OrderedVersion})
+	 * @return List of parent versions, or an empty list, if the provided version is the root version. {@code null} is returned, if the default ordering should be used (specified by {@link E})
 	 */
-	List<String> getParentVersion(OrderedVersion mcVersion);
+	List<String> getParentVersion(E mcVersion);
 
-	OrderedVersion getVersionByVersionID(String versionId);
+	E getVersionByVersionID(String versionId);
 
 	/**
-	 * @return whether this Minecraft version should <i>definitely</i> not appear in a main branch of the version graph
+	 * @return whether this version should <i>definitely</i> not appear in a main branch of the version graph
 	 */
-	boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion);
+	boolean shouldExcludeFromMainBranch(E mcVersion);
 }

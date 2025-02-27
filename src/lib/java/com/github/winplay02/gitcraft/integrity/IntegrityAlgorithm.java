@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.LinkedHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -41,7 +42,7 @@ public abstract class IntegrityAlgorithm {
 	/**
 	 * Checksum Cache
 	 */
-	private final LinkedHashMap<Path, HashValue> cachedHashes = new LinkedHashMap<>();
+	private final ConcurrentHashMap<Path, HashValue> cachedHashes = new ConcurrentHashMap<>();
 
 	/**
 	 * Construct a new abstract integrity algorithms with a configuration.

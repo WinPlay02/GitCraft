@@ -5,6 +5,8 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
+import java.util.concurrent.ExecutorService;
+
 public interface StepWorker<S extends StepInput> {
 
 	Config config();
@@ -25,10 +27,10 @@ public interface StepWorker<S extends StepInput> {
 		}
 	}
 
-	record Context(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion) {
+	record Context(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion, ExecutorService executorService) {
 
 		public Context withDifferingVersion(OrderedVersion minecraftVersion) {
-			return new Context(repository, versionGraph, minecraftVersion);
+			return new Context(repository, versionGraph, minecraftVersion, executorService);
 		}
 
 		@Override

@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.manifest.vanilla;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -15,7 +16,6 @@ import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import net.fabricmc.loader.api.SemanticVersion;
@@ -167,13 +167,15 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	@Override
 	protected void loadVersionsFromRepository(Path dir, Consumer<OrderedVersion> loader) throws IOException {
-		for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
-			VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
+		try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
+			for (Path file : dirStream) {
+				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
 
-			// we could check every field but this ought to be enough
-			if (info.id() != null && info.assets() != null) {
-				String semanticVersion = this.lookupSemanticVersion(info);
-				loader.accept(OrderedVersion.from(info, semanticVersion));
+				// we could check every field but this ought to be enough
+				if (info.id() != null && info.assets() != null) {
+					String semanticVersion = this.lookupSemanticVersion(info);
+					loader.accept(OrderedVersion.from(info, semanticVersion));
+				}
 			}
 		}
 	}
@@ -238,7 +240,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	}
 
 	private Path clientJarArtifactParentPath(VersionInfo versionMeta) {
-		return GitCraftPaths.MC_VERSION_STORE.resolve(versionMeta.id());
+		return this.manifestMetadata.resolve(versionMeta.id());
 	}
 
 	private String fixupSemver(String proposedSemVer) {

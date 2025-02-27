@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.manifest;
 
 import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -25,7 +26,7 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E extends VersionsManifest.VersionEntry> implements MetadataProvider {
+public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E extends VersionsManifest.VersionEntry> implements MetadataProvider<OrderedVersion> {
 	protected final Path manifestMetadata;
 	protected final Path remoteMetadata;
 	protected final Path localMetadata;
@@ -37,9 +38,9 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	private boolean versionsLoaded;
 
 	protected BaseMetadataProvider() {
-		this.manifestMetadata = GitCraftPaths.MC_VERSION_META_STORE.resolve(this.getInternalName());
-		this.remoteMetadata = GitCraftPaths.MC_VERSION_META_DOWNLOADS.resolve(this.getInternalName());
-		this.localMetadata = GitCraftPaths.SOURCE_EXTRA_VERSIONS.resolve(this.getInternalName());
+		this.manifestMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcMetaStore().resolve(this.getInternalName());
+		this.remoteMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcMetaDownloads().resolve(this.getInternalName());
+		this.localMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcExtraVersionStore().resolve(this.getInternalName());
 		this.manifestSources = new ArrayList<>();
 		this.metadataSources = new ArrayList<>();
 		this.repositorySources = new ArrayList<>();
@@ -83,7 +84,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	}
 
 	/**
-	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id VersionInfo.id}).
+	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id()}).
 	 */
 	@Override
 	public final Map<String, OrderedVersion> getVersions() throws IOException {

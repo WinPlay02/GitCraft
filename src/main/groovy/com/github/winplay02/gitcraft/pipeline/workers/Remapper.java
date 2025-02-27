@@ -53,7 +53,7 @@ public record Remapper(StepWorker.Config config) implements StepWorker<Remapper.
 		}
 		Path jarIn = pipeline.getStoragePath(inputFile, context);
 		Path jarOut = pipeline.getStoragePath(outputFile, context);
-		if (!MiscHelper.isJarEmpty(jarOut)) {
+		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}
 		if (Files.exists(jarOut)) {

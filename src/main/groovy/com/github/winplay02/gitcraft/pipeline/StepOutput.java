@@ -6,6 +6,7 @@ import com.github.winplay02.gitcraft.util.MiscHelper;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,9 +23,9 @@ public record StepOutput(StepStatus status, StepResults results) {
 	public static StepOutput merge(StepOutput... outputs) {
 		return new StepOutput(
 			StepStatus.merge(
-				Arrays.stream(outputs).map(StepOutput::status).collect(Collectors.toList())),
+				Arrays.stream(outputs).filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
 			new StepResults(MiscHelper.mergeSets(
-				new HashSet<>(), Arrays.stream(outputs).map(output -> output.results().result()).toList()
+				new HashSet<>(), Arrays.stream(outputs).filter(Objects::nonNull).map(output -> output.results().result()).toList()
 			))
 		);
 	}
@@ -32,9 +33,9 @@ public record StepOutput(StepStatus status, StepResults results) {
 	public static StepOutput merge(Collection<StepOutput> outputs) {
 		return new StepOutput(
 			StepStatus.merge(
-				outputs.stream().map(StepOutput::status).collect(Collectors.toList())),
+				outputs.stream().filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
 			new StepResults(MiscHelper.mergeSets(
-				new HashSet<>(), outputs.stream().map(output -> output.results().result()).toList()
+				new HashSet<>(), outputs.stream().filter(Objects::nonNull).map(output -> output.results().result()).toList()
 			))
 		);
 	}
@@ -42,9 +43,9 @@ public record StepOutput(StepStatus status, StepResults results) {
 	public static StepOutput merge(StepResults otherResults, StepOutput... outputs) {
 		return new StepOutput(
 			StepStatus.merge(
-				Arrays.stream(outputs).map(StepOutput::status).collect(Collectors.toList())),
+				Arrays.stream(outputs).filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
 			new StepResults(MiscHelper.mergeSets(
-				new HashSet<>(), Stream.concat(Stream.of(otherResults.result()), Arrays.stream(outputs).map(output -> output.results().result())).toList()
+				new HashSet<>(), Stream.concat(Stream.of(otherResults.result()), Arrays.stream(outputs).filter(Objects::nonNull).map(output -> output.results().result())).toList()
 			))
 		);
 	}

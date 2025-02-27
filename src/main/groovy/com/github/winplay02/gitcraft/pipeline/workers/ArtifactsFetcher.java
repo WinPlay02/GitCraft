@@ -10,9 +10,13 @@ import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<StepInput.Empty> {
 
@@ -20,27 +24,27 @@ public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<S
 	public StepOutput run(Pipeline pipeline, Context context, StepInput.Empty input, StepResults results) throws Exception {
 		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS));
 
-		StepOutput clientJarStatus = null;
-		StepOutput serverJarStatus = null;
-		StepOutput serverExeStatus = null;
-		StepOutput serverZipStatus = null;
-
 		OrderedVersion mcVersion = context.minecraftVersion();
 
+		List<Callable<StepOutput>> outputTasks = new ArrayList<>(4);
+
 		if (mcVersion.hasClientCode()) {
-			clientJarStatus = fetchArtifact(pipeline, context, mcVersion.clientJar(), PipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, "client jar");
+			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.clientJar(), PipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, "client jar"));
 		}
 		if (mcVersion.hasServerJar()) {
-			serverJarStatus = fetchArtifact(pipeline, context, mcVersion.serverDist().serverJar(), PipelineFilesystemStorage.ARTIFACTS_SERVER_JAR, "server jar");
+			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.serverDist().serverJar(), PipelineFilesystemStorage.ARTIFACTS_SERVER_JAR, "server jar"));
 		}
 		if (mcVersion.hasServerWindows()) {
-			serverExeStatus = fetchArtifact(pipeline, context, mcVersion.serverDist().windowsServer(), PipelineFilesystemStorage.ARTIFACTS_SERVER_EXE, "server exe");
+			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.serverDist().windowsServer(), PipelineFilesystemStorage.ARTIFACTS_SERVER_EXE, "server exe"));
 		}
 		if (mcVersion.hasServerZip()) {
-			serverZipStatus = fetchArtifact(pipeline, context, mcVersion.serverDist().serverZip(), PipelineFilesystemStorage.ARTIFACTS_SERVER_ZIP, "server zip");
+			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.serverDist().serverZip(), PipelineFilesystemStorage.ARTIFACTS_SERVER_ZIP, "server zip"));
 		}
-
-		return StepOutput.merge(results, clientJarStatus, serverJarStatus, serverExeStatus, serverZipStatus);
+		return StepOutput.merge(results, StepOutput.merge(MiscHelper.runTasksInParallelAndAwaitResult(
+			4,
+			context.executorService(),
+			outputTasks
+		)));
 	}
 
 	static StepOutput fetchArtifact(Pipeline pipeline, StepWorker.Context context, Artifact artifact, StorageKey resultFile, String artifactKind) {

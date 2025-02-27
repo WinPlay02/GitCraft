@@ -24,7 +24,16 @@ application {
 	applicationDefaultJvmArgs = ['-Xmx4G', '-XX:+HeapDumpOnOutOfMemoryError']
 }
 
+sourceSets {
+	lib {
+		java {
+
+		}
+	}
+}
+
 dependencies {
+	implementation sourceSets.lib.output
 	// General
 	implementation "org.apache.groovy:groovy-all:${groovy_version}"
 	implementation "com.google.code.gson:gson:${gson_version}"

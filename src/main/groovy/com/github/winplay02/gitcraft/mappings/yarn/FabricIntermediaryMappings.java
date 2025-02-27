@@ -3,10 +3,10 @@ package com.github.winplay02.gitcraft.mappings.yarn;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.mappings.Mapping;
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
@@ -81,12 +81,12 @@ public class FabricIntermediaryMappings extends Mapping {
 	}
 
 	protected Path getMappingsPathInternalV1(OrderedVersion mcVersion) {
-		return GitCraftPaths.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary-v1.tiny");
+		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary-v1.tiny");
 	}
 
 	@Override
 	protected Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return GitCraftPaths.MAPPINGS.resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary.tiny");
+		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(mcVersion.launcherFriendlyVersionName() + "-intermediary.tiny");
 	}
 
 	@Override

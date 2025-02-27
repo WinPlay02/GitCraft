@@ -1,10 +1,10 @@
 package com.github.winplay02.gitcraft.pipeline.key;
 
-import org.apache.groovy.util.Arrays;
+import com.github.winplay02.gitcraft.util.MiscHelper;
 
 public record ArtifactKey(String... keys) implements StorageKey {
 	public ArtifactKey(DirectoryKey type, String... keys) {
-		this(Arrays.concat(new String[]{type.type()}, keys));
+		this(MiscHelper.concatArrays(new String[]{type.type()}, keys));
 	}
 }
 

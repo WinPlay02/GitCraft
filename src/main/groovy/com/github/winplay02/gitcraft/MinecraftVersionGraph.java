@@ -119,7 +119,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	/** nodes that mark new side branches, mapped to the path lengths to the tips of those side branches */
 	public HashMap<OrderedVersion, Integer> branchPoints = new HashMap<>();
 
-	public static MinecraftVersionGraph createFromMetadata(MetadataProvider provider) throws IOException {
+	public static MinecraftVersionGraph createFromMetadata(MetadataProvider<OrderedVersion> provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
 		// Compatibility with existing repositories
 		if (provider.getSource() != ManifestSource.MOJANG) {

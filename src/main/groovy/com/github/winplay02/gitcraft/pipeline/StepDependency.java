@@ -31,7 +31,7 @@ public record StepDependency(Map<Step, DependencyType> dependencyTypes, Set<Step
 	}
 
 	public static StepDependency mergeDependencies(StepDependency d1, StepDependency d2) {
-		Set<Step> intersection = MiscHelper.calculateSetIntersection(d1.dependencyTypes().keySet(), d1.dependencyTypes().keySet());
+		Set<Step> intersection = MiscHelper.calculateSetIntersection(d1.dependencyTypes().keySet(), d2.dependencyTypes().keySet());
 		for (Step step : intersection) {
 			if (d1.dependencyTypes().get(step) != d2.dependencyTypes().get(step)) {
 				MiscHelper.panic("Cannot merge step dependency declarations, as they are contradictory (Step: %s, type1: %s, type2: %s).", step, d1.dependencyTypes().get(step), d2.dependencyTypes().get(step));

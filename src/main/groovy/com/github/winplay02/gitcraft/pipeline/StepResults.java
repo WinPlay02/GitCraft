@@ -4,13 +4,13 @@ import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public record StepResults(Set<StorageKey> result) {
 	public static StepResults ofEmpty() {
-		return new StepResults(new HashSet<>());
+		return new StepResults(ConcurrentHashMap.newKeySet());
 	}
 
 	public void addKey(StorageKey storageKey) {

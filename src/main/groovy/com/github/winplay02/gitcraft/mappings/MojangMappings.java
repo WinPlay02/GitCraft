@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.Artifact;
@@ -58,7 +59,7 @@ public class MojangMappings extends Mapping {
 		if (minecraftJar == MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
 		}
-		Path artifactTargetPath = GitCraftPaths.MC_VERSION_STORE.resolve(mcVersion.launcherFriendlyVersionName());
+		Path artifactTargetPath = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcVersionStore().resolve(mcVersion.launcherFriendlyVersionName());
 		Path mappingsPath = getMappingsPathInternal(mcVersion, minecraftJar);
 		Artifact artifact = null;
 		if (minecraftJar == MinecraftJar.CLIENT)
@@ -97,7 +98,7 @@ public class MojangMappings extends Mapping {
 
 	@Override
 	public Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return GitCraftPaths.MAPPINGS.resolve("%s-%s-moj.tiny".formatted(mcVersion.launcherFriendlyVersionName(), minecraftJar.name().toLowerCase()));
+		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve("%s-%s-moj.tiny".formatted(mcVersion.launcherFriendlyVersionName(), minecraftJar.name().toLowerCase()));
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 public enum DependencyType {
+
 	/**
 	 * does not depend on the step at all
 	 */
@@ -14,5 +15,12 @@ public enum DependencyType {
 	/**
 	 * requires the step to run first only if it is present
 	 */
-	NOT_REQUIRED
+	NOT_REQUIRED;
+
+	/**
+	 * @return Whether the type describes a dependency relationship
+	 */
+	public boolean isDependency() {
+		return this == REQUIRED || this == NOT_REQUIRED;
+	}
 }

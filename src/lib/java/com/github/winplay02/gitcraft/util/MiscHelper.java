@@ -11,11 +11,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -182,6 +189,18 @@ public class MiscHelper {
 		return intersection;
 	}
 
+	public static <T> Set<T> calculateAsymmetricSetDifference(Set<T> set1, Set<T> set2) {
+		if (set1 == null) {
+			return Set.of();
+		}
+		if (set2 == null) {
+			return set1;
+		}
+		HashSet<T> difference = new HashSet<>(set1);
+		difference.removeAll(set2);
+		return difference;
+	}
+
 	public static boolean isJarEmpty(Path jarFile) throws IOException {
 		return Files.exists(jarFile) && Files.size(jarFile) <= 22 /* empty jar */;
 	}
@@ -237,5 +256,47 @@ public class MiscHelper {
 
 	public static <S, I, T> Function<S, T> chain(Function<S, I> sourceIntermediaryFunction, Function<I, T> intermediaryTargetFunction) {
 		return sourceIntermediaryFunction.andThen(intermediaryTargetFunction);
+	}
+
+	public static <E> E[] concatArrays(E[] first, E[] second) {
+		E[] result = Arrays.copyOf(first, first.length + second.length);
+		System.arraycopy(second, 0, result, first.length, second.length);
+		return result;
+	}
+
+	public static <T> CompletableFuture<List<T>> awaitAllFutures(List<CompletableFuture<T>> futures) {
+		CompletableFuture<T>[] cfs = futures.toArray(new CompletableFuture[futures.size()]);
+
+		return CompletableFuture.allOf(cfs)
+			.thenApply(ignored -> futures.stream()
+				.map(CompletableFuture::join)
+				.collect(Collectors.toList())
+			);
+	}
+
+	public static <T> List<T> runTasksInParallelAndAwaitResult(final int maxParallelRunningTasks, final ExecutorService executorService, final Iterable<Callable<T>> tasks) {
+		assert maxParallelRunningTasks > 0;
+		CompletionService<T> completionService = new ExecutorCompletionService<>(executorService);
+		Iterator<Callable<T>> iterator = tasks.iterator();
+		int startedTasks = 0;
+		int completedTasks = 0;
+		List<T> results = new ArrayList<>();
+		while (iterator.hasNext() || startedTasks > completedTasks) {
+			if (iterator.hasNext() && startedTasks - completedTasks < maxParallelRunningTasks) {
+				final Callable<T> task = iterator.next();
+				completionService.submit(task);
+				++startedTasks;
+			}
+			if (startedTasks - completedTasks >= maxParallelRunningTasks || !iterator.hasNext()) {
+				try {
+					T value = completionService.take().get();
+					results.add(value);
+					++completedTasks;
+				} catch (InterruptedException | ExecutionException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		return results;
 	}
 }

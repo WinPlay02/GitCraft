@@ -56,6 +56,7 @@ public record PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem,
 	private static final String DIST_JSON = "json";
 
 	private static final String HINT_UNPACKED = "unpacked";
+	private static final String HINT_UNBUNDLED = "unbundled";
 	private static final String HINT_OBFUSCATED = "obfuscated";
 	private static final String HINT_REMAPPED = "remapped";
 	private static final String HINT_UNPICKED = "unpicked";
@@ -81,6 +82,7 @@ public record PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem,
 	public static final ArtifactKey ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP = new ArtifactKey(ARTIFACTS, "vanilla-datapack", DIST_ZIP);
 	public static final ArtifactKey ASSETS_INDEX_JSON = new ArtifactKey(ASSETS_INDEX, DIST_JSON);
 	public static final ArtifactKey UNPACKED_SERVER_JAR = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_JAR, HINT_UNPACKED);
+	public static final ArtifactKey UNBUNDLED_SERVER_JAR = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_JAR, HINT_UNBUNDLED);
 	public static final ArtifactKey MERGED_JAR_OBFUSCATED = new ArtifactKey(ARTIFACTS, SIDE_MERGED, DIST_JAR, HINT_OBFUSCATED);
 	public static final ArtifactKey DATAGEN_SNBT_ARCHIVE = new ArtifactKey(ARTIFACTS, "datagen", "snbt", HINT_UNPACKED);
 	public static final ArtifactKey DATAGEN_REPORTS_ARCHIVE = new ArtifactKey(ARTIFACTS, "datagen", "reports", HINT_OBFUSCATED);
@@ -126,7 +128,8 @@ public record PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem,
 			ASSETS_OBJECTS, rootPathConst(PipelineFilesystemRoot::getAssetsObjects),
 			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, context -> context.minecraftVersion().assetsIndex().name()),
 			UNPACKED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unpacked.jar"),
-			MERGED_JAR_OBFUSCATED, createFromKey(ARTIFACTS, "merged-obfuscated.zip")
+			UNBUNDLED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unbundled.jar"),
+			MERGED_JAR_OBFUSCATED, createFromKey(ARTIFACTS, "merged-obfuscated.jar")
 		),
 		Map.of(
 			ARTIFACTS_DATAGEN, createFromKey(ARTIFACTS, "datagenerator"),
