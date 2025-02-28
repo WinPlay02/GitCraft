@@ -8,6 +8,7 @@ import java.util.List;
 import com.github.winplay02.gitcraft.GitCraft;
 
 import net.ornithemc.condor.Condor;
+import net.ornithemc.condor.Options;
 
 public record LvtPatcher(Step step, Config config) implements StepWorker {
 
@@ -42,7 +43,9 @@ public record LvtPatcher(Step step, Config config) implements StepWorker {
 		}
 		Files.deleteIfExists(jarOut);
 		Files.copy(jarIn, jarOut);
-		Condor.run(jarOut, libraries);
+		// this step is applied before remapping, so obfuscate variable names
+		// that way Tiny Remapper will take care of fixing them
+		Condor.run(jarOut, libraries, Options.builder().removeInvalidEntries().obfuscateNames().build());
 		return StepStatus.SUCCESS;
 	}
 
