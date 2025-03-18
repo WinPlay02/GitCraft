@@ -34,9 +34,9 @@ public enum Step {
 	REPO_GARBAGE_COLLECTOR("GC repository", RepoGarbageCollector::new);
 
 	private final String name;
-	private final Function<StepWorker.Config, StepWorker<?>> workerFactory;
+	private final Function<StepWorker.Config, StepWorker<?, ?>> workerFactory;
 
-	Step(String name, Function<StepWorker.Config, StepWorker<?>> workerFactory) {
+	Step(String name, Function<StepWorker.Config, StepWorker<?, ?>> workerFactory) {
 		this.name = name;
 		this.workerFactory = workerFactory;
 	}
@@ -45,7 +45,7 @@ public enum Step {
 		return name;
 	}
 
-	public StepWorker<?> createWorker(StepWorker.Config config) {
+	public StepWorker<?, ?> createWorker(StepWorker.Config config) {
 		return workerFactory.apply(config);
 	}
 }

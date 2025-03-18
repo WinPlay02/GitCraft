@@ -5,7 +5,7 @@ package com.github.winplay02.gitcraft.graph;
  *
  * @param <T> Concrete Version
  */
-public interface AbstractVersion<T extends AbstractVersion<T>> extends Comparable<T> {
+public interface AbstractVersion<T extends AbstractVersion<T>> extends Vertex<T> {
 
 	/**
 	 * @return Semantic version string, usable for ordering versions
@@ -23,4 +23,16 @@ public interface AbstractVersion<T extends AbstractVersion<T>> extends Comparabl
 	 * @return Commit Message identifying this version
 	 */
 	String toCommitMessage();
+
+	@Override
+	default String description() {
+		return String.format("%s (%s)", friendlyVersion(), semanticVersion());
+	}
+
+	/**
+	 * @return This version as part of the path used on a filesystem
+	 */
+	default String pathName() {
+		return friendlyVersion();
+	}
 }

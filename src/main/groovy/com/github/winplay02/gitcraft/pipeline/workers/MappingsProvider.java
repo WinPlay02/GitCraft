@@ -10,12 +10,12 @@ import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
-public record MappingsProvider(StepWorker.Config config) implements StepWorker<StepInput.Empty> {
+public record MappingsProvider(StepWorker.Config config) implements StepWorker<OrderedVersion, StepInput.Empty> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, StepInput.Empty input, StepResults results) throws Exception {
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
 		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		OrderedVersion mcVersion = context.minecraftVersion();
+		OrderedVersion mcVersion = context.targetVersion();
 		StepStatus mergedStatus = mapping.provideMappings(mcVersion, MinecraftJar.MERGED);
 		if (mergedStatus.hasRun()) {
 			return StepOutput.ofEmptyResultSet(mergedStatus);

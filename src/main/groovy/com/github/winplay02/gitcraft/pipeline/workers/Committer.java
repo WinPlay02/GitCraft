@@ -1,7 +1,7 @@
 package com.github.winplay02.gitcraft.pipeline.workers;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
@@ -38,10 +38,10 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
-public record Committer(StepWorker.Config config) implements StepWorker<Committer.Inputs> {
+public record Committer(StepWorker.Config config) implements StepWorker<OrderedVersion, Committer.Inputs> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, Committer.Inputs input, StepResults results) throws Exception {
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input, StepResults<OrderedVersion> results) throws Exception {
 		if (GitCraft.config.noRepo) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -50,7 +50,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 		// Clean First
 		MiscHelper.executeTimedStep("Clearing working directory...", context.repository()::clearWorkingTree);
 		// Switch Branch
-		Optional<String> target_branch = switchBranchIfNeeded(context.minecraftVersion(), context.versionGraph(), context.repository());
+		Optional<String> target_branch = switchBranchIfNeeded(context.targetVersion(), context.versionGraph(), context.repository());
 		if (target_branch.isEmpty()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.UP_TO_DATE);
 		}
@@ -71,19 +71,19 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 			});
 		}
 		// Commit
-		MiscHelper.executeTimedStep("Committing files to repo...", () -> createCommit(context.minecraftVersion(), context.repository()));
-		MiscHelper.println("Committed %s to the repository! (Target Branch is %s)", context.minecraftVersion().launcherFriendlyVersionName(), target_branch.orElseThrow() + (GitCraft.versionGraph.isOnMainBranch(context.minecraftVersion()) ? "" : " (non-linear)"));
+		MiscHelper.executeTimedStep("Committing files to repo...", () -> createCommit(context.targetVersion(), context.repository()));
+		MiscHelper.println("Committed %s to the repository! (Target Branch is %s)", context.targetVersion().launcherFriendlyVersionName(), target_branch.orElseThrow() + (GitCraft.versionGraph.isOnMainBranch(context.targetVersion()) ? "" : " (non-linear)"));
 
 		// Create branch for linear version
-		if (GitCraft.config.createVersionBranches && GitCraft.versionGraph.isOnMainBranch(context.minecraftVersion())) {
-			MiscHelper.executeTimedStep("Creating branch for linear version...", () -> createBranchFromCurrentCommit(context.minecraftVersion(), context.repository()));
-			MiscHelper.println("Created branch for linear version %s", context.minecraftVersion().launcherFriendlyVersionName());
+		if (GitCraft.config.createVersionBranches && GitCraft.versionGraph.isOnMainBranch(context.targetVersion())) {
+			MiscHelper.executeTimedStep("Creating branch for linear version...", () -> createBranchFromCurrentCommit(context.targetVersion(), context.repository()));
+			MiscHelper.println("Created branch for linear version %s", context.targetVersion().launcherFriendlyVersionName());
 		}
 
 		// Create branch for stable linear version
-		if (GitCraft.config.createStableVersionBranches && !GitCraft.config.createVersionBranches && !context.minecraftVersion().isSnapshotOrPending()) {
-			MiscHelper.executeTimedStep("Creating branch for stable linear version...", () -> createBranchFromCurrentCommit(context.minecraftVersion(), context.repository()));
-			MiscHelper.println("Created branch for stable linear version %s", context.minecraftVersion().launcherFriendlyVersionName());
+		if (GitCraft.config.createStableVersionBranches && !GitCraft.config.createVersionBranches && !context.targetVersion().isSnapshotOrPending()) {
+			MiscHelper.executeTimedStep("Creating branch for stable linear version...", () -> createBranchFromCurrentCommit(context.targetVersion(), context.repository()));
+			MiscHelper.println("Created branch for stable linear version %s", context.targetVersion().launcherFriendlyVersionName());
 		}
 
 		return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
@@ -113,10 +113,10 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 			: branch.launcherFriendlyVersionName()).replace(" ", "-");
 	}
 
-	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
+	private Optional<String> switchBranchIfNeeded(OrderedVersion mcVersion, AbstractVersionGraph<OrderedVersion> versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
 		String target_branch;
 		if (repo.getGit().getRepository().resolve(Constants.HEAD) != null) { // Don't run on empty repo
-			NavigableSet<OrderedVersion> prev_version = new TreeSet<>(versionGraph.getPreviousNodes(mcVersion));
+			NavigableSet<OrderedVersion> prev_version = new TreeSet<>(versionGraph.getPreviousVertices(mcVersion));
 			target_branch = getBranchNameForVersion(mcVersion);
 			if (versionGraph.getRootVersions().contains(mcVersion)) {
 				if (repo.doesBranchExist(target_branch)) {
@@ -157,7 +157,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 		return Optional.of(target_branch);
 	}
 
-	private void checkoutVersionBranch(String target_branch, OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
+	private void checkoutVersionBranch(String target_branch, OrderedVersion mcVersion, AbstractVersionGraph<OrderedVersion> versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
 		if (!Objects.equals(repo.getGit().getRepository().getBranch(), target_branch)) {
 			Ref target_ref = repo.getGit().getRepository().getRefDatabase().findRef(target_branch);
 			if (target_ref == null) {
@@ -171,8 +171,8 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 		}
 	}
 
-	private HashSet<RevCommit> findBaseForNonLinearVersion(OrderedVersion mcVersion, MinecraftVersionGraph versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
-		NavigableSet<OrderedVersion> previousVersion = versionGraph.getPreviousNodes(mcVersion);
+	private HashSet<RevCommit> findBaseForNonLinearVersion(OrderedVersion mcVersion, AbstractVersionGraph<OrderedVersion> versionGraph, RepoWrapper repo) throws IOException, GitAPIException {
+		NavigableSet<OrderedVersion> previousVersion = versionGraph.getPreviousVertices(mcVersion);
 		if (previousVersion.isEmpty()) {
 			MiscHelper.panic("Cannot commit non-linear version %s, no base version was not found", mcVersion.launcherFriendlyVersionName());
 		}
@@ -184,7 +184,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 		return resultRevs;
 	}
 
-	private void copyCode(Pipeline pipeline, Context context, Committer.Inputs input) throws IOException {
+	private void copyCode(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		RepoWrapper repo = context.repository();
 		if (input.decompiledMerged().isPresent()) {
 			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledMerged().orElseThrow(), context))) {
@@ -203,11 +203,11 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 			}
 		}
 		if (input.decompiledClientOnly().isEmpty() && input.decompiledServerOnly().isEmpty()) {
-			MiscHelper.panic("A decompiled JAR for version %s does not exist", context.minecraftVersion().launcherFriendlyVersionName());
+			MiscHelper.panic("A decompiled JAR for version %s does not exist", context.targetVersion().launcherFriendlyVersionName());
 		}
 	}
 
-	private void copyAssets(Pipeline pipeline, Context context, Committer.Inputs input) throws IOException {
+	private void copyAssets(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		RepoWrapper repo = context.repository();
 		if (GitCraft.config.loadAssets || GitCraft.config.loadIntegratedDatapack) {
 			if (input.serverZip().isPresent()) {
@@ -269,10 +269,10 @@ public record Committer(StepWorker.Config config) implements StepWorker<Committe
 		}
 	}
 
-	private void copyExternalAssets(Pipeline pipeline, Context context, Committer.Inputs input) throws IOException {
+	private void copyExternalAssets(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		if (GitCraft.config.loadAssets && GitCraft.config.loadAssetsExtern) {
 			if (input.assetsIndexPath().isEmpty() || input.assetsObjectStore().isEmpty()) {
-				MiscHelper.panic("Assets for version %s do not exist", context.minecraftVersion().launcherFriendlyVersionName());
+				MiscHelper.panic("Assets for version %s do not exist", context.targetVersion().launcherFriendlyVersionName());
 			}
 			Path assetsIndexPath = pipeline.getStoragePath(input.assetsIndexPath().orElseThrow(), context);
 			Path artifactObjectStore = pipeline.getStoragePath(input.assetsObjectStore().orElseThrow(), context);

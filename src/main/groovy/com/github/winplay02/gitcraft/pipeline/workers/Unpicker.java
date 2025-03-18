@@ -17,33 +17,34 @@ import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
-public record Unpicker(StepWorker.Config config) implements StepWorker<Unpicker.Inputs> {
+public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVersion, Unpicker.Inputs> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, Unpicker.Inputs input, StepResults results) throws Exception {
-		StepOutput mergedStatus = unpickJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.UNPICKED_MERGED_JAR);
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Unpicker.Inputs input, StepResults<OrderedVersion> results) throws Exception {
+		StepOutput<OrderedVersion> mergedStatus = unpickJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.UNPICKED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput clientStatus = unpickJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), PipelineFilesystemStorage.UNPICKED_CLIENT_JAR);
-		StepOutput serverStatus = unpickJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), PipelineFilesystemStorage.UNPICKED_SERVER_JAR);
+		StepOutput<OrderedVersion> clientStatus = unpickJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), PipelineFilesystemStorage.UNPICKED_CLIENT_JAR);
+		StepOutput<OrderedVersion> serverStatus = unpickJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), PipelineFilesystemStorage.UNPICKED_SERVER_JAR);
 		return StepOutput.merge(clientStatus, serverStatus);
 	}
 
 	public record Inputs(Optional<StorageKey> mergedJar, Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {
 	}
 
-	private StepOutput unpickJar(Pipeline pipeline, Context context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException {
+	private StepOutput<OrderedVersion> unpickJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException {
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		if (!mapping.canMappingsBeUsedOn(context.minecraftVersion(), type) || !mapping.supportsConstantUnpicking()) {
+		if (!mapping.canMappingsBeUsedOn(context.targetVersion(), type) || !mapping.supportsConstantUnpicking()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Map<String, Path> additionalMappingPaths = mapping.getAdditionalMappingInformation(context.minecraftVersion(), type);
+		Map<String, Path> additionalMappingPaths = mapping.getAdditionalMappingInformation(context.targetVersion(), type);
 		if (!additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_CONSTANTS) || !additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_DEFINITIONS)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -57,12 +58,12 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<Unpicker.
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}
-		ArrayList<String> params = new ArrayList<>(context.minecraftVersion().libraries().size() + 4);
+		ArrayList<String> params = new ArrayList<>(context.targetVersion().libraries().size() + 4);
 		params.add(jarIn.toAbsolutePath().toString());
 		params.add(jarOut.toAbsolutePath().toString());
 		params.add(additionalMappingPaths.get(Mapping.KEY_UNPICK_DEFINITIONS).toAbsolutePath().toString());
 		params.add(additionalMappingPaths.get(Mapping.KEY_UNPICK_CONSTANTS).toAbsolutePath().toString());
-		params.addAll(context.minecraftVersion().libraries().stream().map(artifact -> artifact.resolve(librariesDir)).map(p -> p.toAbsolutePath().toString()).toList());
+		params.addAll(context.targetVersion().libraries().stream().map(artifact -> artifact.resolve(librariesDir)).map(p -> p.toAbsolutePath().toString()).toList());
 		daomephsta.unpick.cli.Main.main(params.toArray(new String[0]));
 		return StepOutput.ofSingle(StepStatus.SUCCESS, outputFile);
 	}

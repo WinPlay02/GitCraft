@@ -1,80 +1,74 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
+import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.ImmutableMultiSetView;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import groovy.lang.Tuple;
 import groovy.lang.Tuple2;
-import org.eclipse.jgit.api.errors.GitAPIException;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class Pipeline {
+public class Pipeline<T extends AbstractVersion<T>> {
 
-	private final PipelineDescription pipelineDescription;
-	private final PipelineFilesystemStorage pipelineFilesystemStorage;
-	private final Map<Tuple2<StorageKey, OrderedVersion>, OrderedVersion> overriddenPaths = new ConcurrentHashMap<>();
-	private final Map<OrderedVersion, StepResults> versionedResults = new ConcurrentHashMap<>();
+	private final PipelineDescription<T> pipelineDescription;
+	private final PipelineFilesystemStorage<T> pipelineFilesystemStorage;
+	private final Map<Tuple2<StorageKey, T>, T> overriddenPaths = new ConcurrentHashMap<>();
+	private final Map<T, StepResults<T>> versionedResults = new ConcurrentHashMap<>();
 
-	public Pipeline(PipelineDescription pipelineDescription, PipelineFilesystemStorage pipelineFilesystemStorage) {
+	public Pipeline(PipelineDescription<T> pipelineDescription, PipelineFilesystemStorage<T> pipelineFilesystemStorage) {
 		this.pipelineDescription = pipelineDescription;
 		this.pipelineFilesystemStorage = pipelineFilesystemStorage;
 		this.pipelineDescription.validate();
 	}
 
-	public PipelineDescription getDescription() {
+	public PipelineDescription<T> getDescription() {
 		return this.pipelineDescription;
 	}
 
-	public PipelineFilesystemStorage getFilesystemStorage() {
+	public PipelineFilesystemStorage<T> getFilesystemStorage() {
 		return this.pipelineFilesystemStorage;
 	}
 
-	public Path getStoragePath(StorageKey key, StepWorker.Context context) {
-		Tuple2<StorageKey, OrderedVersion> versionOverride = Tuple.tuple(key, context.minecraftVersion());
+	public Path getStoragePath(StorageKey key, StepWorker.Context<T> context) {
+		Tuple2<StorageKey, T> versionOverride = Tuple.tuple(key, context.targetVersion());
 		if (this.overriddenPaths.containsKey(versionOverride)) {
 			return this.getStoragePath(key, context.withDifferingVersion(this.overriddenPaths.get(versionOverride)));
 		}
 		return this.getFilesystemStorage().getPath(key, context);
 	}
 
-	protected void relinkStoragePathToDifferentVersion(StorageKey key, StepWorker.Context context, OrderedVersion version) {
-		this.overriddenPaths.put(Tuple.tuple(key, context.minecraftVersion()), version);
+	protected void relinkStoragePathToDifferentVersion(StorageKey key, StepWorker.Context<T> context, T version) {
+		this.overriddenPaths.put(Tuple.tuple(key, context.targetVersion()), version);
 	}
 
-	protected void runSingleVersionSingleStep(TupleVersionStep versionStep, StepWorker.Context context, StepWorker.Config config) {
-		StepResults results = this.versionedResults.computeIfAbsent(versionStep.version(), version -> StepResults.ofEmpty());
+	protected void runSingleVersionSingleStep(TupleVersionStep<T> versionStep, StepWorker.Context<T> context, StepWorker.Config config) {
+		StepResults<T> results = this.versionedResults.computeIfAbsent(versionStep.version(), version -> StepResults.ofEmpty());
 
 		MiscHelper.println("Performing step '%s' for %s (%s)...", versionStep.step().getName(), context, config);
 
-		StepOutput status = null;
+		StepOutput<T> status = null;
 		Exception exception = null;
 
 		long timeStart = System.nanoTime();
 
 		try {
-			StepWorker<?> worker = versionStep.step().createWorker(config);
+			StepWorker<T, ?> worker = (StepWorker<T, ?>) versionStep.step().createWorker(config);
 			status = worker.runGeneric(
 				this,
 				context,
@@ -117,71 +111,71 @@ public class Pipeline {
 		}
 	}
 
-	protected record TupleVersionStep(Step step, OrderedVersion version) {
+	protected record TupleVersionStep<T extends AbstractVersion<T>>(Step step, T version) {
 	}
 
-	protected record PipelineExecutionGraph(Set<TupleVersionStep> stepVersionSubsetVertices, Map<TupleVersionStep, Set<TupleVersionStep>> stepVersionSubsetEdges) {
-		public static PipelineExecutionGraph populate(PipelineDescription description, MinecraftVersionGraph versionGraph) {
-			Set<TupleVersionStep> stepVersionSubsetVertices = new HashSet<>();
+	protected record PipelineExecutionGraph<T extends AbstractVersion<T>>(Set<TupleVersionStep<T>> stepVersionSubsetVertices, Map<TupleVersionStep<T>, Set<TupleVersionStep<T>>> stepVersionSubsetEdges) {
+		public static <T extends AbstractVersion<T>> PipelineExecutionGraph<T> populate(PipelineDescription<T> description, AbstractVersionGraph<T> versionGraph) {
+			Set<TupleVersionStep<T>> stepVersionSubsetVertices = new HashSet<>();
 			// directed: (target, source)
-			Map<TupleVersionStep, Set<TupleVersionStep>> stepVersionSubsetEdges = new HashMap<>();
-			for (OrderedVersion version : versionGraph) {
+			Map<TupleVersionStep<T>, Set<TupleVersionStep<T>>> stepVersionSubsetEdges = new HashMap<>();
+			for (T version : versionGraph) {
 				for (Step step : description.steps()) {
-					TupleVersionStep node = new TupleVersionStep(step, version);
+					TupleVersionStep<T> node = new TupleVersionStep<T>(step, version);
 					stepVersionSubsetVertices.add(node);
 					stepVersionSubsetEdges.computeIfAbsent(node, __ -> new HashSet<>());
 					// Inter-Version dependency: depend on previous version only; logically should depend on all previous versions
 					// but this is not necessary as this dependency applies transitively in a valid pipeline description (step depending on itself)
 					for (Step interVersionDependencyStep : description.getInterVersionDependencies(step)) {
-						for (OrderedVersion previousVersion : versionGraph.getPreviousNodes(version)) {
-							stepVersionSubsetEdges.get(node).add(new TupleVersionStep(interVersionDependencyStep, previousVersion));
+						for (T previousVersion : versionGraph.getPreviousVertices(version)) {
+							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(interVersionDependencyStep, previousVersion));
 						}
 					}
 					// Intra-Version dependency
 					for (Step intraVersionDependencyStep : description.getIntraVersionDependencies(step)) {
 						DependencyType depType = description.getDependencyType(step, intraVersionDependencyStep);
 						if (depType != null && depType.isDependency()) {
-							stepVersionSubsetEdges.get(node).add(new TupleVersionStep(intraVersionDependencyStep, version));
+							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(intraVersionDependencyStep, version));
 						}
 					}
 				}
 			}
 			// TODO validate execution graph
-			return new PipelineExecutionGraph(Collections.unmodifiableSet(stepVersionSubsetVertices), Collections.unmodifiableMap(stepVersionSubsetEdges));
+			return new PipelineExecutionGraph<T>(Collections.unmodifiableSet(stepVersionSubsetVertices), Collections.unmodifiableMap(stepVersionSubsetEdges));
 		}
 
-		public Set<TupleVersionStep> nextTuples(Set<TupleVersionStep> completedSubset) {
+		public Set<TupleVersionStep<T>> nextTuples(Set<TupleVersionStep<T>> completedSubset) {
 			return stepVersionSubsetEdges.entrySet().stream().filter(entry -> !completedSubset.contains(entry.getKey())).filter(entry -> MiscHelper.calculateAsymmetricSetDifference(entry.getValue(), completedSubset).isEmpty()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
 		}
 	}
 
-	protected record InFlightExecutionPlan(PipelineExecutionGraph executionGraph,
-										   Set<TupleVersionStep> completedSubset,
-										   Set<TupleVersionStep> executingSubset,
-										   Map<TupleVersionStep, Exception> failedTasks,
-										   Map<OrderedVersion, StepWorker.Context> versionedContexts,
-										   Map<OrderedVersion, StepWorker.Config> versionedConfigs,
+	protected record InFlightExecutionPlan<T extends AbstractVersion<T>>(PipelineExecutionGraph<T> executionGraph,
+										   Set<TupleVersionStep<T>> completedSubset,
+										   Set<TupleVersionStep<T>> executingSubset,
+										   Map<TupleVersionStep<T>, Exception> failedTasks,
+										   Map<T, StepWorker.Context<T>> versionedContexts,
+										   Map<T, StepWorker.Config> versionedConfigs,
 										   Object conditionalVar) {
 
-		public static InFlightExecutionPlan create(PipelineDescription description, MinecraftVersionGraph versionGraph) {
-			return new InFlightExecutionPlan(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
+		public static <T extends AbstractVersion<T>> InFlightExecutionPlan<T> create(PipelineDescription<T> description, AbstractVersionGraph<T> versionGraph) {
+			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
 		}
 
-		private StepWorker.Context getContext(OrderedVersion version, RepoWrapper repository, MinecraftVersionGraph versionGraph, ExecutorService executorService) {
-			return this.versionedContexts().computeIfAbsent(version, minecraftVersion -> new StepWorker.Context(repository, versionGraph, minecraftVersion, executorService));
+		private StepWorker.Context<T> getContext(T version, RepoWrapper repository, AbstractVersionGraph<T> versionGraph, ExecutorService executorService) {
+			return this.versionedContexts().computeIfAbsent(version, minecraftVersion -> new StepWorker.Context<T>(repository, versionGraph, minecraftVersion, executorService));
 		}
 
-		private StepWorker.Config getConfig(OrderedVersion version) {
-			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion(minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED)));
+		private StepWorker.Config getConfig(T version) {
+			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED))); // TODO fix dependency on OrderedVersion
 		}
 
-		private void runSingleTask(ExecutorService executor, TupleVersionStep task, Pipeline pipeline, RepoWrapper repository, MinecraftVersionGraph versionGraph) {
+		private void runSingleTask(ExecutorService executor, TupleVersionStep<T> task, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 			executor.execute(() -> {
 				if (executingSubset.contains(task) || completedSubset.contains(task)) {
 					return;
 				}
 				executingSubset.add(task);
-				StepWorker.Context context = this.getContext(task.version(), repository, versionGraph, executor);
+				StepWorker.Context<T> context = this.getContext(task.version(), repository, versionGraph, executor);
 				StepWorker.Config config = this.getConfig(task.version());
 				boolean failed = false;
 				try {
@@ -203,12 +197,12 @@ public class Pipeline {
 			});
 		}
 
-		private synchronized void scanForTasks(ExecutorService executor, Pipeline pipeline, RepoWrapper repository, MinecraftVersionGraph versionGraph) {
-			Set<TupleVersionStep> nextTasks = executionGraph.nextTuples(this.completedSubset());
+		private synchronized void scanForTasks(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+			Set<TupleVersionStep<T>> nextTasks = executionGraph.nextTuples(this.completedSubset());
 			nextTasks.stream().filter(Predicate.not(this.executingSubset()::contains)).forEach(task -> this.runSingleTask(executor, task, pipeline, repository, versionGraph));
 		}
 
-		public void run(ExecutorService executor, Pipeline pipeline, RepoWrapper repository, MinecraftVersionGraph versionGraph) {
+		public void run(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 			scanForTasks(executor, pipeline, repository, versionGraph);
 			await();
 		}
@@ -243,8 +237,8 @@ public class Pipeline {
 		}
 	}
 
-	public void runFully(RepoWrapper repository, MinecraftVersionGraph versionGraph) throws Exception {
-		InFlightExecutionPlan executionPlan = InFlightExecutionPlan.create(this.getDescription(), versionGraph);
+	public void runFully(RepoWrapper repository, AbstractVersionGraph<T> versionGraph) throws Exception {
+		InFlightExecutionPlan<T> executionPlan = InFlightExecutionPlan.create(this.getDescription(), versionGraph);
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Pipeline-Executor-" + this.getDescription().descriptionName()).factory())) {
 			executionPlan.run(executor, this, repository, versionGraph);
 			/*while (true) {
@@ -270,8 +264,8 @@ public class Pipeline {
 		}*/
 	}
 
-	public static void run(PipelineDescription description, PipelineFilesystemStorage storage, RepoWrapper repository, MinecraftVersionGraph versionGraph) throws Exception {
-		Pipeline pipeline = new Pipeline(description, storage);
+	public static <T extends AbstractVersion<T>> void run(PipelineDescription<T> description, PipelineFilesystemStorage<T> storage, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) throws Exception {
+		Pipeline<T> pipeline = new Pipeline<>(description, storage);
 		pipeline.runFully(repository, versionGraph);
 	}
 }

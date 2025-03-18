@@ -24,11 +24,11 @@ import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.stitch.merge.JarMerger;
 
-public record JarsMerger(boolean obfuscated, StepWorker.Config config) implements StepWorker<JarsMerger.Inputs> {
+public record JarsMerger(boolean obfuscated, StepWorker.Config config) implements StepWorker<OrderedVersion, JarsMerger.Inputs> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, JarsMerger.Inputs input, StepResults results) throws Exception {
-		OrderedVersion mcVersion = context.minecraftVersion();
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, JarsMerger.Inputs input, StepResults<OrderedVersion> results) throws Exception {
+		OrderedVersion mcVersion = context.targetVersion();
 		if (input.clientJar().isEmpty() || input.serverJar().isEmpty()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -42,7 +42,7 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 		}
 		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.obfuscated ? PipelineFilesystemStorage.MERGED_JAR_OBFUSCATED : PipelineFilesystemStorage.MERGED_JAR_REMAPPED);
 		if (Files.exists(mergedJarPath) && !MiscHelper.isJarEmpty(mergedJarPath)) {
-			return new StepOutput(StepStatus.UP_TO_DATE, results);
+			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
 		Files.deleteIfExists(mergedJarPath);
 		Path clientJar = pipeline.getStoragePath(input.clientJar().orElseThrow(), context);
@@ -67,7 +67,7 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}
-		return new StepOutput(StepStatus.SUCCESS, results);
+		return new StepOutput<>(StepStatus.SUCCESS, results);
 	}
 
 	public record Inputs(Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {

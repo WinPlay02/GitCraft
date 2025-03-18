@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public record DataGenerator(StepWorker.Config config) implements StepWorker<DataGenerator.Inputs> {
+public record DataGenerator(StepWorker.Config config) implements StepWorker<OrderedVersion, DataGenerator.Inputs> {
 
 	public static final ExternalWorldgenPacks EXTERNAL_WORLDGEN_PACKS = new ExternalWorldgenPacks();
 	private static final String DATAGEN_AVAILABLE_START_VERSION = "18w01a";
@@ -32,11 +32,11 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Data
 	private static final String EXT_VANILLA_WORLDGEN_PACK_END = "21w44a";
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, DataGenerator.Inputs input, StepResults results) throws Exception {
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, DataGenerator.Inputs input, StepResults<OrderedVersion> results) throws Exception {
 		if (!GitCraft.config.loadDatagenRegistry && (!GitCraft.config.readableNbt || !GitCraft.config.loadIntegratedDatapack)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		OrderedVersion mcVersion = context.minecraftVersion();
+		OrderedVersion mcVersion = context.targetVersion();
 		if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_START_VERSION)) < 0) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -59,7 +59,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Data
 
 		if ((!GitCraft.config.readableNbt || Files.exists(artifactSnbtArchive))
 			&& (!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
-			return new StepOutput(StepStatus.UP_TO_DATE, results);
+			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
 
 		Path executablePath = pipeline.getStoragePath(input.serverJar(), context);
@@ -115,10 +115,10 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Data
 			}
 			MiscHelper.deleteDirectory(datagenReportsOutput);
 			MiscHelper.deleteDirectory(datagenDirectory);
-			return new StepOutput(status != null ? status : StepStatus.SUCCESS, results);
+			return new StepOutput<>(status != null ? status : StepStatus.SUCCESS, results);
 		}
 		MiscHelper.deleteDirectory(datagenDirectory);
-		return new StepOutput(StepStatus.SUCCESS, results);
+		return new StepOutput<>(StepStatus.SUCCESS, results);
 	}
 
 	public record Inputs(StorageKey serverJar, StorageKey dataJar) implements StepInput {

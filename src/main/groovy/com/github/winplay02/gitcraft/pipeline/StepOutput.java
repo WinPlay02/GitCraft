@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
@@ -11,40 +12,42 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record StepOutput(StepStatus status, StepResults results) {
-	public static StepOutput ofSingle(StepStatus status, StorageKey key) {
-		return new StepOutput(status, new StepResults(Set.of(key)));
+public record StepOutput<T extends AbstractVersion<T>>(StepStatus status, StepResults<T> results) {
+	public static <T extends AbstractVersion<T>> StepOutput<T> ofSingle(StepStatus status, StorageKey key) {
+		return new StepOutput<>(status, new StepResults<T>(Set.of(key)));
 	}
 
-	public static StepOutput ofEmptyResultSet(StepStatus status) {
-		return new StepOutput(status, new StepResults(Set.of()));
+	public static <T extends AbstractVersion<T>> StepOutput<T> ofEmptyResultSet(StepStatus status) {
+		return new StepOutput<>(status, new StepResults<T>(Set.of()));
 	}
 
-	public static StepOutput merge(StepOutput... outputs) {
-		return new StepOutput(
+	@SafeVarargs
+	public static <T extends AbstractVersion<T>> StepOutput<T> merge(StepOutput<T>... outputs) {
+		return new StepOutput<>(
 			StepStatus.merge(
 				Arrays.stream(outputs).filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
-			new StepResults(MiscHelper.mergeSets(
+			new StepResults<T>(MiscHelper.mergeSets(
 				new HashSet<>(), Arrays.stream(outputs).filter(Objects::nonNull).map(output -> output.results().result()).toList()
 			))
 		);
 	}
 
-	public static StepOutput merge(Collection<StepOutput> outputs) {
-		return new StepOutput(
+	public static <T extends AbstractVersion<T>> StepOutput<T> merge(Collection<StepOutput<T>> outputs) {
+		return new StepOutput<>(
 			StepStatus.merge(
 				outputs.stream().filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
-			new StepResults(MiscHelper.mergeSets(
+			new StepResults<T>(MiscHelper.mergeSets(
 				new HashSet<>(), outputs.stream().filter(Objects::nonNull).map(output -> output.results().result()).toList()
 			))
 		);
 	}
 
-	public static StepOutput merge(StepResults otherResults, StepOutput... outputs) {
-		return new StepOutput(
+	@SafeVarargs
+	public static <T extends AbstractVersion<T>> StepOutput<T> merge(StepResults<T> otherResults, StepOutput<T>... outputs) {
+		return new StepOutput<>(
 			StepStatus.merge(
 				Arrays.stream(outputs).filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
-			new StepResults(MiscHelper.mergeSets(
+			new StepResults<T>(MiscHelper.mergeSets(
 				new HashSet<>(), Stream.concat(Stream.of(otherResults.result()), Arrays.stream(outputs).filter(Objects::nonNull).map(output -> output.results().result())).toList()
 			))
 		);

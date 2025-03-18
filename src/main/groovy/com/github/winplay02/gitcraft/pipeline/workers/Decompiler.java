@@ -24,6 +24,7 @@ import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
@@ -38,17 +39,17 @@ import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
 import net.fabricmc.loom.util.FileSystemUtil;
 
-public record Decompiler(StepWorker.Config config) implements StepWorker<Decompiler.Inputs> {
+public record Decompiler(StepWorker.Config config) implements StepWorker<OrderedVersion, Decompiler.Inputs> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, Decompiler.Inputs input, StepResults results) throws Exception {
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Decompiler.Inputs input, StepResults<OrderedVersion> results) throws Exception {
 		Files.createDirectories(pipeline.getStoragePath(PipelineFilesystemStorage.DECOMPILED, context));
-		StepOutput mergedStatus = decompileJar(pipeline, context, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
+		StepOutput<OrderedVersion> mergedStatus = decompileJar(pipeline, context, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput clientStatus = decompileJar(pipeline, context, input.clientJar().orElse(null), "client", PipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
-		StepOutput serverStatus = decompileJar(pipeline, context, input.serverJar().orElse(null), "server", PipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
+		StepOutput<OrderedVersion> clientStatus = decompileJar(pipeline, context, input.clientJar().orElse(null), "client", PipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
+		StepOutput<OrderedVersion> serverStatus = decompileJar(pipeline, context, input.serverJar().orElse(null), "server", PipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
 		return StepOutput.merge(clientStatus, serverStatus);
 	}
 
@@ -57,7 +58,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Decompi
 
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
-	private StepOutput decompileJar(Pipeline pipeline, Context context, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
+	private StepOutput<OrderedVersion> decompileJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
 		Path jarIn = pipeline.getStoragePath(inputFile, context);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
@@ -89,7 +90,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Decompi
 		options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
 		if (config.mappingFlavour().getMappingImpl().supportsComments()) {
 			// TODO: this will break for mapping flavours that support unpicking but for the client and server separately
-			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getMappingImpl().getMappingsPath(context.minecraftVersion(), MinecraftJar.MERGED).orElseThrow().toFile()));
+			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getMappingImpl().getMappingsPath(context.targetVersion(), MinecraftJar.MERGED).orElseThrow().toFile()));
 		}
 
 		try (FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(jarOut, true)) {
@@ -101,7 +102,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Decompi
 
 			Fernflower ff = new Fernflower(new FFNIODirectoryResultSaver(targetJarRootPath, null), options, new PrintStreamLogger(NULL_IS)); // System.out
 			if (librariesDir != null) {
-				for (Artifact library : context.minecraftVersion().libraries()) {
+				for (Artifact library : context.targetVersion().libraries()) {
 					Path lib_file = library.resolve(librariesDir);
 					// TODO add library via NIO
 					ff.addLibrary(lib_file.toFile());
@@ -117,8 +118,8 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Decompi
 			Path p = targetJarRootPath.resolve("dependencies.json");
 
 			List<Artifact.DependencyArtifact> c = Stream.concat(
-							Arrays.stream(new Artifact.DependencyArtifact[]{Artifact.DependencyArtifact.ofVirtual("Java " + context.minecraftVersion().javaVersion())}),
-							context.minecraftVersion().libraries().stream().map(Artifact.DependencyArtifact::new).sorted(Comparator.comparing(artifact -> String.join("", artifact.name().split("-")))))
+							Arrays.stream(new Artifact.DependencyArtifact[]{Artifact.DependencyArtifact.ofVirtual("Java " + context.targetVersion().javaVersion())}),
+							context.targetVersion().libraries().stream().map(Artifact.DependencyArtifact::new).sorted(Comparator.comparing(artifact -> String.join("", artifact.name().split("-")))))
 					.collect(Collectors.toList());
 
 			SerializationHelper.writeAllToPath(p, SerializationHelper.serialize(c));

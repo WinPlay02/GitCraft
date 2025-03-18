@@ -1,19 +1,19 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
+import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 import java.util.concurrent.ExecutorService;
 
-public interface StepWorker<S extends StepInput> {
+public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 
 	Config config();
 
-	StepOutput run(Pipeline pipeline, Context context, S input, StepResults results) throws Exception;
+	StepOutput<T> run(Pipeline<T> pipeline, Context<T> context, S input, StepResults<T> results) throws Exception;
 
-	default StepOutput runGeneric(Pipeline pipeline, Context context, StepInput input, StepResults results) throws Exception {
+	default StepOutput<T> runGeneric(Pipeline<T> pipeline, Context<T> context, StepInput input, StepResults<T> results) throws Exception {
 		@SuppressWarnings("unchecked")
 		S castInput = (S) input;
 		return this.run(pipeline, context, castInput, results);
@@ -27,15 +27,15 @@ public interface StepWorker<S extends StepInput> {
 		}
 	}
 
-	record Context(RepoWrapper repository, MinecraftVersionGraph versionGraph, OrderedVersion minecraftVersion, ExecutorService executorService) {
+	record Context<T extends AbstractVersion<T>>(RepoWrapper repository, AbstractVersionGraph<T> versionGraph, T targetVersion, ExecutorService executorService) {
 
-		public Context withDifferingVersion(OrderedVersion minecraftVersion) {
-			return new Context(repository, versionGraph, minecraftVersion, executorService);
+		public Context<T> withDifferingVersion(T targetVersion) {
+			return new Context<>(repository, versionGraph, targetVersion, executorService);
 		}
 
 		@Override
 		public String toString() {
-			return "version: %s".formatted(minecraftVersion.launcherFriendlyVersionName());
+			return "version: %s".formatted(targetVersion.friendlyVersion());
 		}
 	}
 }

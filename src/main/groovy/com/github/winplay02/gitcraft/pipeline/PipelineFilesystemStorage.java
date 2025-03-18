@@ -1,8 +1,10 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.pipeline.key.ArtifactKey;
 import com.github.winplay02.gitcraft.pipeline.key.DirectoryKey;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -14,35 +16,35 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public record PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem,
-										Set<StorageKey> resettableKeys,
-										Map<StorageKey, BiFunction<PipelineFilesystemStorage, StepWorker.Context, Path>> paths) {
+public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFilesystemRoot rootFilesystem,
+																   Set<StorageKey> resettableKeys,
+																   Map<StorageKey, BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path>> paths) {
 	@SafeVarargs
-	public PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem, Set<StorageKey> resettableKeys, Map<StorageKey, BiFunction<PipelineFilesystemStorage, StepWorker.Context, Path>>... paths) {
+	public PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem, Set<StorageKey> resettableKeys, Map<StorageKey, BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path>>... paths) {
 		this(rootFilesystem, resettableKeys, MiscHelper.mergeMaps(new HashMap<>(), paths));
 	}
 
-	public Path getPath(StorageKey key, StepWorker.Context context) {
+	public Path getPath(StorageKey key, StepWorker.Context<T> context) {
 		return this.paths.get(key).apply(this, context);
 	}
 
-	private static BiFunction<PipelineFilesystemStorage, StepWorker.Context, Path> rootPathConst(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
+	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> rootPathConst(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
 		return (root, _context) -> rootPathConstFunction.apply(root.rootFilesystem());
 	}
 
-	private static BiFunction<PipelineFilesystemStorage, StepWorker.Context, Path> rootPathVersioned(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
-		return (root, context) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(context.minecraftVersion().launcherFriendlyVersionName());
+	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> rootPathVersioned(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
+		return (root, context) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(context.targetVersion().pathName());
 	}
 
-	private Path resolvePath(StorageKey key, StepWorker.Context context, String toResolveFirst, String... toResolve) {
+	private Path resolvePath(StorageKey key, StepWorker.Context<T> context, String toResolveFirst, String... toResolve) {
 		return this.paths.get(key).apply(this, context).resolve(toResolveFirst, toResolve);
 	}
 
-	private static BiFunction<PipelineFilesystemStorage, StepWorker.Context, Path> createFromKey(StorageKey key, String toResolveFirst, String... toResolve) {
+	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> createFromKey(StorageKey key, String toResolveFirst, String... toResolve) {
 		return (root, context) -> root.resolvePath(key, context, toResolveFirst, toResolve);
 	}
 
-	private static BiFunction<PipelineFilesystemStorage, StepWorker.Context, Path> createFromKey(StorageKey key, Function<StepWorker.Context, String> toResolve) {
+	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> createFromKey(StorageKey key, Function<StepWorker.Context<T>, String> toResolve) {
 		return (root, context) -> root.resolvePath(key, context, toResolve.apply(context));
 	}
 
@@ -106,7 +108,7 @@ public record PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem,
 	public static final ArtifactKey DECOMPILED_SERVER_JAR = new ArtifactKey(DECOMPILED, SIDE_SERVER, DIST_JAR);
 	public static final ArtifactKey DECOMPILED_MERGED_JAR = new ArtifactKey(DECOMPILED, SIDE_MERGED, DIST_JAR);
 
-	public static final LazyValue<PipelineFilesystemStorage> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage(
+	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion>(
 		GitCraftPaths.FILESYSTEM_ROOT,
 		Set.of(
 			REMAPPED_CLIENT_JAR, REMAPPED_SERVER_JAR, REMAPPED_MERGED_JAR,
@@ -126,7 +128,7 @@ public record PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem,
 			LIBRARIES, rootPathConst(PipelineFilesystemRoot::getLibraryStore),
 			ASSETS_INDEX, rootPathConst(PipelineFilesystemRoot::getAssetsIndex),
 			ASSETS_OBJECTS, rootPathConst(PipelineFilesystemRoot::getAssetsObjects),
-			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, context -> context.minecraftVersion().assetsIndex().name()),
+			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, context -> context.targetVersion().assetsIndex().name()),
 			UNPACKED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unpacked.jar"),
 			UNBUNDLED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unbundled.jar"),
 			MERGED_JAR_OBFUSCATED, createFromKey(ARTIFACTS, "merged-obfuscated.jar")

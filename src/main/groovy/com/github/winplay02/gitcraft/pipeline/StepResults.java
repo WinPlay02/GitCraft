@@ -1,28 +1,28 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public record StepResults(Set<StorageKey> result) {
-	public static StepResults ofEmpty() {
-		return new StepResults(ConcurrentHashMap.newKeySet());
+public record StepResults<T extends AbstractVersion<T>>(Set<StorageKey> result) {
+	public static <T extends AbstractVersion<T>> StepResults<T> ofEmpty() {
+		return new StepResults<T>(ConcurrentHashMap.newKeySet());
 	}
 
 	public void addKey(StorageKey storageKey) {
 		this.result.add(storageKey);
 	}
 
-	public Path getPathForKeyAndAdd(Pipeline pipeline, StepWorker.Context context, StorageKey storageKey) {
+	public Path getPathForKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StorageKey storageKey) {
 		this.result.add(storageKey);
 		return pipeline.getStoragePath(storageKey, context);
 	}
 
-	public Path getPathForDifferentVersionKeyAndAdd(Pipeline pipeline, StepWorker.Context context, StorageKey storageKey, OrderedVersion version) {
+	public Path getPathForDifferentVersionKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StorageKey storageKey, T version) {
 		this.result.add(storageKey);
 		pipeline.relinkStoragePathToDifferentVersion(storageKey, context, version);
 		return pipeline.getStoragePath(storageKey, context);
@@ -41,7 +41,7 @@ public record StepResults(Set<StorageKey> result) {
 		return Optional.empty();
 	}
 
-	public void addAll(StepResults results) {
+	public void addAll(StepResults<T> results) {
 		this.result.addAll(results.result);
 	}
 }

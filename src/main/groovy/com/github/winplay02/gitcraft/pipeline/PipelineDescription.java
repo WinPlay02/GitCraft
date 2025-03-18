@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsUnpacker;
 import com.github.winplay02.gitcraft.pipeline.workers.Committer;
 import com.github.winplay02.gitcraft.pipeline.workers.DataGenerator;
@@ -7,6 +8,7 @@ import com.github.winplay02.gitcraft.pipeline.workers.Decompiler;
 import com.github.winplay02.gitcraft.pipeline.workers.JarsMerger;
 import com.github.winplay02.gitcraft.pipeline.workers.Remapper;
 import com.github.winplay02.gitcraft.pipeline.workers.Unpicker;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.util.HashMap;
@@ -37,10 +39,10 @@ import static com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage.U
 import static com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage.UNPICKED_MERGED_JAR;
 import static com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage.UNPICKED_SERVER_JAR;
 
-public record PipelineDescription(String descriptionName,
-								  List<Step> steps,
-								  Map<Step, BiFunction<PipelineFilesystemStorage, StepResults, StepInput>> stepInputMap,
-								  Map<Step, StepDependency> stepDependencies) {
+public record PipelineDescription<T extends AbstractVersion<T>>(String descriptionName,
+																List<Step> steps,
+																Map<Step, BiFunction<PipelineFilesystemStorage<T>, StepResults<T>, StepInput>> stepInputMap,
+																Map<Step, StepDependency> stepDependencies) {
 
 	public Set<Step> getIntraVersionDependencies(Step step) {
 		return this.stepDependencies.getOrDefault(step, StepDependency.EMPTY).dependencyTypes().keySet();
@@ -96,9 +98,9 @@ public record PipelineDescription(String descriptionName,
 	}
 
 	// Reset is not in the default pipeline, as parallelization would be even trickier, since every step (more or less) depends on it
-	public static final PipelineDescription RESET_PIPELINE = new PipelineDescription("Reset", List.of(Step.RESET), Map.of(), Map.of(Step.RESET, StepDependency.ofInterVersion(Step.RESET)));
+	public static final PipelineDescription<OrderedVersion> RESET_PIPELINE = new PipelineDescription<>("Reset", List.of(Step.RESET), Map.of(), Map.of(Step.RESET, StepDependency.ofInterVersion(Step.RESET)));
 
-	public static final PipelineDescription DEFAULT_PIPELINE = new PipelineDescription("Default",
+	public static final PipelineDescription<OrderedVersion> DEFAULT_PIPELINE = new PipelineDescription<>("Default",
 		List.of(
 			Step.FETCH_ARTIFACTS,
 			Step.FETCH_LIBRARIES,
@@ -149,5 +151,5 @@ public record PipelineDescription(String descriptionName,
 		));
 
 	// GC does not need to be in the default pipeline, as it is sufficient to only gc at the end once
-	public static final PipelineDescription GC_PIPELINE = new PipelineDescription("GC", List.of(Step.REPO_GARBAGE_COLLECTOR), Map.of(), Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependency.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)));
+	public static final PipelineDescription<OrderedVersion> GC_PIPELINE = new PipelineDescription<>("GC", List.of(Step.REPO_GARBAGE_COLLECTOR), Map.of(), Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependency.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)));
 }

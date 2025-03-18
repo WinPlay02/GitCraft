@@ -18,15 +18,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<StepInput.Empty> {
+public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<OrderedVersion, StepInput.Empty> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, StepInput.Empty input, StepResults results) throws Exception {
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
 		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS));
 
-		OrderedVersion mcVersion = context.minecraftVersion();
+		OrderedVersion mcVersion = context.targetVersion();
 
-		List<Callable<StepOutput>> outputTasks = new ArrayList<>(4);
+		List<Callable<StepOutput<OrderedVersion>>> outputTasks = new ArrayList<>(4);
 
 		if (mcVersion.hasClientCode()) {
 			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.clientJar(), PipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, "client jar"));
@@ -47,7 +47,7 @@ public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<S
 		)));
 	}
 
-	static StepOutput fetchArtifact(Pipeline pipeline, StepWorker.Context context, Artifact artifact, StorageKey resultFile, String artifactKind) {
+	static StepOutput<OrderedVersion> fetchArtifact(Pipeline<OrderedVersion> pipeline, StepWorker.Context<OrderedVersion> context, Artifact artifact, StorageKey resultFile, String artifactKind) {
 		Path resultPath = pipeline.getStoragePath(resultFile, context);
 		StepStatus status = artifact.fetchArtifactToFile(resultPath, artifactKind);
 		if (status.hasRun()) {

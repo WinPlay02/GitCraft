@@ -18,22 +18,23 @@ import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public record Remapper(StepWorker.Config config) implements StepWorker<Remapper.Inputs> {
+public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVersion, Remapper.Inputs> {
 
 	@Override
-	public StepOutput run(Pipeline pipeline, Context context, Remapper.Inputs input, StepResults results) throws Exception {
+	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Remapper.Inputs input, StepResults<OrderedVersion> results) throws Exception {
 		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.REMAPPED));
-		StepOutput mergedStatus = remapJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
+		StepOutput<OrderedVersion> mergedStatus = remapJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput clientStatus = remapJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), PipelineFilesystemStorage.REMAPPED_CLIENT_JAR);
-		StepOutput serverStatus = remapJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), PipelineFilesystemStorage.REMAPPED_SERVER_JAR);
+		StepOutput<OrderedVersion> clientStatus = remapJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), PipelineFilesystemStorage.REMAPPED_CLIENT_JAR);
+		StepOutput<OrderedVersion> serverStatus = remapJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), PipelineFilesystemStorage.REMAPPED_SERVER_JAR);
 		return StepOutput.merge(clientStatus, serverStatus);
 	}
 
@@ -43,12 +44,12 @@ public record Remapper(StepWorker.Config config) implements StepWorker<Remapper.
 	// From Fabric-loom
 	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
 
-	private StepOutput remapJar(Pipeline pipeline, Context context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException {
+	private StepOutput<OrderedVersion> remapJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException {
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		if (!mapping.canMappingsBeUsedOn(context.minecraftVersion(), type)) {
+		if (!mapping.canMappingsBeUsedOn(context.targetVersion(), type)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		Path jarIn = pipeline.getStoragePath(inputFile, context);
@@ -59,7 +60,7 @@ public record Remapper(StepWorker.Config config) implements StepWorker<Remapper.
 		if (Files.exists(jarOut)) {
 			Files.delete(jarOut);
 		}
-		IMappingProvider mappingProvider = mapping.getMappingsProvider(context.minecraftVersion(), type);
+		IMappingProvider mappingProvider = mapping.getMappingsProvider(context.targetVersion(), type);
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
 			.renameInvalidLocals(true)
 			.rebuildSourceFilenames(true)

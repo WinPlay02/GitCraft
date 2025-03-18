@@ -37,7 +37,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		this.roots.clear();
 		this.branchPoints.clear();
 
-		Set<OrderedVersion> roots = this.findRootVersions();
+		Set<OrderedVersion> roots = this.findRootVertices();
 
 		for (OrderedVersion root : roots) {
 			int length = this.findBranchPoints(root);
@@ -58,7 +58,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 
 		Predicate<OrderedVersion> mainBranchPredicate = v -> !GitCraft.config.manifestSource.getMetadataProvider().shouldExcludeFromMainBranch(v);
 
-		NavigableSet<OrderedVersion> nextBranches = this.getFollowingNodes(mcVersion);
+		NavigableSet<OrderedVersion> nextBranches = this.getFollowingVertices(mcVersion);
 		Set<OrderedVersion> potentialMainBranches = nextBranches.stream().filter(mainBranchPredicate).collect(Collectors.toSet());
 
 		// find branch points in all following paths
@@ -87,7 +87,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		// is to say, remove any branch points that lay on these paths from the map,
 		// as it should only contain side branches
 
-		NavigableSet<OrderedVersion> nextBranches = this.getFollowingNodes(mcVersion);
+		NavigableSet<OrderedVersion> nextBranches = this.getFollowingVertices(mcVersion);
 
 		OrderedVersion mainBranch = null;
 		int mainBranchLength = -1;
@@ -207,7 +207,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		OrderedVersion longestBranch = null;
 		int longestBranchLength = 0;
 
-		for (OrderedVersion previousVersion : this.getPreviousNodes(mcVersion)) {
+		for (OrderedVersion previousVersion : this.getPreviousVertices(mcVersion)) {
 			OrderedVersion branchPoint = this.walkToPreviousBranchPoint(previousVersion);
 
 			if (branchPoint == null) {
@@ -234,7 +234,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		OrderedVersion longestBranch = null;
 		int longestBranchLength = 0;
 
-		for (OrderedVersion previousVersion : this.getPreviousNodes(mcVersion)) {
+		for (OrderedVersion previousVersion : this.getPreviousVertices(mcVersion)) {
 			OrderedVersion branchPoint = this.walkToRoot(previousVersion);
 
 			if (branchPoint == null) {
