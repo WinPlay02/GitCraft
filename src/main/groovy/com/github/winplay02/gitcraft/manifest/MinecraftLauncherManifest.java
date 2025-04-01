@@ -264,6 +264,9 @@ public class MinecraftLauncherManifest extends ManifestProvider {
 			case "1.20.5-alpha.24.12.potato.original" -> {
 				return List.of("1.20.5-alpha.24.12.a");
 			}
+			case "1.21.6-alpha.25.14.craftmine" -> {
+				return List.of("1.21.5");
+			}
 			default -> {
 				return null;
 			}
