@@ -117,30 +117,31 @@ public record Resetter(Step step, Config config) implements StepWorker {
 	protected List<Ref> getRefsContainingCommit(RepoWrapper repo, RevCommit targetCommit) throws IOException {
 		List<Ref> refs = repo.getGit().getRepository().getRefDatabase().getRefs();
 		List<Ref> refsContaining = new ArrayList<>();
-		RevWalk walk = new RevWalk(repo.getGit().getRepository());
-		for (Ref ref : refs) {
-			if (!ref.isPeeled()) {
-				ref = repo.getGit().getRepository().getRefDatabase().peel(ref);
-			}
-
-			ObjectId objectId = ref.getPeeledObjectId();
-			if (objectId == null)
-				objectId = ref.getObjectId();
-			RevCommit commit = null;
-			try {
-				commit = walk.parseCommit(objectId);
-			} catch (MissingObjectException | IncorrectObjectTypeException ignored) {
-			}
-			if (commit != null) {
-				walk.markStart(commit);
-				walk.setRevFilter(new Committer.CommitRevFilter(targetCommit.getId()));
-				if (walk.iterator().hasNext()) {
-					refsContaining.add(ref);
+		try (RevWalk walk = new RevWalk(repo.getGit().getRepository())) {
+			for (Ref ref : refs) {
+				if (!ref.isPeeled()) {
+					ref = repo.getGit().getRepository().getRefDatabase().peel(ref);
 				}
+
+				ObjectId objectId = ref.getPeeledObjectId();
+				if (objectId == null)
+					objectId = ref.getObjectId();
+				RevCommit commit = null;
+				try {
+					commit = walk.parseCommit(objectId);
+				} catch (MissingObjectException | IncorrectObjectTypeException ignored) {
+				}
+				if (commit != null) {
+					walk.markStart(commit);
+					walk.setRevFilter(new Committer.CommitRevFilter(targetCommit.getId()));
+					if (walk.iterator().hasNext()) {
+						refsContaining.add(ref);
+					}
+				}
+				walk.reset();
 			}
-			walk.reset();
+			return refsContaining;
 		}
-		return refsContaining;
 	}
 
 	protected void createSymbolicHEAD(String refTarget, RepoWrapper repo) throws IOException {

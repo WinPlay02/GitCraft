@@ -2,8 +2,8 @@ package com.github.winplay02.gitcraft.manifest.skyrising;
 
 import com.github.winplay02.gitcraft.manifest.BaseMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
-import com.github.winplay02.gitcraft.meta.VersionDetails;
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionDetails;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
@@ -25,7 +25,11 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	private final Map<String, VersionDetails> versionDetails = new HashMap<>();
 
 	public SkyrisingMetadataProvider() {
-		this.addManifestSource("https://skyrising.github.io/mc-versions/version_manifest.json", SkyrisingManifest.class);
+		this("https://skyrising.github.io/mc-versions/version_manifest.json");
+	}
+
+	protected SkyrisingMetadataProvider(String manifestUrl) {
+		this.addManifestSource(manifestUrl, SkyrisingManifest.class);
 	}
 
 	@Override
@@ -44,8 +48,13 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	}
 
 	@Override
+	protected void postLoadVersions() {
+		this.versionDetails.keySet().removeIf(version -> this.getVersionByVersionID(version) == null);
+	}
+
+	@Override
 	protected OrderedVersion loadVersionFromManifest(SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		VersionInfo info = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir.resolve("info"), "version info", VersionInfo.class);
+		VersionInfo info = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.url(), null, targetDir.resolve("info"), "version info", VersionInfo.class);
 		VersionDetails details = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"), "version details", VersionDetails.class);
 		this.versionDetails.put(details.id(), details);
 		return OrderedVersion.from(info, details.normalizedVersion());
@@ -89,28 +98,38 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	protected boolean isExistingVersionMetadataValid(SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		return this.isExistingVersionMetadataValid(manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir.resolve("info"))
+		return this.isExistingVersionMetadataValid(manifestEntry.id(), manifestEntry.url(), null, targetDir.resolve("info"))
 			&& this.isExistingVersionMetadataValid(manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"));
 	}
 
 	@Override
 	public List<String> getParentVersion(OrderedVersion mcVersion) {
 		return this.getVersionDetails(mcVersion.launcherFriendlyVersionName()).previous().stream()
-			.map(versionId -> this.getVersionDetails(versionId).normalizedVersion())
+			.map(this::getVersionDetails)
 			.filter(Objects::nonNull)
+			.map(VersionDetails::normalizedVersion)
 			.toList();
 	}
 
-	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)(-\\d+|\\d+)|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)((-\\d+|\\d+)(-\\d+)?)?|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+
+	@Override
+	public boolean shouldExclude(OrderedVersion mcVersion) {
+		// classic and alpha servers don't work well with the version graph right now
+		return mcVersion.launcherFriendlyVersionName().startsWith("server-");
+	}
 
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// ensure the main branch goes through 12w32a rather than 1.3.2
 			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "1.3.2")
-			// filter out april fools snapshots and experimental versions,
-			// which often have typical ids that do not match normal snapshots
-			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
+			|| (mcVersion.isSnapshotOrPending()
+				// filter out april fools snapshots and experimental versions,
+				// which often have typical ids that do not match normal snapshots
+				&& !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches()
+				// allow 13w12~ anyway as the changes in it carry over to 1.5.1
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "13w12~"));
 	}
 
 	private VersionDetails getVersionDetails(String versionId) {

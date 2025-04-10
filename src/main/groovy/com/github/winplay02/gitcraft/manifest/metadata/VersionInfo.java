@@ -1,4 +1,4 @@
-package com.github.winplay02.gitcraft.meta;
+package com.github.winplay02.gitcraft.manifest.metadata;
 
 import java.time.ZonedDateTime;
 import java.util.List;

@@ -4,6 +4,9 @@ import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+
+import daomephsta.unpick.constantmappers.datadriven.parser.v2.UnpickV2Reader;
+
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.MappingVisitor;
@@ -12,6 +15,7 @@ import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
@@ -145,6 +149,15 @@ public abstract class Mapping {
 	protected static boolean validateMappings(Path mappingsTinyPath) {
 		try {
 			MappingReader.read(mappingsTinyPath, new MemoryMappingTree());
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
+	protected static boolean validateUnpickDefinitions(Path unpickDefinitionsPath) {
+		try (UnpickV2Reader r = new UnpickV2Reader(Files.newInputStream(unpickDefinitionsPath))) {
+			r.accept(new UnpickV2Reader.Visitor() { });
 			return true;
 		} catch (IOException e) {
 			return false;
