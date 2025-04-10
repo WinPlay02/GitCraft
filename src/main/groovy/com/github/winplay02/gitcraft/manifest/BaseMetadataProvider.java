@@ -187,8 +187,9 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 					Optional<Path> zipFile = MiscHelper.findRecursivelyByName(fs.getPath("."), fileName);
 					if (zipFile.isPresent()) {
 						return this.loadVersionMetadata(zipFile.get(), metadataClass);
+					} else {
+						MiscHelper.panic("cannot find metadata file json inside %s", targetFile);
 					}
-					return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
 				}
 			} else {
 				MiscHelper.panic("unknown metadata file extension: %s", targetFile);
