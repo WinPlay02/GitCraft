@@ -195,7 +195,11 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 				MiscHelper.panic("unknown file extension for metadata file %s", targetFile);
 			}
 		}
-		return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
+		T metadata = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
+		if (metadata == null) {
+			MiscHelper.panic("unable to load metadata type %s from file %s", metadataClass.getName(), targetFile);
+		}
+		return metadata;
 	}
 
 	/**
