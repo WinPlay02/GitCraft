@@ -61,6 +61,16 @@ public class FeatherMappings extends Mapping {
 	}
 
 	@Override
+	public boolean supportsComments() {
+		return true;
+	}
+
+	@Override
+	public boolean supportsConstantUnpicking() {
+		return generation > 1;
+	}
+
+	@Override
 	public String getDestinationNS() {
 		return MappingsNamespace.NAMED.toString();
 	}
@@ -98,15 +108,30 @@ public class FeatherMappings extends Mapping {
 			return StepStatus.NOT_RUN;
 		}
 		Path mappingsFile = getMappingsPathInternal(mcVersion, minecraftJar);
+		Path unpickDefinitionsFile = getUnpickDefinitionsPath(mcVersion, minecraftJar);
+		Path unpickConstantsJarFile = getUnpickConstantsJarPath(mcVersion, minecraftJar);
 		if (Files.exists(mappingsFile) && validateMappings(mappingsFile)) {
-			return StepStatus.UP_TO_DATE;
+			if (!supportsConstantUnpicking() || (Files.exists(unpickDefinitionsFile) && validateUnpickDefinitions(unpickDefinitionsFile))) {
+				if (!supportsConstantUnpicking() || (Files.exists(unpickConstantsJarFile) && Files.size(unpickConstantsJarFile) > 22 /* not empty jar */)) {
+					return StepStatus.UP_TO_DATE;
+				}
+			}
 		}
 		Files.deleteIfExists(mappingsFile);
+		Files.deleteIfExists(unpickDefinitionsFile);
+		Files.deleteIfExists(unpickConstantsJarFile);
 		Path mappingsJarFile = getMappingsJarPath(mcVersion, minecraftJar);
 		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(featherVersion.makeMergedV2JarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(mappingsJarFile, null, "feather gen " + generation + " mapping", mcVersion.launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(mappingsJarFile)) {
 			Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 			Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
+			if (supportsConstantUnpicking()) {
+				Path unpickDefinitionsPathInJar = fs.getPath("extras", "definitions.unpick");
+				Files.copy(unpickDefinitionsPathInJar, unpickDefinitionsFile, StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
+		if (supportsConstantUnpicking()) {
+			downloadStatus = StepStatus.merge(downloadStatus, RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(featherVersion.makeConstantsJarMavenUrl(GitCraft.ORNITHE_MAVEN), new RemoteHelper.LocalFileInfo(unpickConstantsJarFile, null, "feather gen " + generation + " unpicking constants", mcVersion.launcherFriendlyVersionName())));
 		}
 		return StepStatus.merge(downloadStatus, StepStatus.SUCCESS);
 	}
@@ -134,6 +159,42 @@ public class FeatherMappings extends Mapping {
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	private Path getUnpickDefinitionsPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+		try {
+			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(mcVersion, minecraftJar);
+			if (featherVersion == null) {
+				return null;
+			}
+			return GitCraftPaths.MAPPINGS.resolve(versionKey(mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-definitions.unpick");
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private Path getUnpickConstantsJarPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+		try {
+			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(mcVersion, minecraftJar);
+			if (featherVersion == null) {
+				return null;
+			}
+			return GitCraftPaths.MAPPINGS.resolve(versionKey(mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-constants.jar");
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public Map<String, Path> getAdditionalMappingInformation(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+		if (supportsConstantUnpicking()) {
+			Path unpickDefinitions = getUnpickDefinitionsPath(mcVersion, minecraftJar);
+			Path unpickConstants = getUnpickConstantsJarPath(mcVersion, minecraftJar);
+			if (Files.exists(unpickConstants) && Files.exists(unpickDefinitions)) {
+				return Map.of(KEY_UNPICK_CONSTANTS, unpickConstants, KEY_UNPICK_DEFINITIONS, unpickDefinitions);
+			}
+		}
+		return super.getAdditionalMappingInformation(mcVersion, minecraftJar);
 	}
 
 	@Override
