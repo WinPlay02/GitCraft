@@ -1,26 +1,8 @@
 package com.github.winplay02.gitcraft;
 
-import com.github.winplay02.gitcraft.exceptions.ExceptionsPatch;
-import com.github.winplay02.gitcraft.exceptions.NoneExceptions;
-import com.github.winplay02.gitcraft.exceptions.ornithe.RavenExceptions;
-import com.github.winplay02.gitcraft.mappings.IdentityMappings;
-import com.github.winplay02.gitcraft.mappings.Mapping;
-import com.github.winplay02.gitcraft.mappings.MojangMappings;
-import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
-import com.github.winplay02.gitcraft.mappings.ornithe.CalamusIntermediaryMappings;
-import com.github.winplay02.gitcraft.mappings.ornithe.FeatherMappings;
-import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
-import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
-import com.github.winplay02.gitcraft.nests.Nest;
-import com.github.winplay02.gitcraft.nests.NoneNests;
-import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNests;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.signatures.NoneSignatures;
-import com.github.winplay02.gitcraft.signatures.SignaturesPatch;
-import com.github.winplay02.gitcraft.signatures.ornithe.SparrowSignatures;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
@@ -30,31 +12,9 @@ import java.io.IOException;
 public class GitCraft {
 	public static final String VERSION = "0.2.0";
 
-	/// Every Mapping
-	public static final LazyValue<MojangMappings> MOJANG_MAPPINGS = LazyValue.of(MojangMappings::new);
-	public static final LazyValue<FabricIntermediaryMappings> FABRIC_INTERMEDIARY_MAPPINGS = LazyValue.of(FabricIntermediaryMappings::new);
-	public static final LazyValue<Mapping> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
-	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
-	public static final LazyValue<CalamusIntermediaryMappings> CALAMUS_INTERMEDIARY_MAPPINGS = LazyValue.of(CalamusIntermediaryMappings::new);
-	public static final LazyValue<FeatherMappings> FEATHER_MAPPINGS = LazyValue.of(FeatherMappings::new);
-	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
-
-	// Every Exception Patch
-	public static final LazyValue<ExceptionsPatch> RAVEN_EXCEPTIONS = LazyValue.of(RavenExceptions::new);
-	public static final LazyValue<ExceptionsPatch> NONE_EXCEPTIONS = LazyValue.of(NoneExceptions::new);
-
-	// Every Signature Patch
-	public static final LazyValue<SignaturesPatch> SPARROW_SIGNATURES = LazyValue.of(SparrowSignatures::new);
-	public static final LazyValue<SignaturesPatch> NONE_SIGNATURES = LazyValue.of(NoneSignatures::new);
-
-	// Every Nest
-	public static final LazyValue<Nest> ORNITHE_NESTS = LazyValue.of(OrnitheNests::new);
-	public static final LazyValue<Nest> NONE_NESTS = LazyValue.of(NoneNests::new);
-
 	public static final String FABRIC_MAVEN = "https://maven.fabricmc.net/";
 	public static final String ORNITHE_MAVEN = "https://maven.ornithemc.net/releases/";
 
-	/// Other Information
 	public static GitCraftConfig config = null;
 
 	public static MinecraftVersionGraph versionGraph = null;

@@ -1,7 +1,7 @@
 package com.github.winplay02.gitcraft.nests;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNests;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -15,8 +15,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 public enum NestsFlavour {
-	ORNITHE_NESTS(GitCraft.ORNITHE_NESTS),
-	NONE(GitCraft.NONE_NESTS);
+	ORNITHE_NESTS(LazyValue.of(OrnitheNests::new)),
+	NONE(LazyValue.of(NoneNests::new));
 
 	private final LazyValue<? extends Nest> impl;
 

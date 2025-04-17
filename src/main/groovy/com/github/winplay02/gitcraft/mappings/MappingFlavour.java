@@ -6,7 +6,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.mappings.ornithe.CalamusIntermediaryMappings;
+import com.github.winplay02.gitcraft.mappings.ornithe.FeatherMappings;
+import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
+import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -16,13 +19,13 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
 public enum MappingFlavour {
-	MOJMAP(GitCraft.MOJANG_MAPPINGS),
-	FABRIC_INTERMEDIARY(GitCraft.FABRIC_INTERMEDIARY_MAPPINGS),
-	YARN(GitCraft.YARN_MAPPINGS),
-	MOJMAP_PARCHMENT(GitCraft.MOJANG_PARCHMENT_MAPPINGS),
-	CALAMUS_INTERMEDIARY(GitCraft.CALAMUS_INTERMEDIARY_MAPPINGS),
-	FEATHER(GitCraft.FEATHER_MAPPINGS),
-	IDENTITY_UNMAPPED(GitCraft.IDENTITY_UNMAPPED);
+	MOJMAP(LazyValue.of(MojangMappings::new)),
+	FABRIC_INTERMEDIARY(LazyValue.of(FabricIntermediaryMappings::new)),
+	YARN(LazyValue.of(() -> new YarnMappings((FabricIntermediaryMappings) FABRIC_INTERMEDIARY.impl.get()))),
+	MOJMAP_PARCHMENT(LazyValue.of(() -> new ParchmentMappings((MojangMappings) MOJMAP.impl.get()))),
+	CALAMUS_INTERMEDIARY(LazyValue.of(CalamusIntermediaryMappings::new)),
+	FEATHER(LazyValue.of(FeatherMappings::new)),
+	IDENTITY_UNMAPPED(LazyValue.of(IdentityMappings::new));
 
 	private final LazyValue<? extends Mapping> impl;
 
@@ -51,7 +54,7 @@ public enum MappingFlavour {
 		return impl.get().supportsMergingPre1_3Versions();
 	}
 
-	public boolean isMappingFileRequired() {
+	public boolean isFileRequired() {
 		return impl.get().isMappingFileRequired();
 	}
 

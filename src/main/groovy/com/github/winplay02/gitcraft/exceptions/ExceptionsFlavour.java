@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.exceptions;
 
-import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.exceptions.ornithe.RavenExceptions;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -14,8 +14,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 public enum ExceptionsFlavour {
-	RAVEN(GitCraft.RAVEN_EXCEPTIONS),
-	NONE(GitCraft.NONE_EXCEPTIONS);
+	RAVEN(LazyValue.of(RavenExceptions::new)),
+	NONE(LazyValue.of(NoneExceptions::new));
 
 	private final LazyValue<? extends ExceptionsPatch> impl;
 

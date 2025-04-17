@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.signatures;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.signatures.ornithe.SparrowSignatures;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.LazyValue;
 
@@ -14,8 +14,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 public enum SignaturesFlavour {
-	SPARROW(GitCraft.SPARROW_SIGNATURES),
-	NONE(GitCraft.NONE_SIGNATURES);
+	SPARROW(LazyValue.of(SparrowSignatures::new)),
+	NONE(LazyValue.of(NoneSignatures::new));
 
 	private final LazyValue<? extends SignaturesPatch> impl;
 
