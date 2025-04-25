@@ -13,15 +13,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public enum NestsFlavour {
-	ORNITHE_NESTS(LazyValue.of(OrnitheNests::new)),
-	NONE(LazyValue.of(NoneNests::new));
+	ORNITHE_NESTS(OrnitheNests::new),
+	NONE(NoneNests::new);
 
 	private final LazyValue<? extends Nest> impl;
 
-	NestsFlavour(LazyValue<? extends Nest> nests) {
-		this.impl = nests;
+	NestsFlavour(Supplier<? extends Nest> nests) {
+		this.impl = LazyValue.of(nests);
 	}
 
 	@Override

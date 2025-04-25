@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.github.winplay02.gitcraft.mappings.ornithe.CalamusIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.ornithe.FeatherMappings;
@@ -19,18 +20,18 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
 public enum MappingFlavour {
-	MOJMAP(LazyValue.of(MojangMappings::new)),
-	FABRIC_INTERMEDIARY(LazyValue.of(FabricIntermediaryMappings::new)),
-	YARN(LazyValue.of(() -> new YarnMappings((FabricIntermediaryMappings) FABRIC_INTERMEDIARY.impl.get()))),
-	MOJMAP_PARCHMENT(LazyValue.of(() -> new ParchmentMappings((MojangMappings) MOJMAP.impl.get()))),
-	CALAMUS_INTERMEDIARY(LazyValue.of(CalamusIntermediaryMappings::new)),
-	FEATHER(LazyValue.of(FeatherMappings::new)),
-	IDENTITY_UNMAPPED(LazyValue.of(IdentityMappings::new));
+	MOJMAP(MojangMappings::new),
+	FABRIC_INTERMEDIARY(FabricIntermediaryMappings::new),
+	YARN(() -> new YarnMappings((FabricIntermediaryMappings) FABRIC_INTERMEDIARY.impl.get())),
+	MOJMAP_PARCHMENT(() -> new ParchmentMappings((MojangMappings) MOJMAP.impl.get())),
+	CALAMUS_INTERMEDIARY(CalamusIntermediaryMappings::new),
+	FEATHER(FeatherMappings::new),
+	IDENTITY_UNMAPPED(IdentityMappings::new);
 
 	private final LazyValue<? extends Mapping> impl;
 
-	MappingFlavour(LazyValue<? extends Mapping> mapping) {
-		this.impl = mapping;
+	MappingFlavour(Supplier<? extends Mapping> mapping) {
+		this.impl = LazyValue.of(mapping);
 	}
 
 	@Override

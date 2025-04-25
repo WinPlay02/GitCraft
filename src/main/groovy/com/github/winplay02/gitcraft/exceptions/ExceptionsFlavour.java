@@ -12,15 +12,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public enum ExceptionsFlavour {
-	RAVEN(LazyValue.of(RavenExceptions::new)),
-	NONE(LazyValue.of(NoneExceptions::new));
+	RAVEN(RavenExceptions::new),
+	NONE(NoneExceptions::new);
 
 	private final LazyValue<? extends ExceptionsPatch> impl;
 
-	ExceptionsFlavour(LazyValue<? extends ExceptionsPatch> exceptions) {
-		this.impl = exceptions;
+	ExceptionsFlavour(Supplier<? extends ExceptionsPatch> exceptions) {
+		this.impl = LazyValue.of(exceptions);
 	}
 
 	@Override

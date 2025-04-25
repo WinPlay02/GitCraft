@@ -12,15 +12,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public enum SignaturesFlavour {
-	SPARROW(LazyValue.of(SparrowSignatures::new)),
-	NONE(LazyValue.of(NoneSignatures::new));
+	SPARROW(SparrowSignatures::new),
+	NONE(NoneSignatures::new);
 
 	private final LazyValue<? extends SignaturesPatch> impl;
 
-	SignaturesFlavour(LazyValue<? extends SignaturesPatch> signatures) {
-		this.impl = signatures;
+	SignaturesFlavour(Supplier<? extends SignaturesPatch> signatures) {
+		this.impl = LazyValue.of(signatures);
 	}
 
 	@Override
