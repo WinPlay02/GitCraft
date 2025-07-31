@@ -1,72 +1,12 @@
 package com.github.winplay02.gitcraft;
 
-import com.github.winplay02.gitcraft.manifest.ManifestSource;
-import com.github.winplay02.gitcraft.mappings.MappingFlavour;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
 
-import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class GitCraftConfig {
-
-	/// Manifest Source option
-	public ManifestSource manifestSource = ManifestSource.MOJANG;
-
-	/// Additional Data import settings
-	public boolean loadIntegratedDatapack = true;
-	public boolean loadAssets = true;
-	public boolean loadAssetsExtern = true;
-	public boolean readableNbt = true;
-	public boolean loadDatagenRegistry = true;
-	public boolean sortJsonObjects = false;
-
-	/// Internal options
-	public boolean verifyChecksums = true;
-	public boolean checksumRemoveInvalidFiles = true;
-	public boolean printExistingFileChecksumMatching = false;
-	public boolean printExistingFileChecksumMatchingSkipped = false;
-	public boolean printNotRunSteps = false;
-	public int failedFetchRetryInterval = 500;
-	public int remappingThreads = Runtime.getRuntime().availableProcessors() - 3;
-	public int decompilingThreads = Runtime.getRuntime().availableProcessors() - 3;
-	public boolean useHardlinks = true;
-
-	/// Repository settings
-	public boolean noRepo = false;
-	public Path overrideRepositoryPath = null;
-	public String gitUser = "Mojang";
-	public String gitMail = "gitcraft@decompiled.mc";
-	public String gitMainlineLinearBranch = "master";
-	public boolean createVersionBranches = false;
-    public boolean createStableVersionBranches = false;
-	public boolean gcAfterRun = false;
-
-	/// Refresh settings
-	public boolean refreshDecompilation = false;
-	public String[] refreshOnlyVersion = null;
-	public String refreshMinVersion = null;
-	public String refreshMaxVersion = null;
-
-	/// Mapping settings
-	public MappingFlavour usedMapping = MappingFlavour.MOJMAP;
-	public MappingFlavour[] fallbackMappings = null;
-
-	/// Version settings
-	public boolean onlyStableReleases = false;
-	public boolean onlySnapshots = false;
-	public boolean skipNonLinear = false;
-	public String[] onlyVersion = null;
-	public String minVersion = null;
-	public String maxVersion = null;
-	public String[] excludedVersion = null;
-
 	/// Mapping quirks
 	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.16.2";
 
@@ -111,105 +51,4 @@ public class GitCraftConfig {
 
 	// There are no releases for these parchment versions (yet)
 	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.5");
-
-	public static GitCraftConfig defaultConfig() {
-		return new GitCraftConfig();
-	}
-
-	public void printConfigInformation() {
-		MiscHelper.println("Integrated datapack versioning is %s", loadIntegratedDatapack ? "enabled" : "disabled");
-		MiscHelper.println("Asset versioning is %s", loadAssets ? "enabled" : "disabled");
-		MiscHelper.println("External asset versioning is %s", loadAssetsExtern ? (loadAssets ? "enabled" : "implicitely disabled") : "disabled");
-		MiscHelper.println("Checksum verification is %s", verifyChecksums ? "enabled" : "disabled");
-		MiscHelper.println("Non-Linear version are %s", skipNonLinear ? "skipped" : "included");
-		MiscHelper.println("Repository creation and versioning is %s", noRepo ? "skipped" : "enabled");
-		if (refreshDecompilation && !isRefreshOnlyVersion() && !isRefreshMinVersion() && !isRefreshMaxVersion()) {
-			MiscHelper.println("All / specified version(s) will be %s", refreshDecompilation ? "deleted and decompiled again" : "reused if existing");
-		} else {
-			if (isRefreshOnlyVersion()) {
-				MiscHelper.println("Versions to refresh artifacts: %s", String.join(", ", refreshOnlyVersion));
-			} else if (isRefreshMinVersion() && isRefreshMaxVersion()) {
-				MiscHelper.println("Versions to refresh artifacts: from %s to %s", refreshMinVersion, refreshMaxVersion);
-			} else if (isRefreshMinVersion()) {
-				MiscHelper.println("Versions to refresh artifacts: all from %s", refreshMinVersion);
-			} else if (isRefreshMaxVersion()) {
-				MiscHelper.println("Versions to refresh artifacts: all up to %s", refreshMaxVersion);
-			}
-		}
-		String excludedBranches = onlyStableReleases ? " (only stable releases)" : (onlySnapshots ? " (only snapshots)" : "");
-		String excludedVersions = isAnyVersionExcluded() && this.excludedVersion.length > 0 ? String.format(" (excluding: %s)", String.join(", ", this.excludedVersion)) : "";
-		if (isOnlyVersion()) {
-			MiscHelper.println("Versions to decompile: %s%s%s", String.join(", ", onlyVersion), excludedBranches, excludedVersions);
-		} else if (isMinVersion() && isMaxVersion()) {
-			MiscHelper.println("Versions to decompile: Starting with %s up to %s%s%s", minVersion, maxVersion, excludedBranches, excludedVersions);
-		} else if (isMinVersion()) {
-			MiscHelper.println("Versions to decompile: Starting with %s%s%s", minVersion, excludedBranches, excludedVersions);
-		} else if (isMaxVersion()) {
-			MiscHelper.println("Versions to decompile: Up to %s%s%s", maxVersion, excludedBranches, excludedVersions);
-		} else {
-			MiscHelper.println("Versions to decompile: all%s%s", excludedBranches, excludedVersions);
-		}
-		MiscHelper.println("Mappings used: %s", usedMapping);
-		if (fallbackMappings != null && fallbackMappings.length > 0) {
-			MiscHelper.println("Mappings used as fallback: %s", Arrays.stream(fallbackMappings).map(Object::toString).collect(Collectors.joining(", ")));
-		}
-		if (overrideRepositoryPath != null) {
-			MiscHelper.println("Repository path is overridden. This may lead to various errors (see help). Proceed with caution. Target: %s", overrideRepositoryPath);
-		}
-		if (createVersionBranches) {
-			MiscHelper.println("A seperate branch will be created for each version.");
-		}
-        else if (createStableVersionBranches) {
-            MiscHelper.println("A seperate branch will be created for each stable version.");
-        }
-		if (sortJsonObjects) {
-			MiscHelper.println("JSON files (JSON objects) will be sorted in natural order.");
-		}
-	}
-
-	public boolean isOnlyVersion() {
-		return onlyVersion != null;
-	}
-
-	public boolean isMinVersion() {
-		return minVersion != null;
-	}
-
-	public boolean isMaxVersion() {
-		return maxVersion != null;
-	}
-
-	public boolean isAnyVersionExcluded() {
-		return excludedVersion != null;
-	}
-
-	public boolean isRefreshOnlyVersion() {
-		return refreshOnlyVersion != null;
-	}
-
-	public boolean isRefreshMinVersion() {
-		return refreshMinVersion != null;
-	}
-
-	public boolean isRefreshMaxVersion() {
-		return refreshMaxVersion != null;
-	}
-
-	public Optional<MappingFlavour> getMappingsForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedMapping.getMappingImpl().doMappingsExist(mcVersion)) {
-			return Optional.of(this.usedMapping);
-		}
-		if (this.fallbackMappings != null && this.fallbackMappings.length != 0) {
-			for (MappingFlavour nextBestFallbackMapping : this.fallbackMappings) {
-				if (nextBestFallbackMapping.getMappingImpl().doMappingsExist(mcVersion)) {
-					MiscHelper.println("WARNING: %s mappings do not exist for %s. Falling back to %s", this.usedMapping, mcVersion.launcherFriendlyVersionName(), nextBestFallbackMapping);
-					return Optional.of(nextBestFallbackMapping);
-				}
-			}
-			MiscHelper.panic("ERROR: %s mappings do not exist for %s. All fallback options (%s) have been exhausted", this.usedMapping, mcVersion.launcherFriendlyVersionName(), Arrays.stream(this.fallbackMappings).map(Object::toString).collect(Collectors.joining(", ")));
-		} else {
-			MiscHelper.panic("ERROR: %s mappings do not exist for %s. No fallback options were specified", this.usedMapping, mcVersion.launcherFriendlyVersionName());
-		}
-		return Optional.empty();
-	}
 }

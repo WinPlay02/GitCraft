@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.mappings;
 
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -45,7 +46,7 @@ public class MojangPlusYarnMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// TODO implement this and the two below
 		return null;
 	}

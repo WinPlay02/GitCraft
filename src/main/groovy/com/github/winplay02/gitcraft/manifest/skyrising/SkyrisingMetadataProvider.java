@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -44,15 +46,19 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	}
 
 	@Override
-	protected OrderedVersion loadVersionFromManifest(SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		VersionInfo info = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir.resolve("info"), "version info", VersionInfo.class);
-		VersionDetails details = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"), "version details", VersionDetails.class);
-		this.versionDetails.put(details.id(), details);
-		return OrderedVersion.from(info, details.normalizedVersion());
+	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
+		CompletableFuture<VersionInfo> infoFuture = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir.resolve("info"), "version info", VersionInfo.class);
+		CompletableFuture<VersionDetails> detailsFuture = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"), "version details", VersionDetails.class);
+		return CompletableFuture.allOf(infoFuture, detailsFuture).thenApply($ -> {
+			VersionInfo info = infoFuture.join();
+			VersionDetails details = detailsFuture.join();
+			this.versionDetails.put(details.id(), details);
+			return OrderedVersion.from(info, details.normalizedVersion());
+		});
 	}
 
 	@Override
-	protected void loadVersionsFromRepository(Path dir, Consumer<OrderedVersion> loader) throws IOException {
+	protected void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException {
 		Set<VersionInfo> infos = new LinkedHashSet<>();
 		Map<String, VersionDetails> detailses = new LinkedHashMap<>();
 

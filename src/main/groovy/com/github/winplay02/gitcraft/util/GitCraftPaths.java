@@ -1,42 +1,30 @@
 package com.github.winplay02.gitcraft.util;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemRoot;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class GitCraftPaths {
-	public static Path CURRENT_WORKING_DIRECTORY = null;
-	public static Path MAIN_ARTIFACT_STORE = null;
 	public static PipelineFilesystemRoot FILESYSTEM_ROOT = null;
 	public static Path SOURCE_EXTRA_VERSIONS = null;
 	protected static Path LEGACY_METADATA_STORE = null;
 	protected static Path GITCRAFT_VERSION_INFO = null;
-	protected static Path MAVEN_CACHE = null;
 
-	public static Path lookupCurrentWorkingDirectory() throws IOException {
-		return Paths.get(new File(".").getCanonicalPath());
-	}
-
-	public static void initializePaths(Path currentWorkingDirectory) throws IOException {
-		if (CURRENT_WORKING_DIRECTORY != null) {
+	public static void initializePaths() throws IOException {
+		if (FILESYSTEM_ROOT != null) {
 			return;
 		}
-		CURRENT_WORKING_DIRECTORY = currentWorkingDirectory;
-		MAIN_ARTIFACT_STORE = CURRENT_WORKING_DIRECTORY.resolve("artifact-store");
-		FILESYSTEM_ROOT = new PipelineFilesystemRoot(() -> MAIN_ARTIFACT_STORE);
-		SOURCE_EXTRA_VERSIONS = CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
-		LEGACY_METADATA_STORE = MAIN_ARTIFACT_STORE.resolve("metadata.json");
-		GITCRAFT_VERSION_INFO = MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
-		MAVEN_CACHE = MAIN_ARTIFACT_STORE.resolve("maven-cache.json");
+		FILESYSTEM_ROOT = new PipelineFilesystemRoot(() -> LibraryPaths.MAIN_ARTIFACT_STORE);
+		SOURCE_EXTRA_VERSIONS = LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
+		LEGACY_METADATA_STORE = LibraryPaths.MAIN_ARTIFACT_STORE.resolve("metadata.json");
+		GITCRAFT_VERSION_INFO = LibraryPaths.MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
 		// Warning for breaking changes (the only breaking changes for now)
-		Files.createDirectories(MAIN_ARTIFACT_STORE);
 		upgradeExisting();
 		FILESYSTEM_ROOT.initialize();
 		Files.createDirectories(SOURCE_EXTRA_VERSIONS);

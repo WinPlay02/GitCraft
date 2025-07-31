@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
@@ -25,6 +26,7 @@ import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.SerializationHelper;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
@@ -33,7 +35,6 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.util.FFNIODirectoryResultSaver;
 import com.github.winplay02.gitcraft.util.MiscHelper;
-import com.github.winplay02.gitcraft.util.SerializationHelper;
 
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
@@ -83,7 +84,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 		options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
 		options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 		options.put(IFernflowerPreferences.LOG_LEVEL, "trace");
-		options.put(IFernflowerPreferences.THREADS, Integer.toString(GitCraft.config.decompilingThreads));
+		options.put(IFernflowerPreferences.THREADS, Integer.toString(Library.CONF_GLOBAL.decompilingThreads()));
 
 		// Experimental QF preferences
 		options.put(IFernflowerPreferences.PATTERN_MATCHING, "1");

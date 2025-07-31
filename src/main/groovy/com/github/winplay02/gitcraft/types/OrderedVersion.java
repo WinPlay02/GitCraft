@@ -1,7 +1,7 @@
 package com.github.winplay02.gitcraft.types;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
-import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
+import com.github.winplay02.gitcraft.meta.MavenArtifactMetadata;
 import com.github.winplay02.gitcraft.meta.LibraryMetadata;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -90,7 +90,7 @@ public record OrderedVersion(
 		// Ignores natives, not needed as we don't have a runtime
 		Set<Artifact> libs = new HashSet<>();
 		for (LibraryMetadata library : versionInfo.libraries()) {
-			ArtifactMetadata artifactMeta = library.getArtifact();
+			MavenArtifactMetadata artifactMeta = library.getArtifact();
 			if (artifactMeta != null) {
 				libs.add(Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1()));
 			}

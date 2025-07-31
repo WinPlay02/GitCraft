@@ -16,12 +16,12 @@ public record MappingsProvider(StepWorker.Config config) implements StepWorker<O
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
 		Mapping mapping = config.mappingFlavour().getMappingImpl();
 		OrderedVersion mcVersion = context.targetVersion();
-		StepStatus mergedStatus = mapping.provideMappings(mcVersion, MinecraftJar.MERGED);
+		StepStatus mergedStatus = mapping.provideMappings(context, MinecraftJar.MERGED);
 		if (mergedStatus.hasRun()) {
 			return StepOutput.ofEmptyResultSet(mergedStatus);
 		}
-		StepStatus clientStatus = mapping.provideMappings(mcVersion, MinecraftJar.CLIENT);
-		StepStatus serverStatus = mapping.provideMappings(mcVersion, MinecraftJar.SERVER);
+		StepStatus clientStatus = mapping.provideMappings(context, MinecraftJar.CLIENT);
+		StepStatus serverStatus = mapping.provideMappings(context, MinecraftJar.SERVER);
 		return StepOutput.ofEmptyResultSet(StepStatus.merge(clientStatus, serverStatus));
 	}
 }

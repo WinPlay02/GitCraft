@@ -36,7 +36,7 @@ public class RepoWrapper implements Closeable {
 
 	public RepoWrapper(Path root_path) throws Exception {
 		this.root_path = Objects.requireNonNullElse(root_path, GitCraftPaths.FILESYSTEM_ROOT.getDefaultRepository());
-		this.git = Git.init().setInitialBranch(GitCraft.config.gitMainlineLinearBranch).setDirectory(this.root_path.toFile()).call();
+		this.git = Git.init().setInitialBranch(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()).setDirectory(this.root_path.toFile()).call();
 	}
 
 	@Override
@@ -105,7 +105,7 @@ public class RepoWrapper implements Closeable {
 		this.git.add().addFilepattern(".").setRenormalize(false).setUpdate(true).call();
 		// Stage new files
 		this.git.add().addFilepattern(".").setRenormalize(false).call();
-		PersonIdent author = new PersonIdent(authorName, authorMail, authoredDateTime, authoredTimeZone);
+		PersonIdent author = new PersonIdent(authorName, authorMail, authoredDateTime.toInstant(), authoredTimeZone.toZoneId());
 		this.git.commit().setMessage(message).setAuthor(author).setCommitter(author).setSign(false).call();
 	}
 

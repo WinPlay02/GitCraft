@@ -1,11 +1,12 @@
 package com.github.winplay02.gitcraft.integrity;
 
+import com.github.winplay02.gitcraft.config.IntegrityConfiguration;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;

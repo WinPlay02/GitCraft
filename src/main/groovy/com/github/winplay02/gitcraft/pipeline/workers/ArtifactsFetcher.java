@@ -49,7 +49,7 @@ public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<O
 
 	static StepOutput<OrderedVersion> fetchArtifact(Pipeline<OrderedVersion> pipeline, StepWorker.Context<OrderedVersion> context, Artifact artifact, StorageKey resultFile, String artifactKind) {
 		Path resultPath = pipeline.getStoragePath(resultFile, context);
-		StepStatus status = artifact.fetchArtifactToFile(resultPath, artifactKind);
+		StepStatus status = artifact.fetchArtifactToFile(context.executorService(), resultPath, artifactKind);
 		if (status.hasRun()) {
 			return StepOutput.ofSingle(status, resultFile);
 		}

@@ -5,7 +5,7 @@ import com.github.winplay02.gitcraft.util.RemoteHelper;
 import java.io.IOException;
 
 public record LibraryMetadata(String name, Downloads downloads) {
-	public ArtifactMetadata getArtifact() {
+	public MavenArtifactMetadata getArtifact() {
 		if (this.downloads() != null) {
 			return this.downloads().artifact();
 		}
@@ -17,6 +17,6 @@ public record LibraryMetadata(String name, Downloads downloads) {
 		}
 	}
 
-	public record Downloads(ArtifactMetadata artifact) {
+	public record Downloads(MavenArtifactMetadata artifact) {
 	}
 }

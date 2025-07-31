@@ -13,12 +13,10 @@ public record RepoGarbageCollector(StepWorker.Config config) implements StepWork
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
-		if (GitCraft.config.noRepo) {
+		if (GitCraft.getTransientApplicationConfiguration().noRepo()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		context.repository().gc();
 		return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
 	}
 }
-
-// create global executor class, that can reuse? http connections; only use n parallel connections for each origin

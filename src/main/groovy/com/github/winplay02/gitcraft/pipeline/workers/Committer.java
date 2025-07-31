@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.pipeline.workers;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
@@ -42,7 +43,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		if (GitCraft.config.noRepo) {
+		if (GitCraft.getTransientApplicationConfiguration().noRepo()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		// Check validity of prepared args
@@ -64,7 +65,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 			copyExternalAssets(pipeline, context, input);
 		});
 		// Optionally sort copied JSON files
-		if (GitCraft.config.sortJsonObjects) {
+		if (GitCraft.getDataConfiguration().sortJsonObjects()) {
 			MiscHelper.executeTimedStep("Sorting JSON files...", () -> {
 				// Sort them
 				sortJSONFiles(context.repository());
@@ -75,13 +76,13 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		MiscHelper.println("Committed %s to the repository! (Target Branch is %s)", context.targetVersion().launcherFriendlyVersionName(), target_branch.orElseThrow() + (GitCraft.versionGraph.isOnMainBranch(context.targetVersion()) ? "" : " (non-linear)"));
 
 		// Create branch for linear version
-		if (GitCraft.config.createVersionBranches && GitCraft.versionGraph.isOnMainBranch(context.targetVersion())) {
+		if (GitCraft.getRepositoryConfiguration().createVersionBranches() && GitCraft.versionGraph.isOnMainBranch(context.targetVersion())) {
 			MiscHelper.executeTimedStep("Creating branch for linear version...", () -> createBranchFromCurrentCommit(context.targetVersion(), context.repository()));
 			MiscHelper.println("Created branch for linear version %s", context.targetVersion().launcherFriendlyVersionName());
 		}
 
 		// Create branch for stable linear version
-		if (GitCraft.config.createStableVersionBranches && !GitCraft.config.createVersionBranches && !context.targetVersion().isSnapshotOrPending()) {
+		if (GitCraft.getRepositoryConfiguration().createStableVersionBranches() && !GitCraft.getRepositoryConfiguration().createVersionBranches() && !context.targetVersion().isSnapshotOrPending()) {
 			MiscHelper.executeTimedStep("Creating branch for stable linear version...", () -> createBranchFromCurrentCommit(context.targetVersion(), context.repository()));
 			MiscHelper.println("Created branch for stable linear version %s", context.targetVersion().launcherFriendlyVersionName());
 		}
@@ -108,7 +109,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
 		return (branch == null
 			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
-			? GitCraft.config.gitMainlineLinearBranch
+			? GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()
 			: root.launcherFriendlyVersionName()
 			: branch.launcherFriendlyVersionName()).replace(" ", "-");
 	}
@@ -152,7 +153,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 			if (!versionGraph.getRootVersions().contains(mcVersion)) {
 				MiscHelper.panic("A non-root version is committed as the root commit to the repository");
 			}
-			target_branch = GitCraft.config.gitMainlineLinearBranch;
+			target_branch = GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch();
 		}
 		return Optional.of(target_branch);
 	}
@@ -209,7 +210,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 
 	private void copyAssets(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		RepoWrapper repo = context.repository();
-		if (GitCraft.config.loadAssets || GitCraft.config.loadIntegratedDatapack) {
+		if (GitCraft.getDataConfiguration().loadAssets() || GitCraft.getDataConfiguration().loadIntegratedDatapack()) {
 			if (input.serverZip().isPresent()) {
 				Path artifactRootPath = pipeline.getStoragePath(input.serverZip().orElseThrow(), context);
 
@@ -221,13 +222,13 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 			}
 			if (input.assetsDataJar().isPresent()) {
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.assetsDataJar().orElseThrow(), context))) {
-					if (GitCraft.config.loadAssets) {
+					if (GitCraft.getDataConfiguration().loadAssets()) {
 						Path assetsSrcPath = fs.get().getPath("assets");
 						if (Files.exists(assetsSrcPath)) {
 							MiscHelper.copyLargeDir(fs.get().getPath("assets"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("assets"));
 						}
 					}
-					if (GitCraft.config.loadIntegratedDatapack) {
+					if (GitCraft.getDataConfiguration().loadIntegratedDatapack()) {
 						Path dataSrcPath = fs.get().getPath("data");
 						if (Files.exists(dataSrcPath)) {
 							MiscHelper.copyLargeDir(fs.get().getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("data"));
@@ -236,8 +237,8 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 				}
 			}
 		}
-		if (GitCraft.config.loadDatagenRegistry || (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack)) {
-			if (GitCraft.config.loadDatagenRegistry && input.datagenArtifactsReportsJar().isPresent()) {
+		if (GitCraft.getDataConfiguration().loadDatagenRegistry() || (GitCraft.getDataConfiguration().readableNbt() && GitCraft.getDataConfiguration().loadIntegratedDatapack())) {
+			if (GitCraft.getDataConfiguration().loadDatagenRegistry() && input.datagenArtifactsReportsJar().isPresent()) {
 				Path datagenReportsArchive = pipeline.getStoragePath(input.datagenArtifactsReportsJar().orElseThrow(), context);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenReportsArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("reports"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
@@ -249,7 +250,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 					}
 				}
 			}
-			if (GitCraft.config.readableNbt && GitCraft.config.loadIntegratedDatapack && input.datagenArtifactsSnbtJar().isPresent()) {
+			if (GitCraft.getDataConfiguration().readableNbt() && GitCraft.getDataConfiguration().loadIntegratedDatapack() && input.datagenArtifactsSnbtJar().isPresent()) {
 				Path datagenSnbtArchive = pipeline.getStoragePath(input.datagenArtifactsSnbtJar().orElseThrow(), context);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenSnbtArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
@@ -270,7 +271,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 	}
 
 	private void copyExternalAssets(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
-		if (GitCraft.config.loadAssets && GitCraft.config.loadAssetsExtern) {
+		if (GitCraft.getDataConfiguration().loadAssets() && GitCraft.getDataConfiguration().loadAssetsExtern()) {
 			if (input.assetsIndexPath().isEmpty() || input.assetsObjectStore().isEmpty()) {
 				MiscHelper.panic("Assets for version %s do not exist", context.targetVersion().launcherFriendlyVersionName());
 			}
@@ -280,7 +281,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 			AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMetadata.class));
 			// Copy Assets
 			Path targetRoot = context.repository().getRootPath().resolve("minecraft").resolve("external-resources").resolve("assets");
-			if (GitCraft.config.useHardlinks && artifactObjectStore.getFileSystem().equals(targetRoot.getFileSystem()) && !GitCraft.config.sortJsonObjects) {
+			if (Library.CONF_GLOBAL.useHardlinks() && artifactObjectStore.getFileSystem().equals(targetRoot.getFileSystem()) && !GitCraft.getDataConfiguration().sortJsonObjects()) {
 				for (Map.Entry<String, AssetsIndexMetadata.Asset> entry : assetsIndex.assetsIndex().objects().entrySet()) {
 					Path sourcePath = artifactObjectStore.resolve(entry.getValue().hash());
 					Path targetPath = targetRoot.resolve(entry.getKey());
@@ -299,7 +300,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 	}
 
 	private void createCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException {
-		repo.createCommitUsingAllChanges(GitCraft.config.gitUser, GitCraft.config.gitMail, new Date(Objects.requireNonNull(mcVersion.timestamp()).toInstant().toEpochMilli()), TimeZone.getTimeZone(Objects.requireNonNull(mcVersion.timestamp()).getZone()), mcVersion.toCommitMessage());
+		repo.createCommitUsingAllChanges(GitCraft.getRepositoryConfiguration().gitUser(), GitCraft.getRepositoryConfiguration().gitMail(), new Date(Objects.requireNonNull(mcVersion.timestamp()).toInstant().toEpochMilli()), TimeZone.getTimeZone(Objects.requireNonNull(mcVersion.timestamp()).getZone()), mcVersion.toCommitMessage());
 	}
 
 	private void createBranchFromCurrentCommit(OrderedVersion mcVersion, RepoWrapper repo) throws GitAPIException, IOException {

@@ -1,5 +1,7 @@
 package com.github.winplay02.gitcraft.integrity;
 
+import com.github.winplay02.gitcraft.config.IntegrityConfiguration;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.BiConsumer;

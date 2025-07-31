@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
@@ -68,7 +69,7 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 			.inferNameFromSameLvIndex(true)
 			.withMappings(mappingProvider)
 			.fixPackageAccess(true)
-			.threads(GitCraft.config.remappingThreads);
+			.threads(Library.CONF_GLOBAL.remappingThreads());
 		TinyRemapper remapper = remapperBuilder.build();
 		remapper.readInputs(jarIn);
 		try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(jarOut).build()) {

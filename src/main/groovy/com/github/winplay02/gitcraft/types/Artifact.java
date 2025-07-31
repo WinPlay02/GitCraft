@@ -1,9 +1,12 @@
 package com.github.winplay02.gitcraft.types;
 
+import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 
 import java.nio.file.Path;
+import java.util.concurrent.Executor;
 
 /**
  * Single artifact
@@ -25,17 +28,17 @@ public record Artifact(String url, String name, String sha1sum) {
 		return containingPath.resolve(name);
 	}
 
-	public StepStatus fetchArtifact(Path containingPath) {
-		return fetchArtifact(containingPath, "artifact");
+	public StepStatus fetchArtifact(Executor executor, Path containingPath) {
+		return fetchArtifact(executor, containingPath, "artifact");
 	}
 
-	public StepStatus fetchArtifact(Path containingPath, String artifactKind) {
+	public StepStatus fetchArtifact(Executor executor, Path containingPath, String artifactKind) {
 		Path path = resolve(containingPath);
-		return RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(path, sha1sum, artifactKind, name), RemoteHelper.SHA1);
+		return RemoteHelper.downloadToFileWithChecksumIfNotExists(executor, url, new FileSystemNetworkManager.LocalFileInfo(path, sha1sum, Library.IA_SHA1, artifactKind, name));
 	}
 
-	public StepStatus fetchArtifactToFile(Path filePath, String artifactKind) {
-		return RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(filePath, sha1sum, artifactKind, name), RemoteHelper.SHA1);
+	public StepStatus fetchArtifactToFile(Executor executor, Path filePath, String artifactKind) {
+		return RemoteHelper.downloadToFileWithChecksumIfNotExists(executor, url, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1sum, Library.IA_SHA1, artifactKind, name));
 	}
 
 	public static String nameFromUrl(String url) {

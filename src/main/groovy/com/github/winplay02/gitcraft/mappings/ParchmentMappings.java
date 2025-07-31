@@ -3,10 +3,11 @@ package com.github.winplay02.gitcraft.mappings;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -59,7 +60,7 @@ public class ParchmentMappings extends Mapping {
 		if (GitCraftConfig.parchmentMissingVersions.contains(mcVersion.launcherFriendlyVersionName()) || mcVersion.isSnapshotOrPending()) {
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(GitCraftConfig.PARCHMENT_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.PARCHMENT_START_VERSION_ID)) >= 0;
 	}
 
 	@Override
@@ -75,27 +76,29 @@ public class ParchmentMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// parchment is provided for the merged jar
 		if (minecraftJar != MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
 		}
-		Path mappingsPath = getMappingsPathInternal(mcVersion, null);
+		Path mappingsPath = getMappingsPathInternal(versionContext.targetVersion(), null);
 		if (Files.exists(mappingsPath) && validateMappings(mappingsPath)) {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(mappingsPath);
-		String lastestParchmentBuild = getLatestReleaseVersionParchmentBuild(mcVersion);
-		Path parchmentJson = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.json", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), lastestParchmentBuild));
+		String lastestParchmentBuild = getLatestReleaseVersionParchmentBuild(versionContext.targetVersion());
+		Path parchmentJson = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.json", versionContext.targetVersion().launcherFriendlyVersionName(), versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild));
 		StepStatus downloadStatus = null;
 		if (!Files.exists(parchmentJson)) {
-			Path parchmentJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.jar", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), lastestParchmentBuild));
+			Path parchmentJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild));
 			downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(
-					String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", mcVersion.launcherFriendlyVersionName(), lastestParchmentBuild, mcVersion.launcherFriendlyVersionName(), lastestParchmentBuild),
-					new RemoteHelper.LocalFileInfo(parchmentJar,
+					versionContext.executorService(),
+					String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild, versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild),
+					new FileSystemNetworkManager.LocalFileInfo(parchmentJar,
+							null,
 							null,
 							"parchment mapping",
-							mcVersion.launcherFriendlyVersionName())
+							versionContext.targetVersion().launcherFriendlyVersionName())
 			);
 			try (FileSystem fs = FileSystems.newFileSystem(parchmentJar)) {
 				Path mappingsPathInJar = fs.getPath("parchment.json");
@@ -106,10 +109,10 @@ public class ParchmentMappings extends Mapping {
 			}
 		}
 		// parchment requires mojmaps, which is provided separately for client and server jars
-		StepStatus mojmapsClientStatus = mojangMappings.provideMappings(mcVersion, MinecraftJar.CLIENT);
-		StepStatus mojmapsServerStatus = mojangMappings.provideMappings(mcVersion, MinecraftJar.SERVER);
+		StepStatus mojmapsClientStatus = mojangMappings.provideMappings(versionContext, MinecraftJar.CLIENT);
+		StepStatus mojmapsServerStatus = mojangMappings.provideMappings(versionContext, MinecraftJar.SERVER);
 		MemoryMappingTree mappings = new MemoryMappingTree();
-		mojangMappings.visit(mcVersion, minecraftJar, new MappingSourceNsSwitch(mappings, MappingsNamespace.NAMED.toString()));
+		mojangMappings.visit(versionContext.targetVersion(), minecraftJar, new MappingSourceNsSwitch(mappings, MappingsNamespace.NAMED.toString()));
 		ParchmentTreeV1 parchmentTreeV1 = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(parchmentJson), ParchmentTreeV1.class);
 		parchmentTreeV1.visit(mappings, MappingsNamespace.NAMED.toString());
 		try (MappingWriter writer = MappingWriter.create(mappingsPath, MappingFormat.TINY_2_FILE)) {

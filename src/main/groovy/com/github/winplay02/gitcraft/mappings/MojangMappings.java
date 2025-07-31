@@ -5,13 +5,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.Executor;
 
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -54,24 +55,24 @@ public class MojangMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// client and server mappings are provided separately
 		if (minecraftJar == MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
 		}
-		Path artifactTargetPath = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcVersionStore().resolve(mcVersion.launcherFriendlyVersionName());
-		Path mappingsPath = getMappingsPathInternal(mcVersion, minecraftJar);
+		Path artifactTargetPath = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcVersionStore().resolve(versionContext.targetVersion().launcherFriendlyVersionName());
+		Path mappingsPath = getMappingsPathInternal(versionContext.targetVersion(), minecraftJar);
 		Artifact artifact = null;
 		if (minecraftJar == MinecraftJar.CLIENT)
-			artifact = mcVersion.clientMappings();
+			artifact = versionContext.targetVersion().clientMappings();
 		if (minecraftJar == MinecraftJar.SERVER)
-			artifact = mcVersion.serverMappings();
+			artifact = versionContext.targetVersion().serverMappings();
 		if (artifact == null)
 			MiscHelper.panic("no mojang mappings artifact for %s jar", minecraftJar.name().toLowerCase());
-		return provideMappings(artifactTargetPath, artifact, mappingsPath);
+		return provideMappings(versionContext.executorService(), artifactTargetPath, artifact, mappingsPath);
 	}
 
-	private StepStatus provideMappings(Path artifactTargetPath, Artifact artifact, Path mappingsPath) throws IOException {
+	private StepStatus provideMappings(Executor executor, Path artifactTargetPath, Artifact artifact, Path mappingsPath) throws IOException {
 		if (artifact == null) {
 			return StepStatus.NOT_RUN;
 		}
@@ -79,7 +80,7 @@ public class MojangMappings extends Mapping {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(mappingsPath);
-		StepStatus status = artifact.fetchArtifact(artifactTargetPath);
+		StepStatus status = artifact.fetchArtifact(executor, artifactTargetPath);
 		Path artifactPath = artifact.resolve(artifactTargetPath);
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 		// Make official the source namespace

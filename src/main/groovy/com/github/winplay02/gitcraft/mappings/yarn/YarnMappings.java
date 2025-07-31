@@ -4,13 +4,15 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
+import com.github.winplay02.gitcraft.util.SerializationTypes;
 import groovy.lang.Tuple2;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingReader;
@@ -27,6 +29,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -79,7 +82,7 @@ public class YarnMappings extends Mapping {
 		if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(GitCraftConfig.YARN_MAPPINGS_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.YARN_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	@Override
@@ -94,52 +97,52 @@ public class YarnMappings extends Mapping {
 		return doMappingsExist(mcVersion);
 	}
 
-	private StepStatus fetchUnpickArtifacts(OrderedVersion mcVersion) throws IOException {
+	private StepStatus fetchUnpickArtifacts(StepWorker.Context<OrderedVersion> versionContext) throws IOException {
 		// Try constants JAR for unpicking
-		Path unpickingConstantsJar = getUnpickConstantsPath(mcVersion);
-		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		Path unpickingConstantsJar = getUnpickConstantsPath(versionContext.targetVersion());
+		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
 			return StepStatus.FAILED;
 		}
 		try {
-			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLConstants(), new RemoteHelper.LocalFileInfo(unpickingConstantsJar, null, "yarn unpicking constants", mcVersion.launcherFriendlyVersionName()));
+			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLConstants(), new FileSystemNetworkManager.LocalFileInfo(unpickingConstantsJar, null, null, "yarn unpicking constants", versionContext.targetVersion().launcherFriendlyVersionName()));
 		} catch (RuntimeException ignored) {
 			Files.deleteIfExists(unpickingConstantsJar);
 		}
-		MiscHelper.println("Yarn unpicking constants do not exist for %s, skipping download...", mcVersion.launcherFriendlyVersionName());
+		MiscHelper.println("Yarn unpicking constants do not exist for %s, skipping download...", versionContext.targetVersion().launcherFriendlyVersionName());
 		return StepStatus.FAILED;
 	}
 
 	@Override
-	public StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// fabric yarn is provided for the merged jar
 		if (minecraftJar != MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
 		}
-		Path mappingsFile = getMappingsPathInternal(mcVersion, minecraftJar);
-		Path unpickDefinitionsFile = getUnpickDefinitionsPath(mcVersion);
+		Path mappingsFile = getMappingsPathInternal(versionContext.targetVersion(), minecraftJar);
+		Path unpickDefinitionsFile = getUnpickDefinitionsPath(versionContext.targetVersion());
 		// Try existing
 		if (Files.exists(mappingsFile) && validateMappings(mappingsFile)) {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(mappingsFile);
 		// Get latest build info
-		FabricYarnVersionMeta yarnVersion = getYarnLatestBuild(mcVersion);
+		FabricYarnVersionMeta yarnVersion = getYarnLatestBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
-			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", mcVersion.launcherFriendlyVersionName());
-			yarnVersion = new FabricYarnVersionMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
+			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", versionContext.targetVersion().launcherFriendlyVersionName());
+			yarnVersion = new FabricYarnVersionMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
 		}
 		// Try latest yarn merged v2 JAR build
 		{
-			Path mappingsFileJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 			try {
-				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLMergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileJar, null, "yarn mapping", mcVersion.launcherFriendlyVersionName()));
+				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLMergedV2(), new FileSystemNetworkManager.LocalFileInfo(mappingsFileJar, null, null,"yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileJar)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 					Path unpickDefinitions = fs.getPath("extras", "definitions.unpick");
 					if (Files.exists(unpickDefinitions) && unpickDefinitionsFile != null) {
 						Files.copy(unpickDefinitions, unpickDefinitionsFile, StandardCopyOption.REPLACE_EXISTING);
-						fetchUnpickArtifacts(mcVersion); // ignore result for now
+						fetchUnpickArtifacts(versionContext); // ignore result for now
 					}
 					Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
 				}
@@ -147,22 +150,22 @@ public class YarnMappings extends Mapping {
 			} catch (IOException | RuntimeException ignored) {
 				Files.deleteIfExists(mappingsFileJar);
 			}
-			MiscHelper.println("Merged Yarn mappings do not exist for %s, merging with intermediary ourselves...", mcVersion.launcherFriendlyVersionName());
+			MiscHelper.println("Merged Yarn mappings do not exist for %s, merging with intermediary ourselves...", versionContext.targetVersion().launcherFriendlyVersionName());
 		}
 		// Merge with Intermediary mappings
 		{
-			Tuple2<Path, StepStatus> mappingsFileUnmerged = mappingsPathYarnUnmerged(mcVersion, yarnVersion);
+			Tuple2<Path, StepStatus> mappingsFileUnmerged = mappingsPathYarnUnmerged(versionContext, yarnVersion);
 			// intermediary is also provided for the merged jar
-			StepStatus intermediaryResult = intermediaryMappings.provideMappings(mcVersion, minecraftJar);
+			StepStatus intermediaryResult = intermediaryMappings.provideMappings(versionContext, minecraftJar);
 			MemoryMappingTree mappingTree = new MemoryMappingTree();
 			// Intermediary first
 			MappingSourceNsSwitch nsSwitchIntermediary = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString());
-			intermediaryMappings.visit(mcVersion, minecraftJar, nsSwitchIntermediary);
+			intermediaryMappings.visit(versionContext.targetVersion(), minecraftJar, nsSwitchIntermediary);
 			// Then named yarn
 			MappingSourceNsSwitch nsSwitchYarn = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString());
 			// unmerged yarn mappings (1.14 - 1.14.3 (exclusive)) seem to have their mappings backwards
-			if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(GitCraftConfig.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID)) < 0) {
-				MiscHelper.println("Yarn mappings for version %s are known to have switched namespaces", mcVersion.launcherFriendlyVersionName());
+			if (versionContext.targetVersion().compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID)) < 0) {
+				MiscHelper.println("Yarn mappings for version %s are known to have switched namespaces", versionContext.targetVersion().launcherFriendlyVersionName());
 				MappingReader.read(mappingsFileUnmerged.getV1(), new MappingNsRenamer(nsSwitchYarn, Map.of(MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())));
 			} else {
 				MappingReader.read(mappingsFileUnmerged.getV1(), nsSwitchYarn);
@@ -237,9 +240,9 @@ public class YarnMappings extends Mapping {
 	private FabricYarnVersionMeta getYarnLatestBuild(OrderedVersion mcVersion) {
 		if (yarnVersions == null) {
 			try {
-				List<FabricYarnVersionMeta> yarnVersionMetas = SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URL(URL_FABRIC_YARN_META)), SerializationHelper.TYPE_LIST_FABRIC_YARN_VERSION_META);
+				List<FabricYarnVersionMeta> yarnVersionMetas = SerializationHelper.deserialize(FileSystemNetworkManager.fetchAllFromURLSync(new URL(URL_FABRIC_YARN_META)), SerializationTypes.TYPE_LIST_FABRIC_YARN_VERSION_META);
 				yarnVersions = yarnVersionMetas.stream().collect(Collectors.groupingBy(FabricYarnVersionMeta::gameVersion)).values().stream().map(fabricYarnVersionMetas -> fabricYarnVersionMetas.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(FabricYarnVersionMeta::gameVersion, Function.identity()));
-			} catch (IOException e) {
+			} catch (IOException | URISyntaxException | InterruptedException e) {
 				throw new RuntimeException(e);
 			}
 		}
@@ -254,35 +257,35 @@ public class YarnMappings extends Mapping {
 			|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
 	}
 
-	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(OrderedVersion mcVersion, FabricYarnVersionMeta yarnVersion) {
+	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(StepWorker.Context<OrderedVersion> versionContext, FabricYarnVersionMeta yarnVersion) {
 		try {
-			Path mappingsFileUnmerged = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileUnmerged = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 			if (Files.exists(mappingsFileUnmerged) && validateMappings(mappingsFileUnmerged)) {
 				return Tuple2.tuple(mappingsFileUnmerged, StepStatus.UP_TO_DATE);
 			}
-			Path mappingsFileUnmergedJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
-			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLUnmergedV2(), new RemoteHelper.LocalFileInfo(mappingsFileUnmergedJar, null, "unmerged yarn mapping", mcVersion.launcherFriendlyVersionName()));
+			Path mappingsFileUnmergedJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
+			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLUnmergedV2(), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJar, null, null,"unmerged yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJar)) {
 				Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 				Files.copy(mappingsPathInJar, mappingsFileUnmerged, StandardCopyOption.REPLACE_EXISTING);
 			}
 			return Tuple2.tuple(mappingsFileUnmerged, result);
 		} catch (IOException | RuntimeException e) {
-			MiscHelper.println("Yarn mappings in tiny-v2 format do not exist for %s, falling back to tiny-v1 mappings...", mcVersion.launcherFriendlyVersionName());
+			MiscHelper.println("Yarn mappings in tiny-v2 format do not exist for %s, falling back to tiny-v1 mappings...", versionContext.targetVersion().launcherFriendlyVersionName());
 			try {
-				Path mappingsFileUnmergedv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+				Path mappingsFileUnmergedv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 				if (Files.exists(mappingsFileUnmergedv1) && validateMappings(mappingsFileUnmergedv1)) {
 					return Tuple2.tuple(mappingsFileUnmergedv1, StepStatus.UP_TO_DATE);
 				}
-				Path mappingsFileUnmergedJarv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
-				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(yarnVersion.makeMavenURLUnmergedV1(), new RemoteHelper.LocalFileInfo(mappingsFileUnmergedJarv1, null, "unmerged yarn mapping (v1 fallback)", mcVersion.launcherFriendlyVersionName()));
+				Path mappingsFileUnmergedJarv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
+				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLUnmergedV1(), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJarv1, null, null,"unmerged yarn mapping (v1 fallback)", versionContext.targetVersion().launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJarv1)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 					Files.copy(mappingsPathInJar, mappingsFileUnmergedv1, StandardCopyOption.REPLACE_EXISTING);
 				}
 				return Tuple2.tuple(mappingsFileUnmergedv1, result);
 			} catch (IOException e2) {
-				MiscHelper.println("Yarn mappings for version %s cannot be fetched. Giving up after trying merged-v2, v2, and v1 mappings.", mcVersion.launcherFriendlyVersionName());
+				MiscHelper.println("Yarn mappings for version %s cannot be fetched. Giving up after trying merged-v2, v2, and v1 mappings.", versionContext.targetVersion().launcherFriendlyVersionName());
 				throw new RuntimeException(e);
 			}
 		}

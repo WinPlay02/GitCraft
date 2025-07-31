@@ -33,11 +33,11 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, DataGenerator.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		if (!GitCraft.config.loadDatagenRegistry && (!GitCraft.config.readableNbt || !GitCraft.config.loadIntegratedDatapack)) {
+		if (!GitCraft.getDataConfiguration().loadDatagenRegistry() && (!GitCraft.getDataConfiguration().readableNbt() || !GitCraft.getDataConfiguration().loadIntegratedDatapack())) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		OrderedVersion mcVersion = context.targetVersion();
-		if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_START_VERSION)) < 0) {
+		if (mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_START_VERSION)) < 0) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		if (input.serverJar == null) {
@@ -47,18 +47,18 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 		Path artifactSnbtArchive = null;
 		Path artifactReportsArchive = null;
 
-		if (GitCraft.config.readableNbt) {
+		if (GitCraft.getDataConfiguration().readableNbt()) {
 			artifactSnbtArchive = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.DATAGEN_SNBT_ARCHIVE);
 			MiscHelper.deleteJarIfEmpty(artifactSnbtArchive);
 		}
 
-		if (GitCraft.config.loadDatagenRegistry) {
+		if (GitCraft.getDataConfiguration().loadDatagenRegistry()) {
 			artifactReportsArchive = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.DATAGEN_REPORTS_ARCHIVE);
 			MiscHelper.deleteJarIfEmpty(artifactReportsArchive);
 		}
 
-		if ((!GitCraft.config.readableNbt || Files.exists(artifactSnbtArchive))
-			&& (!GitCraft.config.loadDatagenRegistry || Files.exists(artifactReportsArchive))) {
+		if ((!GitCraft.getDataConfiguration().readableNbt() || Files.exists(artifactSnbtArchive))
+			&& (!GitCraft.getDataConfiguration().loadDatagenRegistry() || Files.exists(artifactReportsArchive))) {
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
 
@@ -66,7 +66,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 		Path datagenDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS_DATAGEN);
 		Files.createDirectories(datagenDirectory);
 
-		if (GitCraft.config.readableNbt) {
+		if (GitCraft.getDataConfiguration().readableNbt()) {
 			// Structures (& more)
 			{
 				Path dataJarPath = pipeline.getStoragePath(input.dataJar(), context);
@@ -95,12 +95,12 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			}
 			MiscHelper.deleteDirectory(datagenSnbtOutput);
 		}
-		if (GitCraft.config.loadDatagenRegistry) {
+		if (GitCraft.getDataConfiguration().loadDatagenRegistry()) {
 			StepStatus status = null;
 			Tuple2<OrderedVersion, Artifact> worldgenPack = EXTERNAL_WORLDGEN_PACKS.get(mcVersion);
 			if (worldgenPack != null) {
 				Path vanillaWorldgenDatapack = results.getPathForDifferentVersionKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, worldgenPack.getV1());
-				status = worldgenPack.getV2().fetchArtifactToFile(vanillaWorldgenDatapack, "vanilla worldgen datapack");
+				status = worldgenPack.getV2().fetchArtifactToFile(context.executorService(), vanillaWorldgenDatapack, "vanilla worldgen datapack");
 			}
 			// Datagen
 			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
@@ -125,7 +125,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 	}
 
 	private void runDatagen(OrderedVersion mcVersion, Path cwd, Path executable, String... args) throws IOException, InterruptedException {
-		if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(DATAGEN_BUNDLER_START_VERSION)) >= 0) {
+		if (mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(DATAGEN_BUNDLER_START_VERSION)) >= 0) {
 			// >= DATAGEN_BUNDLER: java -DbundlerMainClass=net.minecraft.data.Main -jar minecraft_server.jar
 			MiscHelper.createJavaJarSubprocess(executable, cwd, new String[]{"-DbundlerMainClass=net.minecraft.data.Main"}, args);
 		} else {
@@ -182,14 +182,14 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 
 		private void setArtifact(String version, String url, String sha1) {
 			artifacts.put(
-				GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(version),
+				GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(version),
 				Artifact.fromURL(url, sha1)
 			);
 		}
 
 		public Tuple2<OrderedVersion, Artifact> get(OrderedVersion mcVersion) {
-			if (mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START)) >= 0
-				&& mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END)) <= 0) {
+			if (mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_START)) >= 0
+				&& mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(EXT_VANILLA_WORLDGEN_PACK_END)) <= 0) {
 				Map.Entry<OrderedVersion, Artifact> entry = artifacts.floorEntry(mcVersion);
 				if (entry != null) {
 					return Tuple2.tuple(entry.getKey(), entry.getValue());

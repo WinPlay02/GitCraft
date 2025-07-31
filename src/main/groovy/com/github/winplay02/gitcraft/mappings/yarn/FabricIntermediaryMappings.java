@@ -4,9 +4,11 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
@@ -38,7 +40,7 @@ public class FabricIntermediaryMappings extends Mapping {
 		if (GitCraftConfig.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.config.manifestSource.getMetadataProvider().getVersionByVersionID(GitCraftConfig.FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	@Override
@@ -58,18 +60,18 @@ public class FabricIntermediaryMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// fabric intermediary is provided for the merged jar
 		if (minecraftJar != MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
 		}
-		Path mappingsFile = getMappingsPathInternal(mcVersion, minecraftJar);
+		Path mappingsFile = getMappingsPathInternal(versionContext.targetVersion(), minecraftJar);
 		if (Files.exists(mappingsFile) && validateMappings(mappingsFile)) {
 			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(mappingsFile);
-		Path mappingsV1 = getMappingsPathInternalV1(mcVersion);
-		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub("FabricMC/intermediary", "master", String.format("mappings/%s.tiny", mappingsIntermediaryPathQuirkVersion(mcVersion.launcherFriendlyVersionName())), new RemoteHelper.LocalFileInfo(mappingsV1, null, "intermediary mapping", mcVersion.launcherFriendlyVersionName()));
+		Path mappingsV1 = getMappingsPathInternalV1(versionContext.targetVersion());
+		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub(versionContext.executorService(), "FabricMC/intermediary", "master", String.format("mappings/%s.tiny", mappingsIntermediaryPathQuirkVersion(versionContext.targetVersion().launcherFriendlyVersionName())), new FileSystemNetworkManager.LocalFileInfo(mappingsV1, null, null,"intermediary mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 		try (BufferedReader br = Files.newBufferedReader(mappingsV1, StandardCharsets.UTF_8)) {
 			Tiny1FileReader.read(br, mappingTree);

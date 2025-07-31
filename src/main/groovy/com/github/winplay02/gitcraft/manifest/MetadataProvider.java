@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.manifest;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
@@ -26,7 +27,7 @@ public interface MetadataProvider<E extends AbstractVersion<E>> {
 	/**
 	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id VersionInfo.id}).
 	 */
-	Map<String, E> getVersions() throws IOException;
+	Map<String, E> getVersions(Executor executor) throws IOException;
 
 	/**
 	 * Finds parent nodes to the provided version. Used to construct the {@link com.github.winplay02.gitcraft.graph.AbstractVersionGraph}.

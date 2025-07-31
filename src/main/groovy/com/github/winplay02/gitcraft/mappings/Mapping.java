@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.mappings;
 
+import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -79,14 +80,14 @@ public abstract class Mapping {
 	 * After calling this method, a path returned by {@link #getMappingsPath(OrderedVersion, MinecraftJar)} should be valid.
 	 * This is only true if {@link #doMappingsExist(OrderedVersion, MinecraftJar)} returns true for the version.
 	 *
-	 * @param mcVersion Version
+	 * @param versionContext Version Context
 	 * @param minecraftJar Minecraft jar
 	 * @return A result
 	 */
-	public abstract StepStatus provideMappings(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException;
+	public abstract StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException;
 
 	/**
-	 * Should return a path to a tinyv2 mappings file, created by {@link #provideMappings(OrderedVersion, MinecraftJar)}
+	 * Should return a path to a tinyv2 mappings file, created by {@link #provideMappings(StepWorker.Context, MinecraftJar)}
 	 *
 	 * @param mcVersion Version
 	 * @param minecraftJar Minecraft jar
@@ -98,7 +99,7 @@ public abstract class Mapping {
 
 	/**
 	 * Should return a path to further information that may be additionally contained in a mappings-distribution.
-	 * These values will be populated by calling {@link #provideMappings(OrderedVersion, MinecraftJar)} first.
+	 * These values will be populated by calling {@link #provideMappings(StepWorker.Context, MinecraftJar)} first.
 	 * Examples for additional files are unpick definitions for yarn.
 	 *
 	 * @param mcVersion Version

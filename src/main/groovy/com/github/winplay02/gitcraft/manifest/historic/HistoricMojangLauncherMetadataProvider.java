@@ -11,6 +11,8 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider<MojangLauncherManifest, MojangLauncherManifest.VersionEntry> {
@@ -23,7 +25,7 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 	}
 
 	@Override
-	protected OrderedVersion loadVersionFromManifest(MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
+	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
 		OrderedVersion mojangLauncherVersion = this.mojangLauncherMetadataProvider.getVersionByVersionID(manifestEntry.id());
 		VersionDetails skyrisingVersion = this.skyrisingMetadataProvider.getVersionDetails(manifestEntry.id());
 		// TODO
@@ -31,7 +33,7 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 	}
 
 	@Override
-	protected void loadVersionsFromRepository(Path dir, Consumer<OrderedVersion> loader) throws IOException {
+	protected void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException {
 	}
 
 	@Override

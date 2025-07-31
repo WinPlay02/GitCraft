@@ -25,7 +25,7 @@ public record LibrariesFetcher(StepWorker.Config config) implements StepWorker<O
 		List<StepStatus> statuses = MiscHelper.runTasksInParallelAndAwaitResult(
 			maxRunningTasks,
 			context.executorService(),
-			context.targetVersion().libraries().stream().<Callable<StepStatus>>map(library -> () -> library.fetchArtifact(librariesDir, "library")).toList()
+			context.targetVersion().libraries().stream().<Callable<StepStatus>>map(library -> () -> library.fetchArtifact(context.executorService(), librariesDir, "library")).toList()
 		);
 
 		return new StepOutput<>(StepStatus.merge(statuses), results);

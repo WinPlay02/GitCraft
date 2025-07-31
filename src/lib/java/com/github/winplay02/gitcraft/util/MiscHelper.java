@@ -1,9 +1,11 @@
 package com.github.winplay02.gitcraft.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -262,6 +264,10 @@ public class MiscHelper {
 		E[] result = Arrays.copyOf(first, first.length + second.length);
 		System.arraycopy(second, 0, result, first.length, second.length);
 		return result;
+	}
+
+	public static <T extends Throwable> void throwUnchecked(Throwable t) throws T {
+		throw (T) t;
 	}
 
 	public static <T> CompletableFuture<List<T>> awaitAllFutures(List<CompletableFuture<T>> futures) {

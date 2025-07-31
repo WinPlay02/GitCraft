@@ -40,17 +40,17 @@ public record Resetter(StepWorker.Config config) implements StepWorker<OrderedVe
 		// delete all non-main refs that contain this commit (including remotes, tags, ...)
 		RevCommit commitToRemove = context.repository().findRevByCommitMessage(context.targetVersion().toCommitMessage());
 		if (commitToRemove != null) {
-			context.repository().checkoutBranch(GitCraft.config.gitMainlineLinearBranch);
+			context.repository().checkoutBranch(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch());
 			for (Ref ref : context.repository().getRefsContainingCommit(commitToRemove)) {
-				if (!ref.getName().equals(Constants.R_HEADS + GitCraft.config.gitMainlineLinearBranch) && !ref.getName().equals(Constants.HEAD)) {
+				if (!ref.getName().equals(Constants.R_HEADS + GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()) && !ref.getName().equals(Constants.HEAD)) {
 					context.repository().deleteRef(ref.getName());
 				}
 			}
 		}
 		if (context.versionGraph().getRootVersions().contains(context.targetVersion())) { // if root node is about to be refreshed, delete main branch and HEAD
 			context.repository().deleteRef(Constants.HEAD);
-			context.repository().deleteRef(GitCraft.config.gitMainlineLinearBranch);
-			context.repository().createSymbolicHEAD(Constants.R_HEADS + GitCraft.config.gitMainlineLinearBranch);
+			context.repository().deleteRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch());
+			context.repository().createSymbolicHEAD(Constants.R_HEADS + GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch());
 			return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
 		}
 		if (GitCraft.resetVersionGraph.getRootVersions().contains(context.targetVersion())) { // Min-Version reached
@@ -60,7 +60,7 @@ public record Resetter(StepWorker.Config config) implements StepWorker<OrderedVe
 			}
 			OrderedVersion newMainlineRoot = previousVersions.stream().filter(GitCraft.versionGraph::isOnMainBranch).findFirst().orElseThrow();
 			RevCommit commit = context.repository().findRevByCommitMessage(newMainlineRoot.toCommitMessage());
-			context.repository().resetRef(GitCraft.config.gitMainlineLinearBranch, commit);
+			context.repository().resetRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch(), commit);
 		}
 		return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
 	}

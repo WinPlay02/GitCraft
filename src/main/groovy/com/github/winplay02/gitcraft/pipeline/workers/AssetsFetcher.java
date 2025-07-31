@@ -24,7 +24,7 @@ public record AssetsFetcher(StepWorker.Config config) implements StepWorker<Orde
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
-		if (!GitCraft.config.loadAssetsExtern || !GitCraft.config.loadAssets) {
+		if (!GitCraft.getDataConfiguration().loadAssetsExtern() || !GitCraft.getDataConfiguration().loadAssets()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		if (context.targetVersion().assetsIndex() == null) {
@@ -42,7 +42,7 @@ public record AssetsFetcher(StepWorker.Config config) implements StepWorker<Orde
 			MiscHelper.runTasksInParallelAndAwaitResult(
 				maxRunningTasks,
 				context.executorService(),
-				assetsIndex.assets().stream().<Callable<StepOutput<OrderedVersion>>>map(assetObject -> () -> StepOutput.ofEmptyResultSet(assetObject.fetchArtifact(assetsObjectsDir, "asset"))).toList()
+				assetsIndex.assets().stream().<Callable<StepOutput<OrderedVersion>>>map(assetObject -> () -> StepOutput.ofEmptyResultSet(assetObject.fetchArtifact(context.executorService(), assetsObjectsDir, "asset"))).toList()
 			)
 		);
 		return StepOutput.merge(statuses);

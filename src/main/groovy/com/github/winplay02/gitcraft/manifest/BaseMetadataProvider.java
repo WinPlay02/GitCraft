@@ -1,12 +1,15 @@
 package com.github.winplay02.gitcraft.manifest;
 
+import com.github.winplay02.gitcraft.Library;
+import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.meta.VersionInfo;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
+import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
 import com.github.winplay02.gitcraft.util.MiscHelper;
-import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
+import com.github.winplay02.gitcraft.util.SerializationTypes;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -18,11 +21,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -60,14 +66,14 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	}
 
 	protected final Path getSemverCachePath() {
-		return GitCraftPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", this.getInternalName()));
+		return LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", this.getInternalName()));
 	}
 
 	protected final void loadSemverCache() {
 		Path cachePath = this.getSemverCachePath();
 		if (Files.exists(cachePath)) {
 			try {
-				this.semverCache.putAll(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(cachePath), SerializationHelper.TYPE_TREE_MAP_STRING_STRING));
+				this.semverCache.putAll(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(cachePath), SerializationTypes.TYPE_TREE_MAP_STRING_STRING));
 			} catch (IOException e) {
 				MiscHelper.println("This is not a fatal error: %s", e);
 			}
@@ -87,37 +93,42 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id()}).
 	 */
 	@Override
-	public final Map<String, OrderedVersion> getVersions() throws IOException {
+	public final Map<String, OrderedVersion> getVersions(Executor executor) throws IOException {
 		if (!this.versionsLoaded) {
-			this.loadVersions();
+			this.loadVersions(executor);
 			this.writeSemverCache();
 		}
 		return Collections.unmodifiableMap(this.versionsById);
 	}
 
-	private void loadVersions() throws IOException {
+	private void loadVersions(Executor executor) throws IOException {
 		this.versionsById.clear();
 		MiscHelper.println("Loading available versions from '%s'...", this.getName());
 		for (MetadataSources.RemoteVersionsManifest<M, E> manifestSource : this.manifestSources) {
 			MiscHelper.println("Reading versions manifest from %s...", manifestSource.url());
 			M manifest = this.fetchVersionsManifest(manifestSource);
+			Map<String, CompletableFuture<OrderedVersion>> futureVersions = new HashMap<>();
 			for (E versionEntry : manifest.versions()) {
-				if (!this.versionsById.containsKey(versionEntry.id())) {
-					this.versionsById.put(versionEntry.id(), this.loadVersionFromManifest(versionEntry, this.manifestMetadata));
+				if (!this.versionsById.containsKey(versionEntry.id()) && !futureVersions.containsKey(versionEntry.id())) {
+					futureVersions.put(versionEntry.id(), this.loadVersionFromManifest(executor, versionEntry, this.manifestMetadata));
 				} else {
 					if (this.isExistingVersionMetadataValid(versionEntry, this.manifestMetadata)) {
 						MiscHelper.println("WARNING: Found duplicate manifest version entry: %s (Matches previous entry)", versionEntry.id());
 					} else {
-						MiscHelper.panic("Found duplicate manifest version enryt: %s (Differs from previous)", versionEntry.id());
+						MiscHelper.panic("Found duplicate manifest version entry: %s (Differs from previous)", versionEntry.id());
 					}
 				}
+			}
+			CompletableFuture.allOf(futureVersions.values().toArray(CompletableFuture[]::new)).join();
+			for(Map.Entry<String, CompletableFuture<OrderedVersion>> idVersion : futureVersions.entrySet()) {
+				this.versionsById.put(idVersion.getKey(), idVersion.getValue().getNow(null));
 			}
 		}
 		for (MetadataSources.RemoteMetadata<E> metadataSource : this.metadataSources) {
 			MiscHelper.println("Reading extra metadata for %s...", metadataSource.versionEntry().id());
 			E versionEntry = metadataSource.versionEntry();
 			if (!this.versionsById.containsKey(versionEntry.id())) {
-				this.versionsById.put(versionEntry.id(), this.loadVersionFromManifest(versionEntry, this.remoteMetadata));
+				this.versionsById.put(versionEntry.id(), this.loadVersionFromManifest(executor, versionEntry, this.remoteMetadata).join());
 			} else {
 				MiscHelper.panic("Found duplicate extra version entry: %s (Differs from previous)", versionEntry.id());
 			}
@@ -125,7 +136,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		for (MetadataSources.LocalRepository repository : this.repositorySources) {
 			MiscHelper.println("Reading extra metadata repository from %s...", repository.directory());
 			Path dir = repository.directory();
-			this.loadVersionsFromRepository(dir, mcVersion -> {
+			this.loadVersionsFromRepository(executor, dir, mcVersion -> {
 				String versionId = mcVersion.launcherFriendlyVersionName();
 				if (!this.versionsById.containsKey(versionId)) {
 					this.versionsById.put(versionId, mcVersion);
@@ -139,8 +150,8 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	private final M fetchVersionsManifest(MetadataSources.RemoteVersionsManifest<M, E> manifestSource) throws IOException {
 		try {
-			return SerializationHelper.deserialize(SerializationHelper.fetchAllFromURL(new URI(manifestSource.url()).toURL()), manifestSource.manifestClass());
-		} catch (MalformedURLException | URISyntaxException e) {
+			return SerializationHelper.deserialize(FileSystemNetworkManager.fetchAllFromURLSync(new URI(manifestSource.url()).toURL()), manifestSource.manifestClass());
+		} catch (MalformedURLException | URISyntaxException | InterruptedException e) {
 			throw new IOException("unable to fetch versions manifest", e);
 		}
 	}
@@ -153,18 +164,31 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	 * @return OrderedVersion Version
 	 * @throws IOException on failure
 	 */
-	protected abstract OrderedVersion loadVersionFromManifest(E manifestEntry, Path targetDir) throws IOException;
+	protected abstract CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, E manifestEntry, Path targetDir) throws IOException;
 
 	/**
 	 * Fetch all the metadata provided by this repository and pass them to the given version loader.
 	 */
-	protected abstract void loadVersionsFromRepository(Path dir, Consumer<OrderedVersion> loader) throws IOException;
+	protected abstract void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException;
 
-	protected final <T> T fetchVersionMetadata(String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass) throws IOException {
+	protected final <T> CompletableFuture<T> fetchVersionMetadata(Executor executor, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass) throws IOException {
+		URI uri = null;
+		try {
+			uri = new URI(url);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
 		String fileName = url.substring(url.lastIndexOf('/') + 1);
 		Path filePath = targetDir.resolve(fileName);
-		RemoteHelper.downloadToFileWithChecksumIfNotExists(url, new RemoteHelper.LocalFileInfo(filePath, sha1, targetFileKind, id), RemoteHelper.SHA1);
-		return this.loadVersionMetadata(filePath, metadataClass);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, Library.IA_SHA1, targetFileKind, id), true);
+		return status.thenApply($ -> {
+			try {
+				return this.loadVersionMetadata(filePath, metadataClass);
+			} catch (IOException e) {
+				MiscHelper.panicBecause(e, "Error while fetching version metadata");
+			}
+			return null;
+		});
 	}
 
 	protected final <T> T loadVersionMetadata(Path targetFile, Class<T> metadataClass) throws IOException {
@@ -198,13 +222,13 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	protected final boolean isExistingVersionMetadataValid(String id, String url, String sha1, Path targetDir) throws IOException {
 		String fileName = url.substring(url.lastIndexOf('/') + 1);
 		Path filePath = targetDir.resolve(fileName);
-		return Files.exists(filePath) && (sha1 == null || RemoteHelper.SHA1.fileMatchesChecksum(filePath, sha1));
+		return Files.exists(filePath) && (sha1 == null || Library.IA_SHA1.fileMatchesChecksum(filePath, sha1));
 	}
 
 	@Override
 	public final OrderedVersion getVersionByVersionID(String versionId) {
 		try {
-			return this.getVersions().get(versionId);
+			return this.getVersions(null).get(versionId);
 		} catch (Exception e) {
 			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
 			return null;

@@ -37,6 +37,7 @@ dependencies {
 	// General
 	implementation "org.apache.groovy:groovy-all:${groovy_version}"
 	implementation "com.google.code.gson:gson:${gson_version}"
+	libImplementation "com.google.code.gson:gson:${gson_version}"
 
 	// Loader and its deps
 	implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
@@ -68,12 +69,12 @@ dependencies {
 	implementation "org.vineflower:vineflower:${vineflower_version}"
 
 	// Testing
-	testImplementation(platform("org.junit:junit-bom:5.10.+"))
-	testImplementation("org.junit.jupiter:junit-jupiter:5.10.+")
+	testImplementation(platform("org.junit:junit-bom:5.13.+"))
+	testImplementation("org.junit.jupiter:junit-jupiter:5.13.+")
 }
 
 // if not working: run ./gradlew run --refresh-dependencies
-configurations.all {
+configurations.configureEach {
 	resolutionStrategy.cacheDynamicVersionsFor 15, 'minutes'
 }
 

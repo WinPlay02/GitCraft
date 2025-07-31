@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -159,21 +161,23 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	}
 
 	@Override
-	protected OrderedVersion loadVersionFromManifest(MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		VersionInfo info = this.fetchVersionMetadata(manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir, "version info", VersionInfo.class);
-		String semanticVersion = this.lookupSemanticVersion(info);
-		return OrderedVersion.from(info, semanticVersion);
+	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
+		CompletableFuture<VersionInfo> futureInfo = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir, "version info", VersionInfo.class);
+		return futureInfo.thenApply(info -> {
+			String semanticVersion = this.lookupSemanticVersion(executor, info);
+			return OrderedVersion.from(info, semanticVersion);
+		});
 	}
 
 	@Override
-	protected void loadVersionsFromRepository(Path dir, Consumer<OrderedVersion> loader) throws IOException {
+	protected void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException {
 		try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
 			for (Path file : dirStream) {
 				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
 
 				// we could check every field but this ought to be enough
 				if (info.id() != null && info.assets() != null) {
-					String semanticVersion = this.lookupSemanticVersion(info);
+					String semanticVersion = this.lookupSemanticVersion(executor, info);
 					loader.accept(OrderedVersion.from(info, semanticVersion));
 				}
 			}
@@ -197,7 +201,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// END FIX
 	);
 
-	private String lookupSemanticVersion(VersionInfo versionMeta) {
+	private String lookupSemanticVersion(Executor executor, VersionInfo versionMeta) {
 		{
 			if (minecraftVersionSemVerOverride.containsKey(versionMeta.id())) {
 				return minecraftVersionSemVerOverride.get(versionMeta.id());
@@ -223,7 +227,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			} catch (Exception | AssertionError ignored2) {
 				Path clientJarPath = null;
 				if (clientJar != null) {
-					clientJar.fetchArtifact(clientJarArtifactParentPath(versionMeta), "client jar");
+					clientJar.fetchArtifact(executor, clientJarArtifactParentPath(versionMeta), "client jar");
 					clientJarPath = clientJar.resolve(clientJarArtifactParentPath(versionMeta));
 				}
 				lookedUpVersion = McVersionLookup.getVersion(clientJarPath != null ? List.of(clientJarPath) : Collections.emptyList(), versionMeta.mainClass(), null);

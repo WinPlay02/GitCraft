@@ -1,6 +1,8 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
@@ -48,12 +50,16 @@ public class Pipeline<T extends AbstractVersion<T>> {
 	public Path getStoragePath(StorageKey key, StepWorker.Context<T> context) {
 		Tuple2<StorageKey, T> versionOverride = Tuple.tuple(key, context.targetVersion());
 		if (this.overriddenPaths.containsKey(versionOverride)) {
+			// TODO debug
+			MiscHelper.println("Get Storage Differing version: %s -> %s", context.targetVersion(), this.overriddenPaths.get(versionOverride));
 			return this.getStoragePath(key, context.withDifferingVersion(this.overriddenPaths.get(versionOverride)));
 		}
 		return this.getFilesystemStorage().getPath(key, context);
 	}
 
 	protected void relinkStoragePathToDifferentVersion(StorageKey key, StepWorker.Context<T> context, T version) {
+		// TODO debug
+		MiscHelper.println("Relink Storage Differing version: %s -> %s", version, context.targetVersion());
 		this.overriddenPaths.put(Tuple.tuple(key, context.targetVersion()), version);
 	}
 
@@ -94,7 +100,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 			case UP_TO_DATE ->
 				MiscHelper.println("\tStep '%s' for %s (%s) was \u001B[32malready up-to-date\u001B[0m", versionStep.step().getName(), context, config);
 			case NOT_RUN -> {
-				if (GitCraft.config.printNotRunSteps) {
+				if (Library.CONF_GLOBAL.printNotRunSteps()) {
 					MiscHelper.println("Step '%s' for %s (%s) was \u001B[36mnot run\u001B[0m", versionStep.step().getName(), context, config);
 				}
 			}
@@ -166,7 +172,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 
 		private StepWorker.Config getConfig(T version) {
-			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(GitCraft.config.getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED))); // TODO fix dependency on OrderedVersion
+			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(GitCraft.getApplicationConfiguration().getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED))); // TODO fix dependency on OrderedVersion
 		}
 
 		private void runSingleTask(ExecutorService executor, TupleVersionStep<T> task, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {

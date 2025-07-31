@@ -1,7 +1,5 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.mappings.yarn.FabricYarnVersionMeta;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -18,7 +16,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,24 +23,13 @@ import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.TreeMap;
 
 public class SerializationHelper {
-
 	protected static Gson gson;
-
-	public static final TypeToken<LinkedHashMap<String, OrderedVersion>> TYPE_LINKED_HASH_MAP_STRING_VERSION = new TypeToken<LinkedHashMap<String, OrderedVersion>>() {
-	};
-	public static final TypeToken<TreeMap<String, String>> TYPE_TREE_MAP_STRING_STRING = new TypeToken<TreeMap<String, String>>() {
-	};
-	public static final TypeToken<ArrayList<FabricYarnVersionMeta>> TYPE_LIST_FABRIC_YARN_VERSION_META = new TypeToken<ArrayList<FabricYarnVersionMeta>>() {
-	};
 
 	static {
 		gson = new GsonBuilder().registerTypeHierarchyAdapter(Path.class, new TypeAdapter<Path>() {
@@ -112,14 +98,6 @@ public class SerializationHelper {
 
 	public static <T> T deserialize(String json, TypeToken<T> type) {
 		return gson.fromJson(json, type);
-	}
-
-	public static String fetchAllFromURL(URL url) throws IOException {
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		try (InputStream inStream = new BufferedInputStream(url.openConnection().getInputStream())) {
-			inStream.transferTo(outStream);
-		}
-		return outStream.toString(StandardCharsets.UTF_8);
 	}
 
 	public static String fetchAllFromPath(Path path) throws IOException {

@@ -24,7 +24,9 @@ public record StepResults<T extends AbstractVersion<T>>(Set<StorageKey> result) 
 
 	public Path getPathForDifferentVersionKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StorageKey storageKey, T version) {
 		this.result.add(storageKey);
-		pipeline.relinkStoragePathToDifferentVersion(storageKey, context, version);
+		if (!version.equals(context.targetVersion())) {
+			pipeline.relinkStoragePathToDifferentVersion(storageKey, context, version);
+		}
 		return pipeline.getStoragePath(storageKey, context);
 	}
 

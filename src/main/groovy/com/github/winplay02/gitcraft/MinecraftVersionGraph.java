@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			return branchLength;
 		}
 
-		Predicate<OrderedVersion> mainBranchPredicate = v -> !GitCraft.config.manifestSource.getMetadataProvider().shouldExcludeFromMainBranch(v);
+		Predicate<OrderedVersion> mainBranchPredicate = v -> !GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().shouldExcludeFromMainBranch(v);
 
 		NavigableSet<OrderedVersion> nextBranches = this.getFollowingVertices(mcVersion);
 		Set<OrderedVersion> potentialMainBranches = nextBranches.stream().filter(mainBranchPredicate).collect(Collectors.toSet());
@@ -95,7 +96,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		// walk the main branch and continue along the longest path
 		for (OrderedVersion branch : nextBranches) {
 			// ignore versions that are *definitely* side branches
-			if (GitCraft.config.manifestSource.getMetadataProvider().shouldExcludeFromMainBranch(branch)) {
+			if (GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().shouldExcludeFromMainBranch(branch)) {
 				continue;
 			}
 
@@ -119,15 +120,15 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	/** nodes that mark new side branches, mapped to the path lengths to the tips of those side branches */
 	public HashMap<OrderedVersion, Integer> branchPoints = new HashMap<>();
 
-	public static MinecraftVersionGraph createFromMetadata(MetadataProvider<OrderedVersion> provider) throws IOException {
+	public static MinecraftVersionGraph createFromMetadata(Executor executor, MetadataProvider<OrderedVersion> provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
 		// Compatibility with existing repositories
 		if (provider.getSource() != ManifestSource.MOJANG) {
 			graph.repoTags.add(String.format("manifest_%s", provider.getInternalName()));
 		}
-		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersions().values());
-		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions().values().stream().filter(value -> !provider.shouldExcludeFromMainBranch(value)).toList());
-		Map<String, OrderedVersion> semverMetaVersions = provider.getVersions().values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
+		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersions(executor).values());
+		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions(executor).values().stream().filter(value -> !provider.shouldExcludeFromMainBranch(value)).toList());
+		Map<String, OrderedVersion> semverMetaVersions = provider.getVersions(executor).values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
 		for (OrderedVersion version : metaVersions) {
 			graph.edgesFw.computeIfAbsent(version, value -> new TreeSet<>());
 			List<String> previousVersion = provider.getParentVersion(version);
