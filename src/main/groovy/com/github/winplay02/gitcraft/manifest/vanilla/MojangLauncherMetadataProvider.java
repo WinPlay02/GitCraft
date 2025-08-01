@@ -387,6 +387,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			case "1.20.5-alpha.24.12.potato.original" -> {
 				return List.of("1.20.5-alpha.24.12.a");
 			}
+			case "1.21.6-alpha.25.14.craftmine" -> {
+				return List.of("1.21.5");
+			}
 			// Special case to make version graph not contain a cycle
 			case "1.9.2" -> {
 				return List.of("1.9.1");

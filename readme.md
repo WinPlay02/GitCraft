@@ -1,4 +1,21 @@
 # GitCraft-Next
+
+## License
+
+GitCraft-Next Copyright (C) 2023 - 2025 WinPlay02 and contributors
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+## Contributors
+
+- [Kas-tle](https://github.com/Kas-tle)
+- [A11v1r15](https://github.com/A11v1r15)
+- [SpaceWalkerRS](https://github.com/SpaceWalkerRS)
+
+## General
+
 Generates a Git repository of decompiled Minecraft. For personal use only. Do not share or upload the resulting repository.
 
 To get started, execute `./gradlew run` from the command line, advanced usage (`./gradlew run --args="[Options]"`) is shown below.
