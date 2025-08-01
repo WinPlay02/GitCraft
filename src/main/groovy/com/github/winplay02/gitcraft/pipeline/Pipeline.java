@@ -259,7 +259,9 @@ public class Pipeline<T extends AbstractVersion<T>> {
 	public void runFully(RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 		InFlightExecutionPlan<T> executionPlan = InFlightExecutionPlan.create(this.getDescription(), versionGraph);
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Pipeline-Executor-" + this.getDescription().descriptionName()).factory())) {
-			this.threadLimiter = new Semaphore(Library.CONF_GLOBAL.maxParallelPipelineSteps());
+			if (Library.CONF_GLOBAL.maxParallelPipelineSteps() > 0) {
+				this.threadLimiter = new Semaphore(Library.CONF_GLOBAL.maxParallelPipelineSteps());
+			}
 			executionPlan.run(executor, this, repository, versionGraph);
 		}
 		if (!executionPlan.failedTasks().isEmpty()) {
