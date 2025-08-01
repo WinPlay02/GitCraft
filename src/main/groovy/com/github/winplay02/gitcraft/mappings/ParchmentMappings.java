@@ -1,7 +1,7 @@
 package com.github.winplay02.gitcraft.mappings;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
@@ -57,10 +57,10 @@ public class ParchmentMappings extends Mapping {
 		if (!mojangMappings.doMappingsExist(mcVersion)) {
 			return false;
 		}
-		if (GitCraftConfig.parchmentMissingVersions.contains(mcVersion.launcherFriendlyVersionName()) || mcVersion.isSnapshotOrPending()) {
+		if (GitCraftQuirks.parchmentMissingVersions.contains(mcVersion.launcherFriendlyVersionName()) || mcVersion.isSnapshotOrPending()) {
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.PARCHMENT_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.PARCHMENT_START_VERSION_ID)) >= 0;
 	}
 
 	@Override

@@ -1,7 +1,7 @@
 package com.github.winplay02.gitcraft.mappings.yarn;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
@@ -37,10 +37,10 @@ public class FabricIntermediaryMappings extends Mapping {
 
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
-		if (GitCraftConfig.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
+		if (GitCraftQuirks.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class FabricIntermediaryMappings extends Mapping {
 	}
 
 	protected static String mappingsIntermediaryPathQuirkVersion(String version) {
-		return GitCraftConfig.yarnInconsistentVersionNaming.getOrDefault(version, version);
+		return GitCraftQuirks.yarnInconsistentVersionNaming.getOrDefault(version, version);
 	}
 
 	@Override

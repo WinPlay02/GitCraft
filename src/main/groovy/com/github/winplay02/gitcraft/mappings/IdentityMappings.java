@@ -9,6 +9,7 @@ import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 
 public class IdentityMappings extends Mapping {
@@ -24,7 +25,7 @@ public class IdentityMappings extends Mapping {
 
 	@Override
 	public String getDestinationNS() {
-		return this.getSourceNS();
+		return MappingsNamespace.NAMED.toString();
 	}
 
 	@Override

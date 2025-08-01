@@ -338,6 +338,53 @@ public class GitCraftTest {
 	}
 
 	@Test
+	public void pipelineOldAlpha() throws Exception {
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph _versionGraph;
+		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
+			_versionGraph = MinecraftVersionGraph.createFromMetadata(executor, metadataBootstrap);
+		}
+		Configuration.reset();
+		//
+		GitCraft.main(new String[]{"--only-version=a1.2.6", "--mappings=identity_unmapped"});
+		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
+			assertNotNull(repoWrapper);
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()));
+			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("a1.2.6"))).getParentCount());
+			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("a1.2.6")));
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets/terrain.png", targetCommit.getTree())) { //
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets/com", targetCommit.getTree())) { //
+				assertNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/external-resources", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/data", targetCommit.getTree())) {
+				assertNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-snbt", targetCommit.getTree())) {
+				assertNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-reports", targetCommit.getTree())) {
+				assertNull(walk);
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/exp-vanilla-worldgen", targetCommit.getTree())) {
+				assertNull(walk); // Exists for this version
+			}
+			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/client", targetCommit.getTree())) {
+				assertNotNull(walk);
+			}
+		}
+	}
+
+	@Test
 	public void pipelineReset() throws Exception {
 		Configuration.reset();
 		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime", "--refresh", "--refresh-min-version=1.18"});

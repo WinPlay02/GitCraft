@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
@@ -34,7 +34,7 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 		}
 		// obfuscated jars for versions older than 1.3 cannot be merged
 		// those versions must be merged after remapping, if the mapping flavour allows it
-		if (this.obfuscated == Objects.requireNonNull(mcVersion.timestamp()).isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)) {
+		if (this.obfuscated == Objects.requireNonNull(mcVersion.timestamp()).isBefore(GitCraftQuirks.FIRST_MERGEABLE_VERSION_RELEASE_TIME)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		if (!this.obfuscated && config.mappingFlavour().getMappingImpl().supportsMergingPre1_3Versions()) {

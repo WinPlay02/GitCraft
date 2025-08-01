@@ -1,7 +1,7 @@
 package com.github.winplay02.gitcraft.mappings.yarn;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
@@ -82,7 +82,7 @@ public class YarnMappings extends Mapping {
 		if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
 			return false;
 		}
-		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.YARN_MAPPINGS_START_VERSION_ID)) >= 0;
+		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.YARN_MAPPINGS_START_VERSION_ID)) >= 0;
 	}
 
 	@Override
@@ -164,7 +164,7 @@ public class YarnMappings extends Mapping {
 			// Then named yarn
 			MappingSourceNsSwitch nsSwitchYarn = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString());
 			// unmerged yarn mappings (1.14 - 1.14.3 (exclusive)) seem to have their mappings backwards
-			if (versionContext.targetVersion().compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftConfig.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID)) < 0) {
+			if (versionContext.targetVersion().compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID)) < 0) {
 				MiscHelper.println("Yarn mappings for version %s are known to have switched namespaces", versionContext.targetVersion().launcherFriendlyVersionName());
 				MappingReader.read(mappingsFileUnmerged.getV1(), new MappingNsRenamer(nsSwitchYarn, Map.of(MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())));
 			} else {
@@ -250,11 +250,11 @@ public class YarnMappings extends Mapping {
 	}
 
 	private static boolean isYarnBrokenVersion(OrderedVersion mcVersion) {
-		return GitCraftConfig.yarnBrokenVersions.contains(mcVersion.launcherFriendlyVersionName())
+		return GitCraftQuirks.yarnBrokenVersions.contains(mcVersion.launcherFriendlyVersionName())
 			/* not really broken, but does not exist: */
-			|| GitCraftConfig.yarnMissingVersions.contains(mcVersion.launcherFriendlyVersionName())
+			|| GitCraftQuirks.yarnMissingVersions.contains(mcVersion.launcherFriendlyVersionName())
 			/* not broken, but does not exist, because of a re-upload */
-			|| GitCraftConfig.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
+			|| GitCraftQuirks.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
 	}
 
 	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(StepWorker.Context<OrderedVersion> versionContext, FabricYarnVersionMeta yarnVersion) {

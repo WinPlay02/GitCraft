@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
+import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsUnpacker;
 import com.github.winplay02.gitcraft.pipeline.workers.Committer;
 import com.github.winplay02.gitcraft.pipeline.workers.DataGenerator;
@@ -42,7 +43,15 @@ import static com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage.U
 public record PipelineDescription<T extends AbstractVersion<T>>(String descriptionName,
 																List<Step> steps,
 																Map<Step, BiFunction<PipelineFilesystemStorage<T>, StepResults<T>, StepInput>> stepInputMap,
-																Map<Step, StepDependency> stepDependencies) {
+																Map<Step, StepDependency> stepDependencies,
+																BiFunction<AbstractVersionGraph<T>, StepWorker.Context<T>, Boolean> skipVersion) {
+
+	public PipelineDescription(String descriptionName,
+							   List<Step> steps,
+							   Map<Step, BiFunction<PipelineFilesystemStorage<T>, StepResults<T>, StepInput>> stepInputMap,
+							   Map<Step, StepDependency> stepDependencies) {
+		this(descriptionName, steps, stepInputMap, stepDependencies, ($, $$) -> false);
+	}
 
 	public Set<Step> getIntraVersionDependencies(Step step) {
 		return this.stepDependencies.getOrDefault(step, StepDependency.EMPTY).dependencyTypes().keySet();
@@ -97,6 +106,8 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		}
 	}
 
+	public static final BiFunction<PipelineFilesystemStorage<OrderedVersion>, StepResults<OrderedVersion>, StepInput> EMPTY_INPUT_PROVIDER = (_storage, _results) -> StepInput.EMPTY;
+
 	// Reset is not in the default pipeline, as parallelization would be even trickier, since every step (more or less) depends on it
 	public static final PipelineDescription<OrderedVersion> RESET_PIPELINE = new PipelineDescription<>("Reset", List.of(Step.RESET), Map.of(), Map.of(Step.RESET, StepDependency.ofInterVersion(Step.RESET)));
 
@@ -118,13 +129,13 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		MiscHelper.mergeMaps(
 			new HashMap<>(),
 			Map.of(
-				Step.FETCH_ARTIFACTS, (_storage, _results) -> new StepInput.Empty(),
-				Step.FETCH_LIBRARIES, (_storage, _results) -> new StepInput.Empty(),
-				Step.FETCH_ASSETS, (_storage, _results) -> new StepInput.Empty(),
+				Step.FETCH_ARTIFACTS, EMPTY_INPUT_PROVIDER,
+				Step.FETCH_LIBRARIES, EMPTY_INPUT_PROVIDER,
+				Step.FETCH_ASSETS, EMPTY_INPUT_PROVIDER,
 				Step.UNPACK_ARTIFACTS, (storage, results) -> new ArtifactsUnpacker.Inputs(results.getKeyIfExists(ARTIFACTS_SERVER_ZIP)),
 				Step.MERGE_OBFUSCATED_JARS, (storage, results) -> new JarsMerger.Inputs(results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
 				Step.DATAGEN, (storage, results) -> new DataGenerator.Inputs(results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR).orElseThrow(), results.getKeyByPriority(MERGED_JAR_OBFUSCATED, ARTIFACTS_CLIENT_JAR).orElseThrow()),
-				Step.PROVIDE_MAPPINGS, (storage, results) -> new StepInput.Empty(),
+				Step.PROVIDE_MAPPINGS, EMPTY_INPUT_PROVIDER,
 				Step.REMAP_JARS, (storage, results) -> new Remapper.Inputs(results.getKeyIfExists(MERGED_JAR_OBFUSCATED), results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
 				Step.MERGE_REMAPPED_JARS, (storage, results) -> new JarsMerger.Inputs(results.getKeyIfExists(REMAPPED_CLIENT_JAR), results.getKeyIfExists(REMAPPED_SERVER_JAR)),
 				Step.UNPICK_JARS, (storage, results) -> new Unpicker.Inputs(results.getKeyIfExists(REMAPPED_MERGED_JAR), results.getKeyIfExists(REMAPPED_CLIENT_JAR), results.getKeyIfExists(REMAPPED_SERVER_JAR))
@@ -148,8 +159,15 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
 			Step.DECOMPILE_JARS, StepDependency.mergeDependencies(StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.REMAP_JARS, Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS)), StepDependency.ofInterVersion(Step.DECOMPILE_JARS)), // only allow one decompile job concurrently
 			Step.COMMIT, StepDependency.mergeDependencies(StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_ASSETS, Step.DECOMPILE_JARS, Step.DATAGEN), StepDependency.ofInterVersion(Step.COMMIT))
-		));
+		),
+		(graph, versionCtx) -> versionCtx.repository() != null && versionCtx.repository().existsRevWithCommitMessageNoExcept(versionCtx.targetVersion().toCommitMessage()));
 
 	// GC does not need to be in the default pipeline, as it is sufficient to only gc at the end once
-	public static final PipelineDescription<OrderedVersion> GC_PIPELINE = new PipelineDescription<>("GC", List.of(Step.REPO_GARBAGE_COLLECTOR), Map.of(), Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependency.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)));
+	public static final PipelineDescription<OrderedVersion> GC_PIPELINE = new PipelineDescription<>(
+		"GC",
+		List.of(Step.REPO_GARBAGE_COLLECTOR),
+		Map.of(Step.REPO_GARBAGE_COLLECTOR, EMPTY_INPUT_PROVIDER),
+		Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependency.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)),
+		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
+	);
 }

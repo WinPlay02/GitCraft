@@ -1,7 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
@@ -50,16 +49,12 @@ public class Pipeline<T extends AbstractVersion<T>> {
 	public Path getStoragePath(StorageKey key, StepWorker.Context<T> context) {
 		Tuple2<StorageKey, T> versionOverride = Tuple.tuple(key, context.targetVersion());
 		if (this.overriddenPaths.containsKey(versionOverride)) {
-			// TODO debug
-			MiscHelper.println("Get Storage Differing version: %s -> %s", context.targetVersion(), this.overriddenPaths.get(versionOverride));
 			return this.getStoragePath(key, context.withDifferingVersion(this.overriddenPaths.get(versionOverride)));
 		}
 		return this.getFilesystemStorage().getPath(key, context);
 	}
 
 	protected void relinkStoragePathToDifferentVersion(StorageKey key, StepWorker.Context<T> context, T version) {
-		// TODO debug
-		MiscHelper.println("Relink Storage Differing version: %s -> %s", version, context.targetVersion());
 		this.overriddenPaths.put(Tuple.tuple(key, context.targetVersion()), version);
 	}
 
@@ -75,14 +70,18 @@ public class Pipeline<T extends AbstractVersion<T>> {
 
 		try {
 			StepWorker<T, ?> worker = (StepWorker<T, ?>) versionStep.step().createWorker(config);
-			status = worker.runGeneric(
-				this,
-				context,
-				this.getDescription().stepInputMap().get(versionStep.step()).apply(this.getFilesystemStorage(), results),
-				results
-			);
-			if (status.results() != results) {
-				results.addAll(status.results());
+			if (worker.shouldExecute(this, context)) {
+				status = worker.runGeneric(
+					this,
+					context,
+					this.getDescription().stepInputMap().get(versionStep.step()).apply(this.getFilesystemStorage(), results),
+					results
+				);
+				if (status.results() != results) {
+					results.addAll(status.results());
+				}
+			} else {
+				status = StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 			}
 		} catch (Exception e) {
 			status = StepOutput.ofEmptyResultSet(StepStatus.FAILED);
@@ -185,7 +184,11 @@ public class Pipeline<T extends AbstractVersion<T>> {
 				StepWorker.Config config = this.getConfig(task.version());
 				boolean failed = false;
 				try {
-					pipeline.runSingleVersionSingleStep(task, context, config);
+					if (!pipeline.pipelineDescription.skipVersion().apply(versionGraph, context)) {
+						pipeline.runSingleVersionSingleStep(task, context, config);
+					} else {
+						MiscHelper.println("Skipping step '%s' for %s (%s)...", task.step().getName(), context, config);
+					}
 					executingSubset.remove(task);
 					completedSubset.add(task);
 				} catch (Exception e) {
@@ -243,17 +246,10 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 	}
 
-	public void runFully(RepoWrapper repository, AbstractVersionGraph<T> versionGraph) throws Exception {
+	public void runFully(RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 		InFlightExecutionPlan<T> executionPlan = InFlightExecutionPlan.create(this.getDescription(), versionGraph);
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Pipeline-Executor-" + this.getDescription().descriptionName()).factory())) {
 			executionPlan.run(executor, this, repository, versionGraph);
-			/*while (true) {
-				try {
-					if (executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS)) {
-						break;
-					}
-				} catch (InterruptedException ignored) {}
-			}*/
 		}
 		if (!executionPlan.failedTasks().isEmpty()) {
 			executionPlan.failedTasks().forEach((key, value) -> {
@@ -262,15 +258,10 @@ public class Pipeline<T extends AbstractVersion<T>> {
 			});
 			MiscHelper.panic("Execution failed, for more information see trace(s) above");
 		}
-		// TODO remove this, after fixing other TODO
-		/*for (OrderedVersion mcVersion : versionGraph) {
-			if (repository == null || !repository.existsRevWithCommitMessage(mcVersion.toCommitMessage())) { // TODO this skip condition should be applied to the version graph directly, not during execution
-				this.runSingleVersion(repository, versionGraph, mcVersion);
-			}
-		}*/
 	}
 
 	public static <T extends AbstractVersion<T>> void run(PipelineDescription<T> description, PipelineFilesystemStorage<T> storage, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) throws Exception {
+		MiscHelper.println("========== Running Pipeline '%s' ==========", description.descriptionName());
 		Pipeline<T> pipeline = new Pipeline<>(description, storage);
 		pipeline.runFully(repository, versionGraph);
 	}

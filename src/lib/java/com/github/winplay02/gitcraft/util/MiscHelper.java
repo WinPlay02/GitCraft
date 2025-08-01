@@ -1,17 +1,16 @@
 package com.github.winplay02.gitcraft.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -66,18 +65,60 @@ public class MiscHelper {
 	}
 
 	public static void copyLargeDirExcept(Path source, Path target, List<Path> exceptions) {
+		Map<Path, Integer> pathUsage = new HashMap<>();
 		try (Stream<Path> walk = Files.walk(source)) {
 			for (Path path : (Iterable<? extends Path>) walk::iterator) {
 				Path resultPath = target.resolve(source.relativize(path).toString());
-				if (exceptions.contains(resultPath)) {
+				if (exceptions.contains(path) || exceptions.stream().anyMatch(path::startsWith)) {
 					continue;
 				}
 				if (Files.isDirectory(path) && Files.notExists(resultPath)) {
 					Files.createDirectories(resultPath);
+					pathUsage.compute(resultPath.getParent(), (k, v) -> v == null ? 1 : v + 1);
 				} else if (Files.isRegularFile(path)) {
 					Files.copy(path, resultPath, StandardCopyOption.REPLACE_EXISTING);
+					pathUsage.compute(resultPath.getParent(), (k, v) -> v == null ? 1 : v + 1);
 				}
 			}
+			removeUnusedDirectories(pathUsage);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	private static void removeUnusedDirectories(Map<Path, Integer> pathUsage) throws IOException {
+		// Remove unused directories
+		while (pathUsage.values().stream().anyMatch(num -> num == 0)) {
+			List<Path> unusedPaths = pathUsage.entrySet().stream().filter(entry -> entry.getValue() == 0).map(Map.Entry::getKey).toList();
+			for (Path uPath : unusedPaths) {
+				Files.delete(uPath);
+				pathUsage.remove(uPath);
+				pathUsage.compute(uPath.getParent(), (k, v) -> Objects.requireNonNull(v) - 1);
+			}
+		}
+	}
+
+	public static void copyLargeDirExceptNoFileExt(Path source, Path target, List<Path> exceptions, Set<String> fileExtensionExceptions) {
+		Map<Path, Integer> pathUsage = new HashMap<>();
+		try (Stream<Path> walk = Files.walk(source)) {
+			for (Path path : (Iterable<? extends Path>) walk::iterator) {
+				Path resultPath = target.resolve(source.relativize(path).toString());
+				if (exceptions.contains(path) || exceptions.stream().anyMatch(path::startsWith)) {
+					continue;
+				}
+				if (Files.isDirectory(path) && Files.notExists(resultPath)) {
+					Files.createDirectories(resultPath);
+					pathUsage.compute(resultPath.getParent(), (k, v) -> v == null ? 1 : v + 1);
+				} else if (Files.isRegularFile(path)) {
+					if (fileExtensionExceptions.stream().noneMatch(ext -> path.toString().endsWith("." + ext))) {
+						Files.copy(path, resultPath, StandardCopyOption.REPLACE_EXISTING);
+						pathUsage.compute(resultPath.getParent(), (k, v) -> v == null ? 1 : v + 1);
+					} else {
+						pathUsage.putIfAbsent(resultPath.getParent(), 0);
+					}
+				}
+			}
+			removeUnusedDirectories(pathUsage);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

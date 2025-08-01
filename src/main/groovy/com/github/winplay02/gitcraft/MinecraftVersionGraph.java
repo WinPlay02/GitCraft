@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -193,7 +194,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		if (this.roots.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
 		}
-		return this.roots.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).get().getKey();
+		return this.roots.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
 	}
 
 	public boolean isOnMainBranch(OrderedVersion mcVersion) {

@@ -67,6 +67,15 @@ public class RepoWrapper implements Closeable {
 		return this.git.log().all().setRevFilter(new CommitMsgFilter(commitMessage)).call().iterator().hasNext();
 	}
 
+	public boolean existsRevWithCommitMessageNoExcept(String commitMessage) {
+		try {
+			return this.existsRevWithCommitMessage(commitMessage);
+		} catch (GitAPIException | IOException e) {
+			MiscHelper.panicBecause(e, "Could not lookup revision in repository");
+			return false;
+		}
+	}
+
 	public RevCommit findRevByCommitMessage(String commitMessage) throws GitAPIException, IOException {
 		Iterator<RevCommit> iterator = this.git.log().all().setRevFilter(new CommitMsgFilter(commitMessage)).call().iterator();
 		if (iterator.hasNext()) {

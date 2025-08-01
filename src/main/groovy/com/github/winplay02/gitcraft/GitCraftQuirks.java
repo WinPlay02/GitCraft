@@ -6,7 +6,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
-public class GitCraftConfig {
+public class GitCraftQuirks {
 	/// Mapping quirks
 	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.16.2";
 

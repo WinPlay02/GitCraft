@@ -32,6 +32,11 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 	private static final String EXT_VANILLA_WORLDGEN_PACK_END = "21w44a";
 
 	@Override
+	public boolean shouldExecute(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context) {
+		return context.targetVersion().compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_START_VERSION)) >= 0;
+	}
+
+	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, DataGenerator.Inputs input, StepResults<OrderedVersion> results) throws Exception {
 		if (!GitCraft.getDataConfiguration().loadDatagenRegistry() && (!GitCraft.getDataConfiguration().readableNbt() || !GitCraft.getDataConfiguration().loadIntegratedDatapack())) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);

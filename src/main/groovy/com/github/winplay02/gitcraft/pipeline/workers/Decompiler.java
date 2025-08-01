@@ -31,7 +31,6 @@ import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.util.FFNIODirectoryResultSaver;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -60,6 +59,9 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
 	private StepOutput<OrderedVersion> decompileJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
+		if (inputFile == null) {
+			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
+		}
 		Path jarIn = pipeline.getStoragePath(inputFile, context);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);

@@ -226,6 +226,11 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 						Path assetsSrcPath = fs.get().getPath("assets");
 						if (Files.exists(assetsSrcPath)) {
 							MiscHelper.copyLargeDir(fs.get().getPath("assets"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("assets"));
+						} else {
+							// Copy old (unstructured) assets
+							for (Path rootPath : fs.get().getRootDirectories()) {
+								MiscHelper.copyLargeDirExceptNoFileExt(rootPath, repo.getRootPath().resolve("minecraft").resolve("resources").resolve("assets"), List.of(rootPath.resolve("META-INF")), Set.of("class"));
+							}
 						}
 					}
 					if (GitCraft.getDataConfiguration().loadIntegratedDatapack()) {

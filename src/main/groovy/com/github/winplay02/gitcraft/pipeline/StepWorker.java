@@ -19,6 +19,10 @@ public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 		return this.run(pipeline, context, castInput, results);
 	}
 
+	default boolean shouldExecute(Pipeline<T> pipeline, Context<T> context) {
+		return true;
+	}
+
 	record Config(MappingFlavour mappingFlavour) {
 
 		@Override
