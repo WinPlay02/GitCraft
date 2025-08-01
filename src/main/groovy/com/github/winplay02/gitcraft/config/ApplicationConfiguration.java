@@ -18,6 +18,20 @@ import static com.github.winplay02.gitcraft.config.Configuration.Utils._null;
 import static com.github.winplay02.gitcraft.config.Configuration.Utils.array;
 import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
 
+/**
+ * GitCraft Application Configuration
+ *
+ * @param manifestSource Manifest source for versions
+ * @param usedMapping Mappings used to make versions comparable and readable
+ * @param fallbackMappings Mappings used if primary mappings are not available (they're tried in the order provided)
+ * @param onlyStableReleases Whether only stable releases should be handled
+ * @param onlySnapshots Whether only snapshots should be handled
+ * @param skipNonLinear Whether non-linear versions are not handled
+ * @param onlyVersion Set of versions that are handled; Order is not important here as there exists a defined partial order on the versions
+ * @param minVersion The min version that is handled; Every version greater than this version is also included, as there exists a defined partial order on the versions
+ * @param maxVersion The max version that is handled; Every version less than this version is also included, as there exists a defined partial order on the versions
+ * @param excludedVersion Versions that should be excluded
+ */
 public record ApplicationConfiguration(ManifestSource manifestSource,
 									   MappingFlavour usedMapping,
 									   MappingFlavour[] fallbackMappings,

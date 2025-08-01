@@ -8,6 +8,16 @@ import java.util.Map;
 
 import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
 
+/**
+ * Data Import Configuration
+ *
+ * @param loadIntegratedDatapack Whether the integrated datapack should be included in versioning
+ * @param loadAssets Whether any integrated assets/resources should be included in versioning
+ * @param loadAssetsExtern Whether any external (assigned via manifest) assets/resources should be included in versioning
+ * @param readableNbt Whether raw NBT files should be converted to the readable SNBT format and additionally included in versioning
+ * @param loadDatagenRegistry Whether datagenerated registry artifacts should be included in versioning
+ * @param sortJsonObjects Whether JSON files should be sorted in a deterministic order to make them more comparable
+ */
 public record DataConfiguration(boolean loadIntegratedDatapack,
 								boolean loadAssets,
 								boolean loadAssetsExtern,

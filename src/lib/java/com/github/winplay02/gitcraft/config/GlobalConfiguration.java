@@ -9,6 +9,22 @@ import java.util.Map;
 
 import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
 
+/**
+ * Global Configuration
+ *
+ * @param checksumRemoveInvalidFiles Whether non-matching files are removed from the artifact store
+ * @param printExistingFileChecksumMatching Whether existing files are logged if their checksum matches
+ * @param printExistingFileChecksumMatchingSkipped Whether skipped existing files are logged (their validity cannot be proven)
+ * @param printNotRunSteps Whether not run steps of the pipeline are logged
+ * @param failedFetchRetryInterval Interval at which a request is resend after being completed with error
+ * @param remappingThreads Amount of threads used for the remapper
+ * @param decompilingThreads Amount of threads used for the decompiler
+ * @param useHardlinks Whether hardlinks are used when moving files to the repository (improves performance on non-reflink supporting filesystems)
+ * @param maxConcurrentHttpStreams Max amount of HTTP/2 streams that can be concurrently used per connection
+ * @param maxConcurrentHttpConnections Max amount of HTTP/1.1 connections can be used
+ * @param maxConcurrentHttpRequestsPerOrigin Max amount of HTTP Requests that are in flight at a given time per origin
+ * @param maxParallelPipelineSteps Max amount of pipeline steps that can be processed in parallel (0 means unlimited)
+ */
 public record GlobalConfiguration(boolean checksumRemoveInvalidFiles,
 								  boolean printExistingFileChecksumMatching,
 								  boolean printExistingFileChecksumMatchingSkipped,
@@ -68,6 +84,10 @@ public record GlobalConfiguration(boolean checksumRemoveInvalidFiles,
 
 		if (maxConcurrentHttpRequestsPerOrigin <= 0) {
 			maxConcurrentHttpRequestsPerOrigin = DEFAULT_MAX_CONCURRENT_HTTP_REQUESTS_PER_ORIGIN;
+		}
+
+		if (maxParallelPipelineSteps < 0) {
+			maxParallelPipelineSteps = DEFAULT.maxParallelPipelineSteps();
 		}
 	}
 

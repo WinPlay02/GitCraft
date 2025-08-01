@@ -28,6 +28,9 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
 		OrderedVersion mojangLauncherVersion = this.mojangLauncherMetadataProvider.getVersionByVersionID(manifestEntry.id());
 		VersionDetails skyrisingVersion = this.skyrisingMetadataProvider.getVersionDetails(manifestEntry.id());
+		for (VersionDetails.ManifestEntry skyrisingManifestEntry : skyrisingVersion.manifests()) {
+
+		}
 		// TODO
 		return null;
 	}

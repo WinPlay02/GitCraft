@@ -1,6 +1,5 @@
 package com.github.winplay02.gitcraft.config;
 
-import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.google.gson.JsonElement;
 
 import java.util.List;

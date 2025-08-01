@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.Library;
+import com.github.winplay02.gitcraft.config.GlobalConfiguration;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
@@ -22,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -180,6 +182,9 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					return;
 				}
 				executingSubset.add(task);
+				if (pipeline.threadLimiter != null) {
+					pipeline.threadLimiter.acquireUninterruptibly();
+				}
 				StepWorker.Context<T> context = this.getContext(task.version(), repository, versionGraph, executor);
 				StepWorker.Config config = this.getConfig(task.version());
 				boolean failed = false;
@@ -198,6 +203,9 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					e.printStackTrace();
 				}
 				signalUpdate();
+				if (pipeline.threadLimiter != null) {
+					pipeline.threadLimiter.release();
+				}
 				if (!failed) {
 					scanForTasks(executor, pipeline, repository, versionGraph);
 				} else {
@@ -246,9 +254,12 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 	}
 
+	private Semaphore threadLimiter = null;
+
 	public void runFully(RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 		InFlightExecutionPlan<T> executionPlan = InFlightExecutionPlan.create(this.getDescription(), versionGraph);
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Pipeline-Executor-" + this.getDescription().descriptionName()).factory())) {
+			this.threadLimiter = new Semaphore(Library.CONF_GLOBAL.maxParallelPipelineSteps());
 			executionPlan.run(executor, this, repository, versionGraph);
 		}
 		if (!executionPlan.failedTasks().isEmpty()) {

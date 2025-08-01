@@ -7,6 +7,16 @@ import java.util.Map;
 
 import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
 
+/**
+ * Repository Configuration
+ *
+ * @param gitUser Name of User-Identity used for git
+ * @param gitMail Mail of User-Identity used for git
+ * @param gitMainlineLinearBranch Branch name used for 'mainline' versions
+ * @param createVersionBranches Whether branches should be created for all versions
+ * @param createStableVersionBranches Whether branches should be created for stable versions
+ * @param gcAfterRun Whether garbage-collection should be run after completing a run
+ */
 public record RepositoryConfiguration(String gitUser,
 									  String gitMail,
 									  String gitMainlineLinearBranch,

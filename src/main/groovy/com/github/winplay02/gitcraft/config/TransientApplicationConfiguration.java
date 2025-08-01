@@ -7,6 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * GitCraft Transient Application Configuration (not loaded from the configuration file)
+ *
+ * @param noRepo Whether the committing to the repository step should be skipped
+ * @param overrideRepositoryPath Path to a repository that should be used instead of the calculated repository path
+ * @param refreshDecompilation Whether existing artifacts should be deleted and generated (useful, e.g. if there are decompiler updates)
+ * @param refreshOnlyVersion Whether a specific versions should be refreshed
+ * @param refreshMinVersion A min version that should be refreshed (all versions greater than this version are also refreshed)
+ * @param refreshMaxVersion A max version that should be refreshed (all versions less than this version are also refreshed)
+ */
 public record TransientApplicationConfiguration(boolean noRepo,
 												Path overrideRepositoryPath,
 												boolean refreshDecompilation,
