@@ -9,6 +9,6 @@ public record SkyrisingManifest(LatestVersions latest, List<VersionEntry> versio
 	public record LatestVersions(String old_alpha, String classic_server, String alpha_server, String old_beta, String release, String snapshot, String pending) {
 	}
 
-	public record VersionEntry(String id, String type, String url, ZonedDateTime time, ZonedDateTime releaseTime, String details, String sha1 /* TODO this does not exist? */) implements VersionsManifest.VersionEntry {
+	public record VersionEntry(String id, String type, String url, ZonedDateTime time, ZonedDateTime releaseTime, String details) implements VersionsManifest.VersionEntry {
 	}
 }
