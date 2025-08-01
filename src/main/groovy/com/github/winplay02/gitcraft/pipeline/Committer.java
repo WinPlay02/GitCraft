@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
@@ -29,7 +28,7 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
-import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -105,11 +104,10 @@ public record Committer(Step step, Config config) implements StepWorker {
 	}
 
 	protected String getBranchNameForVersion(OrderedVersion mcVersion) {
-		OrderedVersion branch = GitCraft.versionGraph.walkToPreviousBranchPoint(mcVersion);
-		OrderedVersion root = GitCraft.versionGraph.walkToRoot(mcVersion);
-		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
-		return (branch == null
-			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
+		OrderedVersion branch = GitCraft.versionGraph.walkBackToBranchPoint(mcVersion);
+		OrderedVersion root = GitCraft.versionGraph.walkBackToRoot(mcVersion);
+		return (GitCraft.versionGraph.isOnMainBranch(mcVersion)
+			? GitCraft.versionGraph.roots.size() == 1 || root == GitCraft.versionGraph.getMainRootVersion()
 				? GitCraft.config.gitMainlineLinearBranch
 				: root.launcherFriendlyVersionName()
 			: branch.launcherFriendlyVersionName()).replace(" ", "-");

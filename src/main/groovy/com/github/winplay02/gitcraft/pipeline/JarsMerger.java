@@ -3,7 +3,6 @@ package com.github.winplay02.gitcraft.pipeline;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.github.winplay02.gitcraft.GitCraftConfig;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 import net.fabricmc.stitch.merge.JarMerger;
@@ -19,10 +18,10 @@ public record JarsMerger(Step step, Config config) implements StepWorker {
 		// obfuscated jars for versions older than 1.3 cannot be merged
 		// those versions must be merged after remapping, if the mapping flavour allows it
 		boolean obfuscated = (step == Step.MERGE_OBFUSCATED_JARS);
-		if (obfuscated == mcVersion.timestamp().isBefore(GitCraftConfig.FIRST_MERGEABLE_VERSION_RELEASE_TIME)) {
+		if (obfuscated != mcVersion.hasSharedObfuscation()) {
 			return StepStatus.NOT_RUN;
 		}
-		if (!obfuscated && config.mappingFlavour().getMappingImpl().supportsMergingPre1_3Versions()) {
+		if (!obfuscated && !config.mappingFlavour().supportsMergingPre1_3Versions()) {
 			return StepStatus.NOT_RUN;
 		}
 		StepResult jarFile = obfuscated ? Results.OBFUSCATED_MINECRAFT_MERGED_JAR : Results.REMAPPED_MINECRAFT_MERGED_JAR;

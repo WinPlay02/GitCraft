@@ -2,7 +2,7 @@ package com.github.winplay02.gitcraft.mappings;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Collections;
 
 import com.github.winplay02.gitcraft.pipeline.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
@@ -53,7 +53,7 @@ public class IdentityMappings extends Mapping {
 
 	@Override
 	public void visit(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingVisitor visitor) throws IOException {
-		visitor.visitNamespaces(getSourceNS(), List.of(getDestinationNS()));
+		visitor.visitNamespaces(getSourceNS(), Collections.emptyList());
 	}
 
 	@Override

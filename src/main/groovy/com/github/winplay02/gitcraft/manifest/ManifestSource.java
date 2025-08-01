@@ -4,13 +4,15 @@ import java.util.Locale;
 import java.util.function.Supplier;
 
 import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvider;
+import com.github.winplay02.gitcraft.manifest.ornithe.OrnitheMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.util.LazyValue;
 
 public enum ManifestSource {
 
 	MOJANG(MojangLauncherMetadataProvider::new),
-	SKYRISING(SkyrisingMetadataProvider::new);
+	SKYRISING(SkyrisingMetadataProvider::new),
+	ORNITHEMC(OrnitheMetadataProvider::new);
 
 	private final LazyValue<? extends MetadataProvider> metadataProvider;
 

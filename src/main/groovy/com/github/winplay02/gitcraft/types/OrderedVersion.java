@@ -1,8 +1,9 @@
 package com.github.winplay02.gitcraft.types;
 
-import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
-import com.github.winplay02.gitcraft.meta.LibraryMetadata;
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.GitCraftConfig;
+import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.LibraryMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -162,6 +163,24 @@ public record OrderedVersion(
 		}
 		// otherwise the check against FIRST_MERGEABLE_VERSION_RELEASE_TIME may fail
 		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
+	}
+
+	/**
+	 * @return whether the client and server for this version share obfuscation mappings
+	 */
+	public boolean hasSharedObfuscation() {
+		return !timestamp().isBefore(GitCraftConfig.RELEASE_TIME_1_3);
+	}
+
+	/**
+	 * @return whether the client and server for this version share version id
+	 */
+	public boolean hasSharedVersioning() {
+		return !timestamp().isBefore(GitCraftConfig.RELEASE_TIME_B1_0);
+	}
+
+	public boolean canBeMerged() {
+		return !timestamp().isBefore(GitCraftConfig.RELEASE_TIME_A1_0_15);
 	}
 
 	public String assetsIndexId() {

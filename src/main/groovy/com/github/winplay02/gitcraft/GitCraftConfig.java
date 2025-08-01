@@ -1,7 +1,10 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
@@ -56,6 +59,13 @@ public class GitCraftConfig {
 	/// Mapping settings
 	public MappingFlavour usedMapping = MappingFlavour.MOJMAP;
 	public MappingFlavour[] fallbackMappings = null;
+	public int ornitheIntermediaryGeneration = 1;
+
+	/// Jar processing settings
+	public boolean patchLvt;
+	public ExceptionsFlavour usedExceptions = ExceptionsFlavour.NONE;
+	public SignaturesFlavour usedSignatures = SignaturesFlavour.NONE;
+	public NestsFlavour usedNests = NestsFlavour.NONE;
 
 	/// Version settings
 	public boolean onlyStableReleases = false;
@@ -74,8 +84,9 @@ public class GitCraftConfig {
 	public static final String YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID = "1.14.3";
 	public static final String PARCHMENT_START_VERSION_ID = "1.16.5";
 
-	// use release time to get around 1.3 having different ids in different manifest sources
-	public static final ZonedDateTime FIRST_MERGEABLE_VERSION_RELEASE_TIME = ZonedDateTime.parse("2012-07-25T22:00:00+00:00");
+	public static final ZonedDateTime RELEASE_TIME_1_3 = ZonedDateTime.parse("2012-07-25T22:00:00+00:00");
+	public static final ZonedDateTime RELEASE_TIME_B1_0 = ZonedDateTime.parse("2010-12-20T17:28:00+00:00");
+	public static final ZonedDateTime RELEASE_TIME_A1_0_15 = ZonedDateTime.parse("2010-08-04T00:00:00+00:00");
 
 	public static List<String> intermediaryMissingVersions = List.of("1.16_combat-1", "1.16_combat-2", "1.16_combat-4", "1.16_combat-5", "1.16_combat-6");
 
@@ -152,6 +163,10 @@ public class GitCraftConfig {
 		if (fallbackMappings != null && fallbackMappings.length > 0) {
 			MiscHelper.println("Mappings used as fallback: %s", Arrays.stream(fallbackMappings).map(Object::toString).collect(Collectors.joining(", ")));
 		}
+		MiscHelper.println("LVT patching is %s", patchLvt ? "enabled" : "disabled");
+		MiscHelper.println("Exceptions used: %s", usedExceptions);
+		MiscHelper.println("Signatures used: %s", usedSignatures);
+		MiscHelper.println("Nests used: %s", usedNests);
 		if (overrideRepositoryPath != null) {
 			MiscHelper.println("Repository path is overridden. This may lead to various errors (see help). Proceed with caution. Target: %s", overrideRepositoryPath);
 		}
@@ -195,12 +210,12 @@ public class GitCraftConfig {
 	}
 
 	public Optional<MappingFlavour> getMappingsForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedMapping.getMappingImpl().doMappingsExist(mcVersion)) {
+		if (this.usedMapping.exists(mcVersion)) {
 			return Optional.of(this.usedMapping);
 		}
 		if (this.fallbackMappings != null && this.fallbackMappings.length != 0) {
 			for (MappingFlavour nextBestFallbackMapping : this.fallbackMappings) {
-				if (nextBestFallbackMapping.getMappingImpl().doMappingsExist(mcVersion)) {
+				if (nextBestFallbackMapping.exists(mcVersion)) {
 					MiscHelper.println("WARNING: %s mappings do not exist for %s. Falling back to %s", this.usedMapping, mcVersion.launcherFriendlyVersionName(), nextBestFallbackMapping);
 					return Optional.of(nextBestFallbackMapping);
 				}
@@ -210,5 +225,29 @@ public class GitCraftConfig {
 			MiscHelper.panic("ERROR: %s mappings do not exist for %s. No fallback options were specified", this.usedMapping, mcVersion.launcherFriendlyVersionName());
 		}
 		return Optional.empty();
+	}
+
+	public Optional<ExceptionsFlavour> getExceptionsForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedExceptions.exists(mcVersion)) {
+			return Optional.of(this.usedExceptions);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	public Optional<SignaturesFlavour> getSignaturesForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedSignatures.exists(mcVersion)) {
+			return Optional.of(this.usedSignatures);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	public Optional<NestsFlavour> getNestsForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedNests.exists(mcVersion)) {
+			return Optional.of(this.usedNests);
+		} else {
+			return Optional.empty();
+		}
 	}
 }

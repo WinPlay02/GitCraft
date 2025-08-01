@@ -73,9 +73,9 @@ public record Decompiler(Step step, Config config) implements StepWorker {
 		// Experimental QF preferences
 		options.put(IFernflowerPreferences.PATTERN_MATCHING, "1");
 		options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
-		if (config.mappingFlavour().getMappingImpl().supportsComments()) {
+		if (config.mappingFlavour().supportsComments()) {
 			// TODO: this will break for mapping flavours that support unpicking but for the client and server separately
-			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getMappingImpl().getMappingsPath(context.minecraftVersion(), MinecraftJar.MERGED).orElseThrow().toFile()));
+			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getPath(context.minecraftVersion(), MinecraftJar.MERGED).orElseThrow().toFile()));
 		}
 
 		try (FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(jarOut, true)) {

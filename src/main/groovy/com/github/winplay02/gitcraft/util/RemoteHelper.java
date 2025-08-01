@@ -4,8 +4,8 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.integrity.GitBlobSHA1Algorithm;
 import com.github.winplay02.gitcraft.integrity.IntegrityAlgorithm;
 import com.github.winplay02.gitcraft.integrity.SHA1Algorithm;
-import com.github.winplay02.gitcraft.meta.ArtifactMetadata;
-import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
+import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.GithubRepositoryBlobContent;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 
 import org.w3c.dom.Document;

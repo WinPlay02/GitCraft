@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 public interface MetadataProvider {
@@ -37,6 +37,11 @@ public interface MetadataProvider {
 	List<String> getParentVersion(OrderedVersion mcVersion);
 
 	OrderedVersion getVersionByVersionID(String versionId);
+
+	/**
+	 * @return whether this Minecraft version should be excluded from the version graph
+	 */
+	boolean shouldExclude(OrderedVersion mcVersion);
 
 	/**
 	 * @return whether this Minecraft version should <i>definitely</i> not appear in a main branch of the version graph

@@ -12,6 +12,7 @@ public record Unpicker(Step step, Config config) implements StepWorker {
 
 	@Override
 	public StepStatus run(Pipeline pipeline, Context context) throws Exception {
+		Files.createDirectories(pipeline.initResultFile(step, context, Results.UNPICKED_JARS_DIRECTORY));
 		StepStatus mergedStatus = unpickJar(pipeline, context, MinecraftJar.MERGED, Results.MINECRAFT_MERGED_JAR);
 		if (mergedStatus.hasRun()) {
 			return mergedStatus;
@@ -22,11 +23,10 @@ public record Unpicker(Step step, Config config) implements StepWorker {
 	}
 
 	private StepStatus unpickJar(Pipeline pipeline, Context context, MinecraftJar inFile, StepResult outFile) throws IOException {
-		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		if (!mapping.canMappingsBeUsedOn(context.minecraftVersion(), inFile) || !mapping.supportsConstantUnpicking()) {
+		if (!config.mappingFlavour().canBeUsedOn(context.minecraftVersion(), inFile) || !config.mappingFlavour().supportsConstantUnpicking()) {
 			return StepStatus.NOT_RUN;
 		}
-		Map<String, Path> additionalMappingPaths = mapping.getAdditionalMappingInformation(context.minecraftVersion(), inFile);
+		Map<String, Path> additionalMappingPaths = config.mappingFlavour().getAdditionalInformation(context.minecraftVersion(), inFile);
 		if (!additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_CONSTANTS) || !additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_DEFINITIONS)) {
 			return StepStatus.NOT_RUN;
 		}
@@ -54,6 +54,6 @@ public record Unpicker(Step step, Config config) implements StepWorker {
 	}
 
 	public enum Results implements StepResult {
-		MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR
+		UNPICKED_JARS_DIRECTORY, MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR
 	}
 }

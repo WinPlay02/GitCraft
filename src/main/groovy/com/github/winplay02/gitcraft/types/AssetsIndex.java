@@ -1,10 +1,10 @@
 package com.github.winplay02.gitcraft.types;
 
-import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
 
 public record AssetsIndex(AssetsIndexMetadata assetsIndex, List<Artifact> assets) {
 	public static AssetsIndex from(AssetsIndexMetadata assetsIndex) {

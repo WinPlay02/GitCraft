@@ -21,10 +21,18 @@ public enum Step {
 	UNPACK_ARTIFACTS("Unpack Artifacts", ArtifactsUnpacker::new),
 	MERGE_OBFUSCATED_JARS("Merge Obfuscated Jars", JarsMerger::new),
 	DATAGEN("Datagen", DataGenerator::new),
+	PATCH_LOCAL_VARIABLE_TABLES("Patch Local Variable Tables", LvtPatcher::new),
+	PROVIDE_EXCEPTIONS("Provide Exceptions", ExceptionsProvider::new),
+	APPLY_EXCEPTIONS("Apply Exceptions", JarsExceptor::new),
+	PROVIDE_SIGNATURES("Provide Signatures", SignaturesProvider::new),
+	APPLY_SIGNATURES("Apply Signatures", JarsSignatureChanger::new),
 	PROVIDE_MAPPINGS("Provide Mappings", MappingsProvider::new),
 	REMAP_JARS("Remap Jars", Remapper::new),
 	MERGE_REMAPPED_JARS("Merge Remapped Jars", JarsMerger::new),
 	UNPICK_JARS("Unpick Jars", Unpicker::new),
+	PROVIDE_NESTS("Provide Nests", NestsProvider::new),
+	APPLY_NESTS("Apply Nests", JarsNester::new),
+	PREEN_JARS("Preen Jars", Preener::new),
 	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
 	COMMIT("Commit to repository", Committer::new);
 
@@ -139,10 +147,61 @@ public enum Step {
 			DATAGEN.setResultFile(DataGenerator.Results.DATAGEN_REPORTS_DIRECTORY, context -> DATAGEN.getResultFile(DataGenerator.Results.DATAGEN_DIRECTORY, context).resolve("generated").resolve("reports"));
 		}
 		{
+			PATCH_LOCAL_VARIABLE_TABLES.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			PATCH_LOCAL_VARIABLE_TABLES.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			PATCH_LOCAL_VARIABLE_TABLES.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
+			PATCH_LOCAL_VARIABLE_TABLES.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+
+			PATCH_LOCAL_VARIABLE_TABLES.setResultFile(LvtPatcher.Results.LVT_PATCHED_DIRECTORY, context -> GitCraftPaths.LVT_PATCHED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			PATCH_LOCAL_VARIABLE_TABLES.setResultFile(LvtPatcher.Results.MINECRAFT_CLIENT_JAR, context -> PATCH_LOCAL_VARIABLE_TABLES.getResultFile(LvtPatcher.Results.LVT_PATCHED_DIRECTORY, context).resolve("client-lvt-patched.jar"));
+			PATCH_LOCAL_VARIABLE_TABLES.setResultFile(LvtPatcher.Results.MINECRAFT_SERVER_JAR, context -> PATCH_LOCAL_VARIABLE_TABLES.getResultFile(LvtPatcher.Results.LVT_PATCHED_DIRECTORY, context).resolve("server-lvt-patched.jar"));
+			PATCH_LOCAL_VARIABLE_TABLES.setResultFile(LvtPatcher.Results.MINECRAFT_MERGED_JAR, context -> PATCH_LOCAL_VARIABLE_TABLES.getResultFile(LvtPatcher.Results.LVT_PATCHED_DIRECTORY, context).resolve("merged-lvt-patched.jar"));
+
+			PATCH_LOCAL_VARIABLE_TABLES.setMinecraftJar(MinecraftJar.CLIENT, LvtPatcher.Results.MINECRAFT_CLIENT_JAR);
+			PATCH_LOCAL_VARIABLE_TABLES.setMinecraftJar(MinecraftJar.SERVER, LvtPatcher.Results.MINECRAFT_SERVER_JAR);
+			PATCH_LOCAL_VARIABLE_TABLES.setMinecraftJar(MinecraftJar.MERGED, LvtPatcher.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
+			APPLY_EXCEPTIONS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.REQUIRED, PROVIDE_EXCEPTIONS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			APPLY_EXCEPTIONS.setDependency(DependencyType.NOT_REQUIRED, PATCH_LOCAL_VARIABLE_TABLES);
+
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context -> GitCraftPaths.EXCEPTIONS_APPLIED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.MINECRAFT_CLIENT_JAR, context -> APPLY_EXCEPTIONS.getResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context).resolve("client-exceptions-patched.jar"));
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.MINECRAFT_SERVER_JAR, context -> APPLY_EXCEPTIONS.getResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context).resolve("server-exceptions-patched.jar"));
+			APPLY_EXCEPTIONS.setResultFile(JarsExceptor.Results.MINECRAFT_MERGED_JAR, context -> APPLY_EXCEPTIONS.getResultFile(JarsExceptor.Results.EXCEPTIONS_APPLIED_DIRECTORY, context).resolve("merged-exceptions-patched.jar"));
+
+			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.CLIENT, JarsExceptor.Results.MINECRAFT_CLIENT_JAR);
+			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.SERVER, JarsExceptor.Results.MINECRAFT_SERVER_JAR);
+			APPLY_EXCEPTIONS.setMinecraftJar(MinecraftJar.MERGED, JarsExceptor.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
+			APPLY_SIGNATURES.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
+			APPLY_SIGNATURES.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
+			APPLY_SIGNATURES.setDependency(DependencyType.REQUIRED, PROVIDE_SIGNATURES);
+			APPLY_SIGNATURES.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			APPLY_SIGNATURES.setDependency(DependencyType.NOT_REQUIRED, PATCH_LOCAL_VARIABLE_TABLES);
+			APPLY_SIGNATURES.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context -> GitCraftPaths.SIGNATURES_APPLIED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.MINECRAFT_CLIENT_JAR, context -> APPLY_SIGNATURES.getResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context).resolve("client-signatures-patched.jar"));
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.MINECRAFT_SERVER_JAR, context -> APPLY_SIGNATURES.getResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context).resolve("server-signatures-patched.jar"));
+			APPLY_SIGNATURES.setResultFile(JarsSignatureChanger.Results.MINECRAFT_MERGED_JAR, context -> APPLY_SIGNATURES.getResultFile(JarsSignatureChanger.Results.SIGNATURES_APPLIED_DIRECTORY, context).resolve("merged-signatures-patched.jar"));
+
+			APPLY_SIGNATURES.setMinecraftJar(MinecraftJar.CLIENT, JarsSignatureChanger.Results.MINECRAFT_CLIENT_JAR);
+			APPLY_SIGNATURES.setMinecraftJar(MinecraftJar.SERVER, JarsSignatureChanger.Results.MINECRAFT_SERVER_JAR);
+			APPLY_SIGNATURES.setMinecraftJar(MinecraftJar.MERGED, JarsSignatureChanger.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			REMAP_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, PATCH_LOCAL_VARIABLE_TABLES);
+			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+			REMAP_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_SIGNATURES);
 
 			REMAP_JARS.setResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context -> GitCraftPaths.REMAPPED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			REMAP_JARS.setResultFile(Remapper.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-remapped.jar"));
@@ -164,23 +223,63 @@ public enum Step {
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
 			UNPICK_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
+			UNPICK_JARS.setDependency(DependencyType.NOT_REQUIRED, PATCH_LOCAL_VARIABLE_TABLES);
+			UNPICK_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+			UNPICK_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_SIGNATURES);
 
-			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_CLIENT_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("client-unpicked.jar"));
-			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_SERVER_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("server-unpicked.jar"));
-			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_MERGED_JAR, context -> REMAP_JARS.getResultFile(Remapper.Results.REMAPPED_JARS_DIRECTORY, context).resolve("merged-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context -> GitCraftPaths.UNPICKED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_CLIENT_JAR, context -> UNPICK_JARS.getResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context).resolve("client-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_SERVER_JAR, context -> UNPICK_JARS.getResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context).resolve("server-unpicked.jar"));
+			UNPICK_JARS.setResultFile(Unpicker.Results.MINECRAFT_MERGED_JAR, context -> UNPICK_JARS.getResultFile(Unpicker.Results.UNPICKED_JARS_DIRECTORY, context).resolve("merged-unpicked.jar"));
 
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.CLIENT, Unpicker.Results.MINECRAFT_CLIENT_JAR);
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.SERVER, Unpicker.Results.MINECRAFT_SERVER_JAR);
 			UNPICK_JARS.setMinecraftJar(MinecraftJar.MERGED, Unpicker.Results.MINECRAFT_MERGED_JAR);
 		}
 		{
+			PROVIDE_NESTS.setDependency(DependencyType.REQUIRED, PROVIDE_MAPPINGS);
+		}
+		{
+			APPLY_NESTS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
+			APPLY_NESTS.setDependency(DependencyType.REQUIRED, PROVIDE_NESTS);
+			APPLY_NESTS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
+
+			APPLY_NESTS.setResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context -> GitCraftPaths.NESTS_APPLIED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			APPLY_NESTS.setResultFile(JarsNester.Results.MINECRAFT_CLIENT_JAR, context -> APPLY_NESTS.getResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context).resolve("client-nested.jar"));
+			APPLY_NESTS.setResultFile(JarsNester.Results.MINECRAFT_SERVER_JAR, context -> APPLY_NESTS.getResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context).resolve("server-nested.jar"));
+			APPLY_NESTS.setResultFile(JarsNester.Results.MINECRAFT_MERGED_JAR, context -> APPLY_NESTS.getResultFile(JarsNester.Results.NESTS_APPLIED_DIRECTORY, context).resolve("merged-nested.jar"));
+
+			APPLY_NESTS.setMinecraftJar(MinecraftJar.CLIENT, JarsNester.Results.MINECRAFT_CLIENT_JAR);
+			APPLY_NESTS.setMinecraftJar(MinecraftJar.SERVER, JarsNester.Results.MINECRAFT_SERVER_JAR);
+			APPLY_NESTS.setMinecraftJar(MinecraftJar.MERGED, JarsNester.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
+			PREEN_JARS.setDependency(DependencyType.REQUIRED, REMAP_JARS);
+			PREEN_JARS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
+			PREEN_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_NESTS);
+
+			PREEN_JARS.setResultFile(Preener.Results.PREENED_DIRECTORY, context -> GitCraftPaths.PREENED.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
+			PREEN_JARS.setResultFile(Preener.Results.MINECRAFT_CLIENT_JAR, context -> PREEN_JARS.getResultFile(Preener.Results.PREENED_DIRECTORY, context).resolve("client-nested.jar"));
+			PREEN_JARS.setResultFile(Preener.Results.MINECRAFT_SERVER_JAR, context -> PREEN_JARS.getResultFile(Preener.Results.PREENED_DIRECTORY, context).resolve("server-nested.jar"));
+			PREEN_JARS.setResultFile(Preener.Results.MINECRAFT_MERGED_JAR, context -> PREEN_JARS.getResultFile(Preener.Results.PREENED_DIRECTORY, context).resolve("merged-nested.jar"));
+
+			PREEN_JARS.setMinecraftJar(MinecraftJar.CLIENT, Preener.Results.MINECRAFT_CLIENT_JAR);
+			PREEN_JARS.setMinecraftJar(MinecraftJar.SERVER, Preener.Results.MINECRAFT_SERVER_JAR);
+			PREEN_JARS.setMinecraftJar(MinecraftJar.MERGED, Preener.Results.MINECRAFT_MERGED_JAR);
+		}
+		{
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_ARTIFACTS);
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, UNPACK_ARTIFACTS);
 			DECOMPILE_JARS.setDependency(DependencyType.REQUIRED, FETCH_LIBRARIES);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_OBFUSCATED_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, PATCH_LOCAL_VARIABLE_TABLES);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_EXCEPTIONS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_SIGNATURES);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, REMAP_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, MERGE_REMAPPED_JARS);
 			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, UNPICK_JARS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, APPLY_NESTS);
+			DECOMPILE_JARS.setDependency(DependencyType.NOT_REQUIRED, PREEN_JARS);
 
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context -> GitCraftPaths.DECOMPILED_WORKINGS.resolve(context.minecraftVersion().launcherFriendlyVersionName()));
 			DECOMPILE_JARS.setResultFile(Decompiler.Results.MINECRAFT_CLIENT_JAR, context -> DECOMPILE_JARS.getResultFile(Decompiler.Results.DECOMPILED_JARS_DIRECTORY, context).resolve("client.jar"));
