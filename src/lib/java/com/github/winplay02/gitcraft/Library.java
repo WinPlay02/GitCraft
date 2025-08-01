@@ -10,6 +10,9 @@ import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class Library {
 	public static GlobalConfiguration CONF_GLOBAL = null;
@@ -18,7 +21,11 @@ public class Library {
 	public static IntegrityAlgorithm IA_SHA1 = null;
 	public static IntegrityAlgorithm IA_GIT_BLOB_SHA1 = null;
 
+	public static Logger LIBRARY_LOGGER = null;
+
 	public static void initialize() {
+		LIBRARY_LOGGER = Logger.getLogger("GitCraft/Library");
+		LIBRARY_LOGGER.setLevel(Level.ALL);
 		try {
 			LibraryPaths.init(LibraryPaths.lookupCurrentWorkingDirectory());
 			// Maven startup
@@ -39,5 +46,18 @@ public class Library {
 		System.setProperty("jdk.httpclient.connectionPoolSize", String.valueOf(CONF_GLOBAL.maxConcurrentHttpConnections()));
 		System.setProperty("jdk.httpclient.maxstreams", String.valueOf(CONF_GLOBAL.maxConcurrentHttpStreams()));
 		System.setProperty("jdk.httpclient.bufsize", String.valueOf(Short.MAX_VALUE * 2));
+	}
+
+	public static Logger getSubLogger(String name) {
+		Logger logger = Logger.getLogger(name);
+		logger.setParent(LIBRARY_LOGGER);
+		return logger;
+	}
+
+	public static Logger getSubLogger(String name, Level logLevel) {
+		Logger logger = Logger.getLogger(name);
+		logger.setParent(LIBRARY_LOGGER);
+		logger.setLevel(logLevel);
+		return logger;
 	}
 }

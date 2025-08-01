@@ -26,6 +26,7 @@ import com.github.winplay02.gitcraft.util.RepoWrapper;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 public class GitCraft {
 	public static final String VERSION = "0.2.0";
@@ -57,6 +58,8 @@ public class GitCraft {
 		return Configuration.getConfiguration(TransientApplicationConfiguration.class);
 	}
 
+	public static Logger applicationLogger = null;
+
 	public static void main(String[] args) throws Exception {
 		Library.initialize();
 		Configuration.register("gitcraft_repository", RepositoryConfiguration.class, RepositoryConfiguration::deserialize);
@@ -66,6 +69,7 @@ public class GitCraft {
 		if (!GitCraftCli.handleCliArgs(args)) {
 			return;
 		}
+		applicationLogger = Library.getSubLogger("GitCraft/Application");
 		Library.applyConfiguration();
 		GitCraftPaths.initializePaths();
 		FabricHelper.checkFabricLoaderVersion();
