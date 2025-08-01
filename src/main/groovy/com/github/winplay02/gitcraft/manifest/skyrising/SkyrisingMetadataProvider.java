@@ -8,6 +8,7 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -62,18 +63,20 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 		Set<VersionInfo> infos = new LinkedHashSet<>();
 		Map<String, VersionDetails> detailses = new LinkedHashMap<>();
 
-		for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
-			VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
-
-			// we could check every field but this ought to be enough
-			if (info.id() != null && info.assets() != null) {
-				infos.add(info);
-			} else {
-				VersionDetails details = this.loadVersionMetadata(file, VersionDetails.class);
+		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
+			for (Path file : directoryStream) {
+				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
 
 				// we could check every field but this ought to be enough
-				if (details.id() != null && details.normalizedVersion() != null) {
-					detailses.put(details.id(), details);
+				if (info.id() != null && info.assets() != null) {
+					infos.add(info);
+				} else {
+					VersionDetails details = this.loadVersionMetadata(file, VersionDetails.class);
+
+					// we could check every field but this ought to be enough
+					if (details.id() != null && details.normalizedVersion() != null) {
+						detailses.put(details.id(), details);
+					}
 				}
 			}
 		}

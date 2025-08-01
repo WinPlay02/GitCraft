@@ -57,21 +57,21 @@ class GitCraftCli {
 		cli_args._(longOpt: 'override-repo-target', args: 1, argName: 'path', type: Path,
 			'Changes the location of the target repository, as repo names may get quite long and unintuitive. If not used carefully, this can lead to repositories with unwanted mixed mappings or straight up refuse to work as some versions in the target repository may be missing.');
 		cli_args._(longOpt: 'create-version-branches', 'Creates a separate branch for each version, including linear versions. This may be useful for quickly switching between multiple versions.')
-        cli_args._(longOpt: 'create-stable-version-branches', 'Creates a separate branch for each stable linear version. This may be useful for quickly switching between multiple versions.')
+		cli_args._(longOpt: 'create-stable-version-branches', 'Creates a separate branch for each stable linear version. This may be useful for quickly switching between multiple versions.')
 		cli_args._(longOpt: 'sort-json', 'Sorts JSON objects contained in JSON files (e.g. models, language files, ...) in natural order. This is disabled by default as it modifies original data.')
 		cli_args._(longOpt: 'manifest-source', "Specifies the manifest source used to fetch the available versions, the mapping to semantic versions and the dependencies between versions. The Minecraft Launcher Meta (from Mojang) is selected by default. Possible values are: ${Arrays.stream(ManifestSource.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ManifestSource, argName: "mapping", defaultValue: "mojang");
 		cli_args.h(longOpt: 'help', 'Displays this help screen');
 		return cli_args;
 	}
 
-	static void handleCliArgs(String[] args) {
+	static boolean handleCliArgs(String[] args) {
 		CliBuilder cli_args = createCli();
 		OptionAccessor cli_args_parsed = cli_args.parse(args);
 
 		// Help
 		if (cli_args_parsed.hasOption("help")) {
 			cli_args.usage();
-			return;
+			return false;
 		}
 
 		// Integrity
@@ -189,5 +189,6 @@ class GitCraftCli {
 			refreshMinVersion,
 			refreshMaxVersion
 		));
+		return true;
 	}
 }

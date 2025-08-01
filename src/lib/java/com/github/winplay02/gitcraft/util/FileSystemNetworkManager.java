@@ -37,7 +37,7 @@ public class FileSystemNetworkManager {
 	protected static final Map<Path, NetworkProgressInfo> downloadJobs = new HashMap<>();
 	protected static final Map<Path, NetworkProgressInfo> completedJobs = new ConcurrentHashMap<>();
 
-	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry) {
+	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable) {
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
 			completedJobs.get(localFileInfo.targetFile()).integrityChecksum.equals(localFileInfo.checksum()) &&
 			completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm.getClass().equals(localFileInfo.integrityAlgorithm().getClass())) {
@@ -53,7 +53,7 @@ public class FileSystemNetworkManager {
 				return downloadJobs.get(localFileInfo.targetFile()).future();
 			}
 			CompletableFuture<StepStatus> f = CompletableFuture.supplyAsync(() -> {
-				if (checksumCheckFileIsValidAndExists(localFileInfo, false)) {
+				if (checksumCheckFileIsValidAndExists(localFileInfo, false, tolerateHashUnavailable)) {
 					return StepStatus.UP_TO_DATE;
 				}
 				if (completedJobs.containsKey(localFileInfo.targetFile())) {
@@ -80,8 +80,8 @@ public class FileSystemNetworkManager {
 						MiscHelper.deleteFile(localFileInfo.targetFile());
 						MiscHelper.sleep(Library.CONF_GLOBAL.failedFetchRetryInterval());
 					}
-				} while (!checksumCheckFileIsValidAndExists(localFileInfo, true));
-				if (!retry && !checksumCheckFileIsValidAndExists(localFileInfo, true)) {
+				} while (!checksumCheckFileIsValidAndExists(localFileInfo, true, true));
+				if (!retry && !checksumCheckFileIsValidAndExists(localFileInfo, true, true)) {
 					MiscHelper.panic("File download failed");
 				}
 				completedJobs.put(localFileInfo.targetFile(), downloadJobs.get(localFileInfo.targetFile()));
@@ -125,7 +125,7 @@ public class FileSystemNetworkManager {
 		return response.body();
 	}
 
-	private static boolean checksumCheckFileIsValidAndExists(LocalFileInfo localFileInfo, boolean useRemote) {
+	private static boolean checksumCheckFileIsValidAndExists(LocalFileInfo localFileInfo, boolean useRemote, boolean tolerateHashUnavailable) {
 		String fileVerbParticiple = useRemote ? "downloaded" : "read";
 		String fileVerbParticipleCap = useRemote ? "Downloaded" : "Read";
 		if (Files.exists(localFileInfo.targetFile())) {
@@ -152,9 +152,13 @@ public class FileSystemNetworkManager {
 				}
 			} else {
 				if (Library.CONF_INTEGRITY.verifyChecksums() && (Library.CONF_GLOBAL.printExistingFileChecksumMatchingSkipped() || useRemote)) {
-					MiscHelper.println("Validity cannot be determined for %s %s %s (no checksum checked)", fileVerbParticipleCap, localFileInfo.outputFileKind(), localFileInfo.outputFileId());
+					if (tolerateHashUnavailable) {
+						MiscHelper.println("Validity cannot be determined for %s %s %s (no checksum checked)", fileVerbParticipleCap, localFileInfo.outputFileKind(), localFileInfo.outputFileId());
+					} else {
+						MiscHelper.println("Validity cannot be determined for %s %s %s (no checksum checked, file is deleted)", fileVerbParticipleCap, localFileInfo.outputFileKind(), localFileInfo.outputFileId());
+					}
 				}
-				return true;
+				return tolerateHashUnavailable;
 			}
 		}
 		return false;

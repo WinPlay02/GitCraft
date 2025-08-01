@@ -180,7 +180,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		}
 		String fileName = url.substring(url.lastIndexOf('/') + 1);
 		Path filePath = targetDir.resolve(fileName);
-		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, Library.IA_SHA1, targetFileKind, id), true);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, Library.IA_SHA1, targetFileKind, id), true, false);
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass);

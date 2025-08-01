@@ -216,7 +216,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifactRootPath)) {
 					for (Path rootPath : fs.get().getRootDirectories()) {
-						MiscHelper.copyLargeDirExcept(rootPath, repo.getRootPath().resolve("server-info"), List.of(rootPath.resolve(ArtifactsUnpacker.SERVER_ZIP_JAR_NAME))); // TODO fix this, the jar gets copied somehow
+						MiscHelper.copyLargeDirExcept(rootPath, repo.getRootPath().resolve("server-info"), List.of(rootPath.resolve(ArtifactsUnpacker.SERVER_ZIP_JAR_NAME)));
 					}
 				}
 			}

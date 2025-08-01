@@ -63,7 +63,9 @@ public class GitCraft {
 		Configuration.register("gitcraft_dataimport", DataConfiguration.class, DataConfiguration::deserialize);
 		Configuration.register("gitcraft_application", ApplicationConfiguration.class, ApplicationConfiguration::deserialize);
 		Configuration.register("gitcraft_application_transient", TransientApplicationConfiguration.class, TransientApplicationConfiguration::deserialize);
-		GitCraftCli.handleCliArgs(args);
+		if (!GitCraftCli.handleCliArgs(args)) {
+			return;
+		}
 		Library.applyConfiguration();
 		GitCraftPaths.initializePaths();
 		FabricHelper.checkFabricLoaderVersion();
