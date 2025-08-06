@@ -55,6 +55,7 @@ Powered by:
 - [Fabric Intermediary Mappings](https://github.com/FabricMC/intermediary)
 - [Parchment](https://github.com/ParchmentMC/Parchment)
 - [Skyrising Minecraft Version Manifest Collection](https://skyrising.github.io/mc-versions)
+- {Libraries, Tools, Mappings} of OrnitheMC
 
 ## Help / Usage
 
@@ -66,9 +67,14 @@ Options:
                                including linear versions. This may be useful
                                for quickly switching between multiple versions.
       --create-stable-version-branches
-                             Creates a separate branch for each stable linear 
-                               versions. This may be useful for quickly switching
-                               between multiple versions.
+                             Creates a separate branch for each stable linear
+                               version. This may be useful for quickly
+                               switching between multiple versions.
+      --exceptions=<exceptions>
+                             Specifies the exceptions patches used to patch
+                               throws clauses into method declarations. None is
+                               selected by default. Possible values are: raven,
+                               none
       --exclude-version[=<version>[,<version>]...]
                              Specify version(s) to exclude from decompilation.
                                The exclusion info will be added to the
@@ -79,6 +85,7 @@ Options:
                                tried (in given order). By default none is tried
                                as a fallback. Possible values are: mojmap,
                                fabric_intermediary, yarn, mojmap_parchment,
+                               calamus_intermediary, feather,
                                identity_unmapped
   -h, --help                 Displays this help screen
       --manifest-source=<mapping>
@@ -87,11 +94,12 @@ Options:
                                versions and the dependencies between versions.
                                The Minecraft Launcher Meta (from Mojang) is
                                selected by default. Possible values are:
-                               mojang_minecraft_launcher, skyrising
+                               mojang, skyrising, ornithemc
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
                                fabric_intermediary, yarn, mojmap_parchment,
+                               calamus_intermediary, feather,
                                identity_unmapped
       --max-version=<version>
                              Specify the max. version to decompile. Every
@@ -108,6 +116,9 @@ Options:
                                separate branches. The repository will be stored
                                in minecraft-repo-min-<version>. The normal
                                repository will not be touched.
+      --nests=<nests>        Specifies the nests used to patch inner classes.
+                               None is selected by default. Possible values
+                               are: ornithe_nests, none
       --no-assets            Disables assets versioning (includes external
                                assets)
       --no-datagen-report    Disables datagen for versioning reports (like
@@ -133,6 +144,9 @@ Options:
                                normal repository will not be touched.
                                --only-version will take precedence over
                                --min-version.
+      --ornithe-intermediary-generation=<generation>
+                             Specifies which generation of Ornithe intermediary
+                               to use for Ornithe's mapping flavours
       --override-repo-target=<path>
                              Changes the location of the target repository, as
                                repo names may get quite long and unintuitive.
@@ -140,6 +154,9 @@ Options:
                                repositories with unwanted mixed mappings or
                                straight up refuse to work as some versions in
                                the target repository may be missing.
+      --patch-lvt            Generates local variable tables of the Minecraft
+                               jars for versions where they were stripped
+                               during obfuscation.
       --refresh              Refreshes the decompilation by deleting old
                                decompiled artifacts and restarting. This may be
                                useful, if the decompiler has been updated or
@@ -160,6 +177,11 @@ Options:
                              Restricts the refreshed versions to the ones
                                provided. This options will cause the git
                                repository to refresh.
+      --signatures=<signatures>
+                             Specifies the signatures patches used to patch
+                               generics into class, field, and method
+                               declarations. None is selected by default.
+                               Possible values are: sparrow, none
       --skip-nonlinear       Skips non-linear (e.g. April Fools, Combat
                                Snapshots, ...) versions completely
       --sort-json            Sorts JSON objects contained in JSON files (e.g.
