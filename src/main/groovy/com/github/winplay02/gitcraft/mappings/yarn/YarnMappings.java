@@ -141,7 +141,7 @@ public class YarnMappings extends Mapping {
 		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
 			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", versionContext.targetVersion().launcherFriendlyVersionName());
-			yarnVersion = new GameVersionBuildMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
+			yarnVersion = new GameVersionBuildMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
 		}
 		// Try latest yarn merged v2 JAR build
 		{
@@ -198,7 +198,7 @@ public class YarnMappings extends Mapping {
 		}
 		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(mcVersion);
 		if (yarnVersion == null) {
-			yarnVersion = new GameVersionBuildMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
+			yarnVersion = new GameVersionBuildMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
 		}
 		return yarnVersion;
 	}
