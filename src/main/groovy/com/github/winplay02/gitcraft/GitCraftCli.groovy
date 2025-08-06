@@ -57,6 +57,7 @@ class GitCraftCli {
 		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
 		cli_args._(longOpt: 'ornithe-intermediary-generation', "Specifies which generation of Ornithe intermediary to use for Ornithe's mapping flavours", type: int, argName: "generation", defaultValue: "1")
 		cli_args._(longOpt: 'patch-lvt', "Generates local variable tables of the Minecraft jars for versions where they were stripped during obfuscation.");
+		cli_args._(longOpt: 'preening-enabled', "Undo merging of specialized and bridge methods.");
 		cli_args._(longOpt: 'exceptions', "Specifies the exceptions patches used to patch throws clauses into method declarations. None is selected by default. Possible values are: ${Arrays.stream(ExceptionsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ExceptionsFlavour, argName: "exceptions", defaultValue: "none");
 		cli_args._(longOpt: 'signatures', "Specifies the signatures patches used to patch generics into class, field, and method declarations. None is selected by default. Possible values are: ${Arrays.stream(SignaturesFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: SignaturesFlavour, argName: "signatures", defaultValue: "none");
 		cli_args._(longOpt: 'nests', "Specifies the nests used to patch inner classes. None is selected by default. Possible values are: ${Arrays.stream(NestsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: NestsFlavour, argName: "nests", defaultValue: "none");
@@ -171,6 +172,7 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("nests")) {
 			usedNests = cli_args_parsed.'nests';
 		}
+		boolean preeningEnabled = cli_args_parsed.'preening-enabled';
 		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
 			manifestSource != null ? manifestSource : original.manifestSource(),
 			usedMapping != null ? usedMapping : original.usedMapping(),
@@ -186,7 +188,8 @@ class GitCraftCli {
 			original.patchLvt() || patchLvt,
 			usedExceptions != null ? usedExceptions : original.usedExceptions(),
 			usedSignatures != null ? usedSignatures : original.usedSignatures(),
-			usedNests != null ? usedNests : original.usedNests()
+			usedNests != null ? usedNests : original.usedNests(),
+			original.enablePreening() || preeningEnabled
 		));
 
 		// Transient Application

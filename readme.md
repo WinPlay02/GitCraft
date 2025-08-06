@@ -62,14 +62,14 @@ Powered by:
 ```
 Usage: gradlew run --args="[Options]"
 Options:
-      --create-version-branches
-                             Creates a separate branch for each version,
-                               including linear versions. This may be useful
-                               for quickly switching between multiple versions.
       --create-stable-version-branches
                              Creates a separate branch for each stable linear
                                version. This may be useful for quickly
                                switching between multiple versions.
+      --create-version-branches
+                             Creates a separate branch for each version,
+                               including linear versions. This may be useful
+                               for quickly switching between multiple versions.
       --exceptions=<exceptions>
                              Specifies the exceptions patches used to patch
                                throws clauses into method declarations. None is
@@ -157,6 +157,7 @@ Options:
       --patch-lvt            Generates local variable tables of the Minecraft
                                jars for versions where they were stripped
                                during obfuscation.
+      --preening-enabled     Undo merging of specialized and bridge methods.
       --refresh              Refreshes the decompilation by deleting old
                                decompiled artifacts and restarting. This may be
                                useful, if the decompiler has been updated or
