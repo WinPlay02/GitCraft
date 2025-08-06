@@ -20,6 +20,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -82,7 +83,7 @@ public class GitCraftTest {
 	}
 
 	@Test
-	public void mappingsMojang() throws IOException {
+	public void mappingsMojang() throws IOException, URISyntaxException, InterruptedException {
 		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
 		metadataBootstrap = new MojangLauncherMetadataProvider();
@@ -111,7 +112,7 @@ public class GitCraftTest {
 	}
 
 	@Test
-	public void mappingsParchment() throws IOException {
+	public void mappingsParchment() throws IOException, URISyntaxException, InterruptedException {
 		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
 		metadataBootstrap = new MojangLauncherMetadataProvider();
@@ -137,7 +138,7 @@ public class GitCraftTest {
 	}
 
 	@Test
-	public void mappingsFabricIntermediary() throws IOException {
+	public void mappingsFabricIntermediary() throws IOException, URISyntaxException, InterruptedException {
 		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
 		metadataBootstrap = new MojangLauncherMetadataProvider();
@@ -163,7 +164,7 @@ public class GitCraftTest {
 	}
 
 	@Test
-	public void mappingsYarn() throws IOException {
+	public void mappingsYarn() throws IOException, URISyntaxException, InterruptedException {
 		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
 		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
 		metadataBootstrap = new MojangLauncherMetadataProvider();
