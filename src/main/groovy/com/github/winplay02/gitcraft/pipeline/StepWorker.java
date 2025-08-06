@@ -34,7 +34,7 @@ public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 		@Override
 		public String toString() {
 			List<String> flavours = new ArrayList<>();
-			if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED) flavours.add("mappings: %s".formatted(mappingFlavour));
+			/*if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED)*/ flavours.add("mappings: %s".formatted(mappingFlavour)); // prevent empty config information
 			if (exceptionsFlavour != ExceptionsFlavour.NONE) flavours.add("exceptions: %s".formatted(exceptionsFlavour));
 			if (signaturesFlavour != SignaturesFlavour.NONE) flavours.add("signatures: %s".formatted(signaturesFlavour));
 			if (nestsFlavour != NestsFlavour.NONE) flavours.add("nests: %s".formatted(nestsFlavour));
