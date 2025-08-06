@@ -6,8 +6,11 @@ import com.github.winplay02.gitcraft.config.DataConfiguration
 import com.github.winplay02.gitcraft.config.IntegrityConfiguration
 import com.github.winplay02.gitcraft.config.RepositoryConfiguration
 import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour
 import com.github.winplay02.gitcraft.manifest.ManifestSource
 import com.github.winplay02.gitcraft.mappings.MappingFlavour
+import com.github.winplay02.gitcraft.nests.NestsFlavour
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour
 import com.github.winplay02.gitcraft.util.MiscHelper
 import groovy.cli.picocli.CliBuilder
 import groovy.cli.picocli.OptionAccessor
@@ -52,6 +55,11 @@ class GitCraftCli {
 				'version', 'Restricts the max. refreshed version to the one provided. This options will cause the git repository to refresh.');
 		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour, argName: "mapping", defaultValue: "mojmap");
 		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
+		cli_args._(longOpt: 'ornithe-intermediary-generation', "Specifies which generation of Ornithe intermediary to use for Ornithe's mapping flavours", type: int, argName: "generation", defaultValue: "1")
+		cli_args._(longOpt: 'patch-lvt', "Generates local variable tables of the Minecraft jars for versions where they were stripped during obfuscation.");
+		cli_args._(longOpt: 'exceptions', "Specifies the exceptions patches used to patch throws clauses into method declarations. None is selected by default. Possible values are: ${Arrays.stream(ExceptionsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ExceptionsFlavour, argName: "exceptions", defaultValue: "none");
+		cli_args._(longOpt: 'signatures', "Specifies the signatures patches used to patch generics into class, field, and method declarations. None is selected by default. Possible values are: ${Arrays.stream(SignaturesFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: SignaturesFlavour, argName: "signatures", defaultValue: "none");
+		cli_args._(longOpt: 'nests', "Specifies the nests used to patch inner classes. None is selected by default. Possible values are: ${Arrays.stream(NestsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: NestsFlavour, argName: "nests", defaultValue: "none");
 		cli_args._(longOpt: 'only-stable', 'Only decompiles stable releases.');
 		cli_args._(longOpt: 'only-snapshot', 'Only decompiles snapshots (includes pending and non-linear, if not otherwise specified).');
 		cli_args._(longOpt: 'override-repo-target', args: 1, argName: 'path', type: Path,
@@ -145,6 +153,24 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("exclude-version")) {
 			excludedVersion = cli_args_parsed.'exclude-versions';
 		}
+		// Ornithe Settings
+		Integer generation = null;
+		if (cli_args_parsed.hasOption("ornithe-intermediary-generation")) {
+			generation = (int) cli_args_parsed.'ornithe-intermediary-generation';
+		}
+		boolean patchLvt = cli_args_parsed.'patch-lvt';
+		ExceptionsFlavour usedExceptions = null;
+		if (cli_args_parsed.hasOption("exceptions")) {
+			usedExceptions = cli_args_parsed.'exceptions';
+		}
+		SignaturesFlavour usedSignatures = null;
+		if (cli_args_parsed.hasOption("signatures")) {
+			usedSignatures = cli_args_parsed.'signatures';
+		}
+		NestsFlavour usedNests = null;
+		if (cli_args_parsed.hasOption("nests")) {
+			usedNests = cli_args_parsed.'nests';
+		}
 		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
 			manifestSource != null ? manifestSource : original.manifestSource(),
 			usedMapping != null ? usedMapping : original.usedMapping(),
@@ -155,7 +181,12 @@ class GitCraftCli {
 			onlyVersion,
 			minVersion,
 			maxVersion,
-			excludedVersion
+			excludedVersion,
+			generation != null ? generation : original.ornitheIntermediaryGeneration(),
+			original.patchLvt() || patchLvt,
+			usedExceptions != null ? usedExceptions : original.usedExceptions(),
+			usedSignatures != null ? usedSignatures : original.usedSignatures(),
+			usedNests != null ? usedNests : original.usedNests()
 		));
 
 		// Transient Application

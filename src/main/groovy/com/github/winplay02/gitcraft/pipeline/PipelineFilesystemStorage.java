@@ -25,6 +25,9 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	}
 
 	public Path getPath(StorageKey key, StepWorker.Context<T> context) {
+		if (key == null || !this.paths.containsKey(key)) {
+			return null;
+		}
 		return this.paths.get(key).apply(this, context);
 	}
 
@@ -63,6 +66,11 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	private static final String HINT_REMAPPED = "remapped";
 	private static final String HINT_UNPICKED = "unpicked";
 	private static final String HINT_DECOMPILED = "decompiled";
+	private static final String HINT_LVT = "lvt";
+	private static final String HINT_EXCEPTIONS = "exceptions";
+	private static final String HINT_SIGNATURES = "signatures";
+	private static final String HINT_NESTED = "nested";
+	private static final String HINT_PREENED = "preened";
 
 	public static final DirectoryKey ARTIFACTS = new DirectoryKey("artifacts");
 	public static final DirectoryKey LIBRARIES = new DirectoryKey("libraries");
@@ -76,6 +84,8 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final DirectoryKey TEMP_DATAGEN_REPORTS_DIRECTORY = new DirectoryKey("artifacts-datagen-reports");
 	public static final DirectoryKey REMAPPED = new DirectoryKey("remapped");
 	public static final DirectoryKey DECOMPILED = new DirectoryKey("decompiled");
+	public static final DirectoryKey PATCHES = new DirectoryKey("patches");
+	public static final DirectoryKey PATCHED = new DirectoryKey("patched");
 
 	public static final ArtifactKey ARTIFACTS_CLIENT_JAR = new ArtifactKey(ARTIFACTS, SIDE_CLIENT, DIST_JAR);
 	public static final ArtifactKey ARTIFACTS_SERVER_JAR = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_JAR);
@@ -99,6 +109,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	// For Merge Step (after remapping)
 	public static final ArtifactKey MERGED_JAR_REMAPPED = new ArtifactKey(ARTIFACTS, SIDE_MERGED, DIST_JAR, HINT_REMAPPED);
 
+	// For Unpick Step
 	public static final ArtifactKey UNPICKED_CLIENT_JAR = new ArtifactKey(REMAPPED, SIDE_CLIENT, DIST_JAR, HINT_UNPICKED);
 	public static final ArtifactKey UNPICKED_SERVER_JAR = new ArtifactKey(REMAPPED, SIDE_SERVER, DIST_JAR, HINT_UNPICKED);
 	public static final ArtifactKey UNPICKED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR, HINT_UNPICKED);
@@ -107,6 +118,32 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final ArtifactKey DECOMPILED_CLIENT_JAR = new ArtifactKey(DECOMPILED, SIDE_CLIENT, DIST_JAR);
 	public static final ArtifactKey DECOMPILED_SERVER_JAR = new ArtifactKey(DECOMPILED, SIDE_SERVER, DIST_JAR);
 	public static final ArtifactKey DECOMPILED_MERGED_JAR = new ArtifactKey(DECOMPILED, SIDE_MERGED, DIST_JAR);
+
+	// For Local Variable Table Patching Step
+	public static final ArtifactKey LVT_PATCHED_CLIENT_JAR = new ArtifactKey(PATCHED, SIDE_CLIENT, DIST_JAR, HINT_LVT);
+	public static final ArtifactKey LVT_PATCHED_SERVER_JAR = new ArtifactKey(PATCHED, SIDE_SERVER, DIST_JAR, HINT_LVT);
+	public static final ArtifactKey LVT_PATCHED_MERGED_JAR = new ArtifactKey(PATCHED, SIDE_MERGED, DIST_JAR, HINT_LVT);
+
+	// For Exception Patching Step
+	public static final ArtifactKey EXCEPTIONS_PATCHED_CLIENT_JAR = new ArtifactKey(PATCHED, SIDE_CLIENT, DIST_JAR, HINT_EXCEPTIONS);
+	public static final ArtifactKey EXCEPTIONS_PATCHED_SERVER_JAR = new ArtifactKey(PATCHED, SIDE_SERVER, DIST_JAR, HINT_EXCEPTIONS);
+	public static final ArtifactKey EXCEPTIONS_PATCHED_MERGED_JAR = new ArtifactKey(PATCHED, SIDE_MERGED, DIST_JAR, HINT_EXCEPTIONS);
+
+	// For Signature Patching Step
+	public static final ArtifactKey SIGNATURES_PATCHED_CLIENT_JAR = new ArtifactKey(PATCHED, SIDE_CLIENT, DIST_JAR, HINT_SIGNATURES);
+	public static final ArtifactKey SIGNATURES_PATCHED_SERVER_JAR = new ArtifactKey(PATCHED, SIDE_SERVER, DIST_JAR, HINT_SIGNATURES);
+	public static final ArtifactKey SIGNATURES_PATCHED_MERGED_JAR = new ArtifactKey(PATCHED, SIDE_MERGED, DIST_JAR, HINT_SIGNATURES);
+
+	// For Nesting Step
+	public static final ArtifactKey NESTED_CLIENT_JAR = new ArtifactKey(REMAPPED, SIDE_CLIENT, DIST_JAR, HINT_NESTED);
+	public static final ArtifactKey NESTED_SERVER_JAR = new ArtifactKey(REMAPPED, SIDE_SERVER, DIST_JAR, HINT_NESTED);
+	public static final ArtifactKey NESTED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR, HINT_NESTED);
+
+	// For Preening Step
+	public static final ArtifactKey PREENED_CLIENT_JAR = new ArtifactKey(REMAPPED, SIDE_CLIENT, DIST_JAR, HINT_PREENED);
+	public static final ArtifactKey PREENED_SERVER_JAR = new ArtifactKey(REMAPPED, SIDE_SERVER, DIST_JAR, HINT_PREENED);
+	public static final ArtifactKey PREENED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR, HINT_PREENED);
+
 
 	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion>(
 		GitCraftPaths.FILESYSTEM_ROOT,
@@ -158,5 +195,25 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			DECOMPILED_CLIENT_JAR, createFromKey(DECOMPILED, "client.jar"),
 			DECOMPILED_SERVER_JAR, createFromKey(DECOMPILED, "server.jar"),
 			DECOMPILED_MERGED_JAR, createFromKey(DECOMPILED, "merged.jar")
+		),
+		Map.of(
+			PATCHED, rootPathVersioned(PipelineFilesystemRoot::getPatchedStore),
+			LVT_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-lvt.jar"),
+			LVT_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-lvt.jar"),
+			LVT_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-lvt.jar"),
+			EXCEPTIONS_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-exc.jar"),
+			EXCEPTIONS_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-exc.jar"),
+			EXCEPTIONS_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-exc.jar"),
+			SIGNATURES_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-sig.jar"),
+			SIGNATURES_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-sig.jar"),
+			SIGNATURES_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-sig.jar")
+		),
+		Map.of(
+			NESTED_CLIENT_JAR, createFromKey(REMAPPED, "client-nested.jar"),
+			NESTED_SERVER_JAR, createFromKey(REMAPPED, "server-nested.jar"),
+			NESTED_MERGED_JAR, createFromKey(REMAPPED, "merged-nested.jar"),
+			PREENED_CLIENT_JAR, createFromKey(REMAPPED, "client-preened.jar"),
+			PREENED_SERVER_JAR, createFromKey(REMAPPED, "server-preened.jar"),
+			PREENED_MERGED_JAR, createFromKey(REMAPPED, "merged-preened.jar")
 		)));
 }

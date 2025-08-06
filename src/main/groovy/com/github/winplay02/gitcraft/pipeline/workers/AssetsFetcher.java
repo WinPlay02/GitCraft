@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;

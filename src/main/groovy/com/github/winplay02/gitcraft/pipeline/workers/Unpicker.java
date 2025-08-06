@@ -58,11 +58,10 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		if (!mapping.canMappingsBeUsedOn(context.targetVersion(), type) || !mapping.supportsConstantUnpicking()) {
+		if (!config.mappingFlavour().canBeUsedOn(context.targetVersion(), type) || !config.mappingFlavour().supportsConstantUnpicking()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Map<String, Path> additionalMappingPaths = mapping.getAdditionalMappingInformation(context.targetVersion(), type);
+		Map<String, Path> additionalMappingPaths = config.mappingFlavour().getAdditionalInformation(context.targetVersion(), type);
 		if (!additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_CONSTANTS) || !additionalMappingPaths.containsKey(Mapping.KEY_UNPICK_DEFINITIONS)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}

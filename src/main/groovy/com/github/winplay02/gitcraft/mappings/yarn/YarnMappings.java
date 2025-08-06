@@ -3,15 +3,20 @@ package com.github.winplay02.gitcraft.mappings.yarn;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.mappings.Mapping;
+
+import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
+
+import com.github.winplay02.gitcraft.meta.MetaUrls;
+import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
+import com.github.winplay02.gitcraft.meta.VersionMetaSource;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
-import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
-import com.github.winplay02.gitcraft.util.SerializationHelper;
 import com.github.winplay02.gitcraft.util.SerializationTypes;
 import groovy.lang.Tuple2;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -30,26 +35,32 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class YarnMappings extends Mapping {
 
-	public static final String URL_FABRIC_YARN_META = "https://meta.fabricmc.net/v2/versions/yarn";
+	private VersionMetaSource<GameVersionBuildMeta> yarnVersions = new RemoteVersionMetaSource<>(
+		MetaUrls.FABRIC_YARN,
+		SerializationTypes.TYPE_LIST_GAME_VERSION_BUILD_META,
+		GameVersionBuildMeta::gameVersion
+	);
 
-	private Map<String, FabricYarnVersionMeta> yarnVersions = null;
+	private static GameVersionBuildMeta usePotentialBuildOverride(GameVersionBuildMeta meta) {
+		// TODO is something like this still needed?
+		int build = GitCraftQuirks.yarnBrokenBuildOverride.getOrDefault(Tuple2.tuple(meta.gameVersion(), meta.build()), meta.build());
+		if (meta.build() == build) {
+			return meta;
+		}
+		return new GameVersionBuildMeta(meta.gameVersion(), meta.separator(), build, meta.maven(), meta.version(), meta.stable());
+	}
 
 	protected FabricIntermediaryMappings intermediaryMappings;
 
@@ -100,12 +111,12 @@ public class YarnMappings extends Mapping {
 	private StepStatus fetchUnpickArtifacts(StepWorker.Context<OrderedVersion> versionContext) throws IOException {
 		// Try constants JAR for unpicking
 		Path unpickingConstantsJar = getUnpickConstantsPath(versionContext.targetVersion());
-		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(versionContext.targetVersion());
+		GameVersionBuildMeta yarnVersion = getTargetYarnBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
 			return StepStatus.FAILED;
 		}
 		try {
-			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLConstants(), new FileSystemNetworkManager.LocalFileInfo(unpickingConstantsJar, null, null, "yarn unpicking constants", versionContext.targetVersion().launcherFriendlyVersionName()));
+			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeConstantsJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(unpickingConstantsJar, null, null, "yarn unpicking constants", versionContext.targetVersion().launcherFriendlyVersionName()));
 		} catch (RuntimeException ignored) {
 			Files.deleteIfExists(unpickingConstantsJar);
 		}
@@ -127,16 +138,16 @@ public class YarnMappings extends Mapping {
 		}
 		Files.deleteIfExists(mappingsFile);
 		// Get latest build info
-		FabricYarnVersionMeta yarnVersion = getYarnLatestBuild(versionContext.targetVersion());
+		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
 			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", versionContext.targetVersion().launcherFriendlyVersionName());
-			yarnVersion = new FabricYarnVersionMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
+			yarnVersion = new GameVersionBuildMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
 		}
 		// Try latest yarn merged v2 JAR build
 		{
 			Path mappingsFileJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 			try {
-				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLMergedV2(), new FileSystemNetworkManager.LocalFileInfo(mappingsFileJar, null, null,"yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
+				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeMergedV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileJar, null, null, "yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileJar)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 					Path unpickDefinitions = fs.getPath("extras", "definitions.unpick");
@@ -181,20 +192,20 @@ public class YarnMappings extends Mapping {
 		}
 	}
 
-	private FabricYarnVersionMeta getTargetYarnBuild(OrderedVersion mcVersion) {
+	private GameVersionBuildMeta getTargetYarnBuild(OrderedVersion mcVersion) {
 		if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
 			return null;
 		}
-		FabricYarnVersionMeta yarnVersion = getYarnLatestBuild(mcVersion);
+		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(mcVersion);
 		if (yarnVersion == null) {
-			yarnVersion = new FabricYarnVersionMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
+			yarnVersion = new GameVersionBuildMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s:unknown-fallback", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
 		}
 		return yarnVersion;
 	}
 
 	@Override
 	protected Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		GameVersionBuildMeta yarnVersion = getTargetYarnBuild(mcVersion);
 		if (yarnVersion == null) {
 			return null;
 		}
@@ -222,7 +233,7 @@ public class YarnMappings extends Mapping {
 	}
 
 	protected Path getUnpickDefinitionsPath(OrderedVersion mcVersion) {
-		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		GameVersionBuildMeta yarnVersion = getTargetYarnBuild(mcVersion);
 		if (yarnVersion == null) {
 			return null;
 		}
@@ -230,23 +241,19 @@ public class YarnMappings extends Mapping {
 	}
 
 	protected Path getUnpickConstantsPath(OrderedVersion mcVersion) {
-		FabricYarnVersionMeta yarnVersion = getTargetYarnBuild(mcVersion);
+		GameVersionBuildMeta yarnVersion = getTargetYarnBuild(mcVersion);
 		if (yarnVersion == null) {
 			return null;
 		}
 		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s-constants.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
-	private FabricYarnVersionMeta getYarnLatestBuild(OrderedVersion mcVersion) {
-		if (yarnVersions == null) {
-			try {
-				List<FabricYarnVersionMeta> yarnVersionMetas = SerializationHelper.deserialize(FileSystemNetworkManager.fetchAllFromURLSync(new URL(URL_FABRIC_YARN_META)), SerializationTypes.TYPE_LIST_FABRIC_YARN_VERSION_META);
-				yarnVersions = yarnVersionMetas.stream().collect(Collectors.groupingBy(FabricYarnVersionMeta::gameVersion)).values().stream().map(fabricYarnVersionMetas -> fabricYarnVersionMetas.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(FabricYarnVersionMeta::gameVersion, Function.identity()));
-			} catch (IOException | URISyntaxException | InterruptedException e) {
-				throw new RuntimeException(e);
-			}
+	private GameVersionBuildMeta getYarnLatestBuild(OrderedVersion mcVersion) {
+		try {
+			return yarnVersions.getLatest(FabricIntermediaryMappings.mappingsIntermediaryPathQuirkVersion(mcVersion.launcherFriendlyVersionName()));
+		} catch (IOException | URISyntaxException | InterruptedException e) {
+			throw new RuntimeException(e);
 		}
-		return yarnVersions.get(FabricIntermediaryMappings.mappingsIntermediaryPathQuirkVersion(mcVersion.launcherFriendlyVersionName()));
 	}
 
 	private static boolean isYarnBrokenVersion(OrderedVersion mcVersion) {
@@ -257,14 +264,14 @@ public class YarnMappings extends Mapping {
 			|| GitCraftQuirks.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
 	}
 
-	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(StepWorker.Context<OrderedVersion> versionContext, FabricYarnVersionMeta yarnVersion) {
+	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(StepWorker.Context<OrderedVersion> versionContext, GameVersionBuildMeta yarnVersion) {
 		try {
 			Path mappingsFileUnmerged = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 			if (Files.exists(mappingsFileUnmerged) && validateMappings(mappingsFileUnmerged)) {
 				return Tuple2.tuple(mappingsFileUnmerged, StepStatus.UP_TO_DATE);
 			}
 			Path mappingsFileUnmergedJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
-			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLUnmergedV2(), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJar, null, null,"unmerged yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
+			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJar, null, null, "unmerged yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJar)) {
 				Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 				Files.copy(mappingsPathInJar, mappingsFileUnmerged, StandardCopyOption.REPLACE_EXISTING);
@@ -278,7 +285,7 @@ public class YarnMappings extends Mapping {
 					return Tuple2.tuple(mappingsFileUnmergedv1, StepStatus.UP_TO_DATE);
 				}
 				Path mappingsFileUnmergedJarv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
-				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMavenURLUnmergedV1(), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJarv1, null, null,"unmerged yarn mapping (v1 fallback)", versionContext.targetVersion().launcherFriendlyVersionName()));
+				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJarv1, null, null, "unmerged yarn mapping (v1 fallback)", versionContext.targetVersion().launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJarv1)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 					Files.copy(mappingsPathInJar, mappingsFileUnmergedv1, StandardCopyOption.REPLACE_EXISTING);

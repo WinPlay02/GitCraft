@@ -1,11 +1,11 @@
-package com.github.winplay02.gitcraft.meta;
+package com.github.winplay02.gitcraft.manifest.metadata;
 
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 
 import java.io.IOException;
 
 public record LibraryMetadata(String name, Downloads downloads) {
-	public MavenArtifactMetadata getArtifact() {
+	public ArtifactMetadata getArtifact() {
 		if (this.downloads() != null) {
 			return this.downloads().artifact();
 		}
@@ -17,6 +17,6 @@ public record LibraryMetadata(String name, Downloads downloads) {
 		}
 	}
 
-	public record Downloads(MavenArtifactMetadata artifact) {
+	public record Downloads(ArtifactMetadata artifact) {
 	}
 }

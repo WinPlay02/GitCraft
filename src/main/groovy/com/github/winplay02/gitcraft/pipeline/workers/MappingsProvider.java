@@ -1,6 +1,5 @@
 package com.github.winplay02.gitcraft.pipeline.workers;
 
-import com.github.winplay02.gitcraft.mappings.Mapping;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
@@ -14,14 +13,12 @@ public record MappingsProvider(StepWorker.Config config) implements StepWorker<O
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
-		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		OrderedVersion mcVersion = context.targetVersion();
-		StepStatus mergedStatus = mapping.provideMappings(context, MinecraftJar.MERGED);
+		StepStatus mergedStatus = config.mappingFlavour().provide(context, MinecraftJar.MERGED);
 		if (mergedStatus.hasRun()) {
 			return StepOutput.ofEmptyResultSet(mergedStatus);
 		}
-		StepStatus clientStatus = mapping.provideMappings(context, MinecraftJar.CLIENT);
-		StepStatus serverStatus = mapping.provideMappings(context, MinecraftJar.SERVER);
+		StepStatus clientStatus = config.mappingFlavour().provide(context, MinecraftJar.CLIENT);
+		StepStatus serverStatus = config.mappingFlavour().provide(context, MinecraftJar.SERVER);
 		return StepOutput.ofEmptyResultSet(StepStatus.merge(clientStatus, serverStatus));
 	}
 }

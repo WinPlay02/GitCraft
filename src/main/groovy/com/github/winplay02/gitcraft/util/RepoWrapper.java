@@ -164,30 +164,31 @@ public class RepoWrapper implements Closeable {
 	public List<Ref> getRefsContainingCommit(RevCommit targetCommit) throws IOException {
 		List<Ref> refs = this.git.getRepository().getRefDatabase().getRefs();
 		List<Ref> refsContaining = new ArrayList<>();
-		RevWalk walk = new RevWalk(this.git.getRepository());
-		for (Ref ref : refs) {
-			if (!ref.isPeeled()) {
-				ref = this.git.getRepository().getRefDatabase().peel(ref);
-			}
-
-			ObjectId objectId = ref.getPeeledObjectId();
-			if (objectId == null)
-				objectId = ref.getObjectId();
-			RevCommit commit = null;
-			try {
-				commit = walk.parseCommit(objectId);
-			} catch (MissingObjectException | IncorrectObjectTypeException ignored) {
-			}
-			if (commit != null) {
-				walk.markStart(commit);
-				walk.setRevFilter(new CommitRevFilter(targetCommit.getId()));
-				if (walk.iterator().hasNext()) {
-					refsContaining.add(ref);
+		try (RevWalk walk = new RevWalk(this.git.getRepository())) {
+			for (Ref ref : refs) {
+				if (!ref.isPeeled()) {
+					ref = this.git.getRepository().getRefDatabase().peel(ref);
 				}
+
+				ObjectId objectId = ref.getPeeledObjectId();
+				if (objectId == null)
+					objectId = ref.getObjectId();
+				RevCommit commit = null;
+				try {
+					commit = walk.parseCommit(objectId);
+				} catch (MissingObjectException | IncorrectObjectTypeException ignored) {
+				}
+				if (commit != null) {
+					walk.markStart(commit);
+					walk.setRevFilter(new CommitRevFilter(targetCommit.getId()));
+					if (walk.iterator().hasNext()) {
+						refsContaining.add(ref);
+					}
+				}
+				walk.reset();
 			}
-			walk.reset();
+			return refsContaining;
 		}
-		return refsContaining;
 	}
 
 	public void createSymbolicHEAD(String refTarget) throws IOException {

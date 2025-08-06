@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.mappings.yarn.FabricYarnVersionMeta;
+import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
+import com.github.winplay02.gitcraft.meta.SimpleVersionMeta;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.google.gson.reflect.TypeToken;
 
@@ -14,6 +15,8 @@ public class SerializationTypes {
 	};
 	public static final TypeToken<TreeMap<String, String>> TYPE_TREE_MAP_STRING_STRING = new TypeToken<TreeMap<String, String>>() {
 	};
-	public static final TypeToken<ArrayList<FabricYarnVersionMeta>> TYPE_LIST_FABRIC_YARN_VERSION_META = new TypeToken<ArrayList<FabricYarnVersionMeta>>() {
+	public static final TypeToken<ArrayList<SimpleVersionMeta>> TYPE_LIST_SIMPLE_VERSION_META = new TypeToken<ArrayList<SimpleVersionMeta>>() {
+	};
+	public static final TypeToken<ArrayList<GameVersionBuildMeta>> TYPE_LIST_GAME_VERSION_BUILD_META = new TypeToken<ArrayList<GameVersionBuildMeta>>() {
 	};
 }

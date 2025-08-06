@@ -1,13 +1,17 @@
 package com.github.winplay02.gitcraft.config;
 
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.google.gson.JsonElement;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +45,13 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 									   String[] onlyVersion,
 									   String minVersion,
 									   String maxVersion,
-									   String[] excludedVersion) implements Configuration {
+									   String[] excludedVersion,
+									   int ornitheIntermediaryGeneration,
+									   boolean patchLvt,
+									   ExceptionsFlavour usedExceptions,
+									   SignaturesFlavour usedSignatures,
+									   NestsFlavour usedNests,
+									   boolean enablePreening) implements Configuration {
 
 	public ApplicationConfiguration {
 		/// Validate parameters (and combinations), which are wrong without looking at any context
@@ -60,22 +70,39 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		null,
 		null,
 		null,
-		null
+		null,
+		1,
+		false,
+		ExceptionsFlavour.NONE,
+		SignaturesFlavour.NONE,
+		NestsFlavour.NONE,
+		false
 	);
 
 	@Override
 	public Map<String, JsonElement> serialize() {
-		return Map.of(
-			"manifestSource", prim(this.manifestSource().toString()),
-			"usedMapping", prim(this.usedMapping().toString()),
-			"fallbackMappings", array(Arrays.stream(this.fallbackMappings()).map(MappingFlavour::toString).toList()),
-			"onlyStableReleases", prim(this.onlyStableReleases()),
-			"onlySnapshots", prim(this.onlySnapshots()),
-			"skipNonLinear", prim(this.skipNonLinear()),
-			"onlyVersion", this.onlyVersion() == null ? _null() : array(Arrays.stream(this.onlyVersion()).toList()),
-			"minVersion", this.minVersion() == null ? _null() : prim(this.minVersion()),
-			"maxVersion", this.maxVersion() == null ? _null() : prim(this.maxVersion()),
-			"excludedVersion", this.excludedVersion() == null ? _null() : array(Arrays.stream(this.excludedVersion()).toList())
+		return MiscHelper.mergeMaps(
+			new HashMap<>(),
+			Map.of(
+				"manifestSource", prim(this.manifestSource().toString()),
+				"usedMapping", prim(this.usedMapping().toString()),
+				"fallbackMappings", array(Arrays.stream(this.fallbackMappings()).map(MappingFlavour::toString).toList()),
+				"onlyStableReleases", prim(this.onlyStableReleases()),
+				"onlySnapshots", prim(this.onlySnapshots()),
+				"skipNonLinear", prim(this.skipNonLinear()),
+				"onlyVersion", this.onlyVersion() == null ? _null() : array(Arrays.stream(this.onlyVersion()).toList()),
+				"minVersion", this.minVersion() == null ? _null() : prim(this.minVersion()),
+				"maxVersion", this.maxVersion() == null ? _null() : prim(this.maxVersion()),
+				"excludedVersion", this.excludedVersion() == null ? _null() : array(Arrays.stream(this.excludedVersion()).toList())
+			),
+			Map.of(
+				"ornitheIntermediaryGeneration", prim(this.ornitheIntermediaryGeneration()),
+				"patchLvt", prim(this.patchLvt()),
+				"usedExceptions", prim(this.usedExceptions().toString()),
+				"usedSignatures", prim(this.usedSignatures().toString()),
+				"usedNests", prim(this.usedNests().toString()),
+				"enablePreening", prim(this.enablePreening())
+			)
 		);
 	}
 
@@ -101,6 +128,11 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			info.add(String.format("Versions to decompile: all%s%s", excludedBranches, excludedVersions));
 		}
 		info.add(String.format("Non-Linear version are: %s", this.skipNonLinear() ? "skipped" : "included"));
+		info.add(String.format("LVT patching is: %s", this.patchLvt() ? "enabled" : "disabled"));
+		info.add(String.format("Exceptions used: %s", this.usedExceptions()));
+		info.add(String.format("Signatures used: %s", this.usedSignatures()));
+		info.add(String.format("Nests used: %s", this.usedNests()));
+		info.add(String.format("Preening is: %s", this.enablePreening() ? "enabled" : "disabled"));
 		return info;
 	}
 
@@ -121,12 +153,12 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 	}
 
 	public Optional<MappingFlavour> getMappingsForMinecraftVersion(OrderedVersion mcVersion) {
-		if (this.usedMapping().getMappingImpl().doMappingsExist(mcVersion)) {
+		if (this.usedMapping().exists(mcVersion)) {
 			return Optional.of(this.usedMapping());
 		}
 		if (this.fallbackMappings() != null && this.fallbackMappings().length != 0) {
 			for (MappingFlavour nextBestFallbackMapping : this.fallbackMappings()) {
-				if (nextBestFallbackMapping.getMappingImpl().doMappingsExist(mcVersion)) {
+				if (nextBestFallbackMapping.exists(mcVersion)) {
 					MiscHelper.println("WARNING: %s mappings do not exist for %s. Falling back to %s", this.usedMapping(), mcVersion.launcherFriendlyVersionName(), nextBestFallbackMapping);
 					return Optional.of(nextBestFallbackMapping);
 				}
@@ -136,6 +168,30 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			MiscHelper.panic("ERROR: %s mappings do not exist for %s. No fallback options were specified", this.usedMapping(), mcVersion.launcherFriendlyVersionName());
 		}
 		return Optional.empty();
+	}
+
+	public Optional<ExceptionsFlavour> getExceptionsForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedExceptions.exists(mcVersion)) {
+			return Optional.of(this.usedExceptions);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	public Optional<SignaturesFlavour> getSignaturesForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedSignatures.exists(mcVersion)) {
+			return Optional.of(this.usedSignatures);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	public Optional<NestsFlavour> getNestsForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedNests.exists(mcVersion)) {
+			return Optional.of(this.usedNests);
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	public static ApplicationConfiguration deserialize(Map<String, JsonElement> map) {
@@ -151,7 +207,13 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			onlyVersion != null ? onlyVersion.toArray(String[]::new) : null,
 			Utils.getString(map, "minVersion", DEFAULT.minVersion()),
 			Utils.getString(map, "maxVersion", DEFAULT.maxVersion()),
-			excludedVersion != null ? excludedVersion.toArray(String[]::new) : null
+			excludedVersion != null ? excludedVersion.toArray(String[]::new) : null,
+			Utils.getInt(map, "ornitheIntermediaryGeneration", DEFAULT.ornitheIntermediaryGeneration()),
+			Utils.getBoolean(map, "patchLvt", DEFAULT.patchLvt()),
+			ExceptionsFlavour.valueOf(Utils.getString(map, "usedExceptions", DEFAULT.usedExceptions().toString().toUpperCase(Locale.ROOT))),
+			SignaturesFlavour.valueOf(Utils.getString(map, "usedSignatures", DEFAULT.usedSignatures().toString().toUpperCase(Locale.ROOT))),
+			NestsFlavour.valueOf(Utils.getString(map, "usedNests", DEFAULT.usedNests().toString().toUpperCase(Locale.ROOT))),
+			Utils.getBoolean(map, "enablePreening", DEFAULT.enablePreening())
 		);
 	}
 }

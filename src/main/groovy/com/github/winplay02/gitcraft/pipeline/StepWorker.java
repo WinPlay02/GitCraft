@@ -2,7 +2,13 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 import java.util.concurrent.ExecutorService;
@@ -23,11 +29,16 @@ public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 		return true;
 	}
 
-	record Config(MappingFlavour mappingFlavour) {
+	record Config(MappingFlavour mappingFlavour, ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour) {
 
 		@Override
 		public String toString() {
-			return "mappings: %s".formatted(mappingFlavour);
+			List<String> flavours = new ArrayList<>();
+			if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED) flavours.add("mappings: %s".formatted(mappingFlavour));
+			if (exceptionsFlavour != ExceptionsFlavour.NONE) flavours.add("exceptions: %s".formatted(exceptionsFlavour));
+			if (signaturesFlavour != SignaturesFlavour.NONE) flavours.add("signatures: %s".formatted(signaturesFlavour));
+			if (nestsFlavour != NestsFlavour.NONE) flavours.add("nests: %s".formatted(nestsFlavour));
+			return String.join(", ", flavours);
 		}
 	}
 

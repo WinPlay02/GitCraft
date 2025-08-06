@@ -17,7 +17,7 @@ public abstract class AbstractVersionGraph<T extends AbstractVersion<T>> extends
 	/**
 	 * root nodes of the graph, mapped to the path lengths to the tips of those main branches
 	 */
-	public HashMap<T, Integer> roots = new HashMap<>();
+	public Set<T> roots = new HashSet<>();
 
 	protected AbstractVersionGraph() {
 		super();
@@ -85,7 +85,7 @@ public abstract class AbstractVersionGraph<T extends AbstractVersion<T>> extends
 		if (this.roots.isEmpty()) {
 			MiscHelper.panic("Graph does not contain a root node");
 		}
-		return this.roots.keySet();
+		return this.roots;
 	}
 
 	public boolean containsVersion(T version) {

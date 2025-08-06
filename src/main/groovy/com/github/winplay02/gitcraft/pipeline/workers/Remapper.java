@@ -6,9 +6,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.Library;
-import com.github.winplay02.gitcraft.mappings.Mapping;
 
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
@@ -49,8 +47,7 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Mapping mapping = config.mappingFlavour().getMappingImpl();
-		if (!mapping.canMappingsBeUsedOn(context.targetVersion(), type)) {
+		if (!config.mappingFlavour().canBeUsedOn(context.targetVersion(), type)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
 		Path jarIn = pipeline.getStoragePath(inputFile, context);
@@ -61,7 +58,7 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (Files.exists(jarOut)) {
 			Files.delete(jarOut);
 		}
-		IMappingProvider mappingProvider = mapping.getMappingsProvider(context.targetVersion(), type);
+		IMappingProvider mappingProvider = config.mappingFlavour().getProvider(context.targetVersion(), type);
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
 			.renameInvalidLocals(true)
 			.rebuildSourceFilenames(true)

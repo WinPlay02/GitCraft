@@ -5,20 +5,12 @@ import com.github.winplay02.gitcraft.config.Configuration;
 import com.github.winplay02.gitcraft.config.DataConfiguration;
 import com.github.winplay02.gitcraft.config.RepositoryConfiguration;
 import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration;
-import com.github.winplay02.gitcraft.mappings.IdentityMappings;
-import com.github.winplay02.gitcraft.mappings.Mapping;
-import com.github.winplay02.gitcraft.mappings.MojangMappings;
-import com.github.winplay02.gitcraft.mappings.MojangPlusYarnMappings;
-import com.github.winplay02.gitcraft.mappings.ParchmentMappings;
-import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
-import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FabricHelper;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
-import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
@@ -31,13 +23,9 @@ import java.util.logging.Logger;
 public class GitCraft {
 	public static final String VERSION = "0.2.0";
 
-	/// Every Mapping
-	public static final LazyValue<MojangMappings> MOJANG_MAPPINGS = LazyValue.of(MojangMappings::new);
-	public static final LazyValue<FabricIntermediaryMappings> FABRIC_INTERMEDIARY_MAPPINGS = LazyValue.of(FabricIntermediaryMappings::new);
-	public static final LazyValue<YarnMappings> YARN_MAPPINGS = LazyValue.of(() -> new YarnMappings(FABRIC_INTERMEDIARY_MAPPINGS.get()));
-	public static final LazyValue<Mapping> MOJANG_PARCHMENT_MAPPINGS = LazyValue.of(() -> new ParchmentMappings(MOJANG_MAPPINGS.get()));
-	public static final LazyValue<Mapping> IDENTITY_UNMAPPED = LazyValue.of(IdentityMappings::new);
-	public static final LazyValue<Mapping> MOJANG_YARN_MAPPINGS = LazyValue.of(() -> new MojangPlusYarnMappings(MOJANG_MAPPINGS.get(), YARN_MAPPINGS.get()));
+	public static final String FABRIC_MAVEN = "https://maven.fabricmc.net/";
+	public static final String ORNITHE_MAVEN = "https://maven.ornithemc.net/releases/";
+
 
 	public static MinecraftVersionGraph versionGraph = null;
 	public static MinecraftVersionGraph resetVersionGraph = null;

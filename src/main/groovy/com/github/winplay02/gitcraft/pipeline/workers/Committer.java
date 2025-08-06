@@ -3,7 +3,7 @@ package com.github.winplay02.gitcraft.pipeline.workers;
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
-import com.github.winplay02.gitcraft.meta.AssetsIndexMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
@@ -104,11 +104,10 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 	}
 
 	private String getBranchNameForVersion(OrderedVersion mcVersion) {
-		OrderedVersion branch = GitCraft.versionGraph.walkToPreviousBranchPoint(mcVersion);
-		OrderedVersion root = GitCraft.versionGraph.walkToRoot(mcVersion);
-		Set<OrderedVersion> roots = GitCraft.versionGraph.getRootVersions();
-		return (branch == null
-			? roots.size() == 1 || root == GitCraft.versionGraph.getDeepestRootVersion()
+		OrderedVersion branch = GitCraft.versionGraph.walkBackToBranchPoint(mcVersion);
+		OrderedVersion root = GitCraft.versionGraph.walkBackToRoot(mcVersion);
+		return (GitCraft.versionGraph.isOnMainBranch(mcVersion)
+			? GitCraft.versionGraph.roots.size() == 1 || root == GitCraft.versionGraph.getMainRootVersion()
 			? GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()
 			: root.launcherFriendlyVersionName()
 			: branch.launcherFriendlyVersionName()).replace(" ", "-");

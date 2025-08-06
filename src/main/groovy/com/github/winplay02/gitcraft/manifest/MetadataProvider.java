@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 
 public interface MetadataProvider<E extends AbstractVersion<E>> {
 	ManifestSource getSource();
@@ -43,4 +43,9 @@ public interface MetadataProvider<E extends AbstractVersion<E>> {
 	 * @return whether this version should <i>definitely</i> not appear in a main branch of the version graph
 	 */
 	boolean shouldExcludeFromMainBranch(E mcVersion);
+
+	/**
+	 * @return whether this version should be excluded from the version graph
+	 */
+	boolean shouldExclude(E mcVersion);
 }

@@ -2,7 +2,7 @@ package com.github.winplay02.gitcraft.manifest;
 
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.LibraryPaths;
-import com.github.winplay02.gitcraft.meta.VersionInfo;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -96,6 +96,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	public final Map<String, OrderedVersion> getVersions(Executor executor) throws IOException {
 		if (!this.versionsLoaded) {
 			this.loadVersions(executor);
+			this.postLoadVersions();
 			this.writeSemverCache();
 		}
 		return Collections.unmodifiableMap(this.versionsById);
@@ -121,14 +122,20 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			}
 			CompletableFuture.allOf(futureVersions.values().toArray(CompletableFuture[]::new)).join();
 			for(Map.Entry<String, CompletableFuture<OrderedVersion>> idVersion : futureVersions.entrySet()) {
-				this.versionsById.put(idVersion.getKey(), idVersion.getValue().getNow(null));
+				OrderedVersion version = idVersion.getValue().getNow(null);
+				if (!this.shouldExclude(version)) {
+					this.versionsById.put(idVersion.getKey(), version);
+				}
 			}
 		}
 		for (MetadataSources.RemoteMetadata<E> metadataSource : this.metadataSources) {
 			MiscHelper.println("Reading extra metadata for %s...", metadataSource.versionEntry().id());
 			E versionEntry = metadataSource.versionEntry();
 			if (!this.versionsById.containsKey(versionEntry.id())) {
-				this.versionsById.put(versionEntry.id(), this.loadVersionFromManifest(executor, versionEntry, this.remoteMetadata).join());
+				OrderedVersion version = this.loadVersionFromManifest(executor, versionEntry, this.remoteMetadata).join();
+				if (!this.shouldExclude(version)) {
+					this.versionsById.put(versionEntry.id(), version);
+				}
 			} else {
 				MiscHelper.panic("Found duplicate extra version entry: %s (Differs from previous)", versionEntry.id());
 			}
@@ -137,15 +144,20 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			MiscHelper.println("Reading extra metadata repository from %s...", repository.directory());
 			Path dir = repository.directory();
 			this.loadVersionsFromRepository(executor, dir, mcVersion -> {
-				String versionId = mcVersion.launcherFriendlyVersionName();
-				if (!this.versionsById.containsKey(versionId)) {
-					this.versionsById.put(versionId, mcVersion);
-				} else {
-					MiscHelper.panic("Found duplicate repository version entry: %s", versionId);
+				if (!this.shouldExclude(mcVersion)) {
+					String versionId = mcVersion.launcherFriendlyVersionName();
+					if (!this.versionsById.containsKey(versionId)) {
+						this.versionsById.put(versionId, mcVersion);
+					} else {
+						MiscHelper.panic("Found duplicate repository version entry: %s", versionId);
+					}
 				}
 			});
 		}
 		this.versionsLoaded = true;
+	}
+
+	protected void postLoadVersions() {
 	}
 
 	private final M fetchVersionsManifest(MetadataSources.RemoteVersionsManifest<M, E> manifestSource) throws IOException {
@@ -200,14 +212,19 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 					Optional<Path> zipFile = MiscHelper.findRecursivelyByName(fs.getPath("."), fileName);
 					if (zipFile.isPresent()) {
 						return this.loadVersionMetadata(zipFile.get(), metadataClass);
+					} else {
+						MiscHelper.panic("cannot find metadata file json inside %s", targetFile);
 					}
-					return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
 				}
 			} else {
-				MiscHelper.panic("unknown metadata file extension: %s", targetFile);
+				MiscHelper.panic("unknown file extension for metadata file %s", targetFile);
 			}
 		}
-		return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
+		T metadata = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(targetFile), metadataClass);
+		if (metadata == null) {
+			MiscHelper.panic("unable to load metadata type %s from file %s", metadataClass.getName(), targetFile);
+		}
+		return metadata;
 	}
 
 	/**
@@ -233,6 +250,11 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
 			return null;
 		}
+	}
+
+	@Override
+	public boolean shouldExclude(OrderedVersion mcVersion) {
+		return false;
 	}
 
 	@Override

@@ -2,8 +2,8 @@ package com.github.winplay02.gitcraft.util;
 
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.LibraryPaths;
-import com.github.winplay02.gitcraft.meta.MavenArtifactMetadata;
-import com.github.winplay02.gitcraft.meta.GithubRepositoryBlobContent;
+import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.GithubRepositoryBlobContent;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 
 import org.w3c.dom.Document;
@@ -76,8 +76,8 @@ public class RemoteHelper {
 		}
 	}
 
-	public static MavenArtifactMetadata createMavenURLFromMavenArtifact(String mavenUrl) throws IOException {
-		return new MavenArtifactMetadata(mavenCache.getSha1ForURL(urlencodedURL(mavenUrl + ".sha1")), -1, urlencodedURL(mavenUrl));
+	public static ArtifactMetadata createMavenURLFromMavenArtifact(String mavenUrl) throws IOException {
+		return new ArtifactMetadata(mavenCache.getSha1ForURL(urlencodedURL(mavenUrl + ".sha1")), -1, urlencodedURL(mavenUrl));
 	}
 
 	public static StepStatus downloadToFileWithChecksumIfNotExistsNoRetryMaven(Executor executor, String url, LocalFileInfo localFileInfo) {

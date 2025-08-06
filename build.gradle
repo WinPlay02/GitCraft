@@ -11,6 +11,10 @@ repositories {
 	maven {
 		url = "https://maven.quiltmc.org/repository/release"
 	}
+	maven {
+		name = 'Ornithe Releases'
+		url = 'https://maven.ornithemc.net/releases/'
+	}
 	mavenCentral()
 }
 
@@ -47,7 +51,7 @@ dependencies {
 	implementation "org.ow2.asm:asm-tree:${project.asm_version}"
 	implementation "org.ow2.asm:asm-util:${project.asm_version}"
 
-	implementation("net.fabricmc:stitch:${stitch_version}") {
+	implementation("net.ornithemc:stitch:${stitch_version}") {
 		exclude module: 'enigma'
 	}
 
@@ -57,10 +61,17 @@ dependencies {
 	implementation "net.fabricmc:mapping-io:${mappingio_version}"
 	implementation "net.fabricmc:fabric-loom:${loom_version}"
 	implementation "net.fabricmc.unpick:unpick:${unpick_version}"
+	implementation "net.fabricmc.unpick:unpick-format-utils:${unpick_version}"
 
 	implementation("net.fabricmc:lorenz-tiny:${lorenz_tiny_version}") {
 		transitive = false
 	}
+
+	implementation "net.ornithemc:condor:${condor_version}"
+	implementation "net.ornithemc:exceptor:${exceptor_version}"
+	implementation "io.github.gaming32:signature-changer:${signature_changer_version}"
+	implementation "net.ornithemc:preen:${preen_version}"
+	implementation "net.ornithemc:nester:${nester_version}"
 
 	// https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
 	implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"

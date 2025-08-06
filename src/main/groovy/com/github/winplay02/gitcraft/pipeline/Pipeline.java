@@ -2,7 +2,6 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.Library;
-import com.github.winplay02.gitcraft.config.GlobalConfiguration;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
@@ -26,6 +25,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 
 public class Pipeline<T extends AbstractVersion<T>> {
 
@@ -105,6 +108,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					MiscHelper.println("Step '%s' for %s (%s) was \u001B[36mnot run\u001B[0m", versionStep.step().getName(), context, config);
 				}
 			}
+			default -> { }
 		}
 
 		if (status.status() == StepStatus.FAILED) {
@@ -173,7 +177,12 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 
 		private StepWorker.Config getConfig(T version) {
-			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(GitCraft.getApplicationConfiguration().getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED))); // TODO fix dependency on OrderedVersion
+			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(
+				GitCraft.getApplicationConfiguration().getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED),
+				GitCraft.getApplicationConfiguration().getExceptionsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(ExceptionsFlavour.NONE),
+				GitCraft.getApplicationConfiguration().getSignaturesForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(SignaturesFlavour.NONE),
+				GitCraft.getApplicationConfiguration().getNestsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(NestsFlavour.NONE)
+			)); // TODO fix dependency on OrderedVersion
 		}
 
 		private void runSingleTask(ExecutorService executor, TupleVersionStep<T> task, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {

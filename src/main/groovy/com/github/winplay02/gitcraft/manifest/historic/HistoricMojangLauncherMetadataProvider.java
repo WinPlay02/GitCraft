@@ -2,10 +2,10 @@ package com.github.winplay02.gitcraft.manifest.historic;
 
 import com.github.winplay02.gitcraft.manifest.BaseMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionDetails;
 import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherManifest;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
-import com.github.winplay02.gitcraft.meta.VersionDetails;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 import java.io.IOException;
