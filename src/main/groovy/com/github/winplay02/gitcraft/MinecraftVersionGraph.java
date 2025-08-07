@@ -189,7 +189,6 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().shouldExcludeFromMainBranch(mcVersion);
 	}
 
-	public HashSet<String> repoTags = new HashSet<>();
 	public HashMap<OrderedVersion, Integer> pathsToTip = new HashMap<>();
 	public HashMap<OrderedVersion, Integer> pathsToRoot = new HashMap<>();
 
