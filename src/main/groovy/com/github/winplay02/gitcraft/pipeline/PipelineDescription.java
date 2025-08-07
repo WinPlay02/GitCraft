@@ -60,11 +60,17 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		// Validate that each step only appears once
 		int nonDuplicateSteps = new HashSet<>(this.steps).size();
 		if (nonDuplicateSteps != this.steps.size()) {
-			MiscHelper.panic("PipelineDescription is invalid, %s steps exists, %s are duplicates", this.steps.size(), this.steps.size() - nonDuplicateSteps);
+			MiscHelper.panic("PipelineDescription %s is invalid, %s steps exists, %s are duplicates", this.descriptionName(), this.steps.size(), this.steps.size() - nonDuplicateSteps);
 		}
 		// Validate dependencies
 		for (Step step : this.steps) {
 			validateStepDependencies(step);
+		}
+		// Validate inputs exist
+		for (Step step : this.steps) {
+			if (!this.stepInputMap().containsKey(step)) {
+				MiscHelper.panic("PipelineDescription %s is invalid, step %s has no declared inputs. If there are no inputs for this step, an EMPTY_INPUT_PROVIDER should be used instead.", this.descriptionName(), step);
+			}
 		}
 	}
 
@@ -74,21 +80,21 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		for (Map.Entry<Step, DependencyType> entry : dependencies.dependencyTypes().entrySet()) {
 			// Validate non-cyclic on itself
 			if (entry.getKey() == step) {
-				MiscHelper.panic("PipelineDescription is invalid, step %s depends on itself. This should be declared as an inter-version dependency", entry.getKey());
+				MiscHelper.panic("PipelineDescription %s is invalid, step %s depends on itself. This should be declared as an inter-version dependency", this.descriptionName(), entry.getKey());
 			}
 			int dependencyIndex = this.steps.indexOf(entry.getKey());
 			// Validate dependencies exist, if required
 			if (dependencyIndex == -1) {
 				if (entry.getValue() == DependencyType.REQUIRED) {
-					MiscHelper.panic("PipelineDescription is invalid, step %s depends on required step %s, which is not part of this pipeline description", step, entry.getKey());
+					MiscHelper.panic("PipelineDescription %s is invalid, step %s depends on required step %s, which is not part of this pipeline description", this.descriptionName(), step, entry.getKey());
 				}
 				if (entry.getValue() == DependencyType.NOT_REQUIRED) {
-					MiscHelper.println("WARNING: Step %s depends on optional step %s, which is not part of this pipeline description", step, entry.getKey());
+					MiscHelper.println("WARNING: (In PipelineDescription %s) Step %s depends on optional step %s, which is not part of this pipeline description", this.descriptionName(), step, entry.getKey());
 				}
 			}
 			// Validate dependencies are executed before subject step
 			if (dependencyIndex > stepIndex) {
-				MiscHelper.panic("PipelineDescription is invalid, step %s depends on future step %s. This should be declared as an inter-version dependency", step, entry.getKey());
+				MiscHelper.panic("PipelineDescription %s is invalid, step %s depends on future step %s. This should be declared as an inter-version dependency", this.descriptionName(), step, entry.getKey());
 			}
 		}
 	}
@@ -96,7 +102,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 	public static final BiFunction<PipelineFilesystemStorage<OrderedVersion>, StepResults<OrderedVersion>, StepInput> EMPTY_INPUT_PROVIDER = (_storage, _results) -> StepInput.EMPTY;
 
 	// Reset is not in the default pipeline, as parallelization would be even trickier, since every step (more or less) depends on it
-	public static final PipelineDescription<OrderedVersion> RESET_PIPELINE = new PipelineDescription<>("Reset", List.of(Step.RESET), Map.of(), Map.of(Step.RESET, StepDependency.ofInterVersion(Step.RESET)));
+	public static final PipelineDescription<OrderedVersion> RESET_PIPELINE = new PipelineDescription<>("Reset", List.of(Step.RESET), Map.of(Step.RESET, EMPTY_INPUT_PROVIDER), Map.of(Step.RESET, StepDependency.ofInterVersion(Step.RESET)));
 
 	public static final PipelineDescription<OrderedVersion> DEFAULT_PIPELINE = new PipelineDescription<>("Default",
 		List.of(
