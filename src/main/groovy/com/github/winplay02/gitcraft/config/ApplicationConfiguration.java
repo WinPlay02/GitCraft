@@ -210,9 +210,9 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			excludedVersion != null ? excludedVersion.toArray(String[]::new) : null,
 			Utils.getInt(map, "ornitheIntermediaryGeneration", DEFAULT.ornitheIntermediaryGeneration()),
 			Utils.getBoolean(map, "patchLvt", DEFAULT.patchLvt()),
-			ExceptionsFlavour.valueOf(Utils.getString(map, "usedExceptions", DEFAULT.usedExceptions().toString().toUpperCase(Locale.ROOT))),
-			SignaturesFlavour.valueOf(Utils.getString(map, "usedSignatures", DEFAULT.usedSignatures().toString().toUpperCase(Locale.ROOT))),
-			NestsFlavour.valueOf(Utils.getString(map, "usedNests", DEFAULT.usedNests().toString().toUpperCase(Locale.ROOT))),
+			ExceptionsFlavour.valueOf(Utils.getString(map, "usedExceptions", DEFAULT.usedExceptions().toString()).toUpperCase(Locale.ROOT)),
+			SignaturesFlavour.valueOf(Utils.getString(map, "usedSignatures", DEFAULT.usedSignatures().toString()).toUpperCase(Locale.ROOT)),
+			NestsFlavour.valueOf(Utils.getString(map, "usedNests", DEFAULT.usedNests().toString()).toUpperCase(Locale.ROOT)),
 			Utils.getBoolean(map, "enablePreening", DEFAULT.enablePreening())
 		);
 	}
