@@ -44,12 +44,12 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Decompiler.Inputs input, StepResults<OrderedVersion> results) throws Exception {
 		Files.createDirectories(pipeline.getStoragePath(PipelineFilesystemStorage.DECOMPILED, context));
-		StepOutput<OrderedVersion> mergedStatus = decompileJar(pipeline, context, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
+		StepOutput<OrderedVersion> mergedStatus = decompileJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput<OrderedVersion> clientStatus = decompileJar(pipeline, context, input.clientJar().orElse(null), "client", PipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
-		StepOutput<OrderedVersion> serverStatus = decompileJar(pipeline, context, input.serverJar().orElse(null), "server", PipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
+		StepOutput<OrderedVersion> clientStatus = decompileJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), "client", PipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
+		StepOutput<OrderedVersion> serverStatus = decompileJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), "server", PipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
 		return StepOutput.merge(clientStatus, serverStatus);
 	}
 
@@ -58,7 +58,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
-	private StepOutput<OrderedVersion> decompileJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
+	private StepOutput<OrderedVersion> decompileJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, MinecraftJar inFile, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -93,7 +93,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 		options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
 		if (config.mappingFlavour().supportsComments()) {
 			// TODO: this will break for mapping flavours that support unpicking but for the client and server separately
-			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getPath(context.targetVersion(), MinecraftJar.MERGED).orElseThrow().toFile()));
+			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getPath(context.targetVersion(), inFile).orElseThrow().toFile()));
 		}
 
 		try (FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(jarOut, true)) {

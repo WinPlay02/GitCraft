@@ -94,10 +94,12 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	 */
 	@Override
 	public final Map<String, OrderedVersion> getVersions(Executor executor) throws IOException {
-		if (!this.versionsLoaded) {
-			this.loadVersions(executor);
-			this.postLoadVersions();
-			this.writeSemverCache();
+		synchronized (this) {
+			if (!this.versionsLoaded) {
+				this.loadVersions(executor);
+				this.postLoadVersions();
+				this.writeSemverCache();
+			}
 		}
 		return Collections.unmodifiableMap(this.versionsById);
 	}
@@ -192,7 +194,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		}
 		String fileName = url.substring(url.lastIndexOf('/') + 1);
 		Path filePath = targetDir.resolve(fileName);
-		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, Library.IA_SHA1, targetFileKind, id), true, false);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass);

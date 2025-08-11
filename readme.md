@@ -88,7 +88,7 @@ Options:
                                calamus_intermediary, feather,
                                identity_unmapped
   -h, --help                 Displays this help screen
-      --manifest-source=<mapping>
+      --manifest-source=<manifestsrc>
                              Specifies the manifest source used to fetch the
                                available versions, the mapping to semantic
                                versions and the dependencies between versions.

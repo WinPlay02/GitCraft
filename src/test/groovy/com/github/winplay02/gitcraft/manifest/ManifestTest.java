@@ -1,17 +1,17 @@
 package com.github.winplay02.gitcraft.manifest;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftTestingFs;
 import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.MinecraftVersionGraph;
+import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,6 +41,28 @@ public class ManifestTest {
 		assertTrue(metadataBootstrap.versionsById.containsKey("1.20"));
 		assertTrue(metadataBootstrap.versionsById.containsKey("rd-132328"));
 		assertEquals("0.0.0-rd.132328", metadataBootstrap.versionsById.get("rd-132328").semanticVersion());
+	}
+
+	@Test
+	public void metadataBootstrapSkyrisingMeta() throws IOException {
+		SkyrisingMetadataProvider metadataBootstrap = new SkyrisingMetadataProvider();
+		Files.deleteIfExists(metadataBootstrap.getSemverCachePath());
+		metadataBootstrap = new SkyrisingMetadataProvider();
+		assertTrue(metadataBootstrap.semverCache.isEmpty());
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), metadataBootstrap.getSemverCachePath());
+		metadataBootstrap = new SkyrisingMetadataProvider();
+		metadataBootstrap.loadSemverCache();
+		assertFalse(metadataBootstrap.semverCache.isEmpty());
+		metadataBootstrap.semverCache.remove("11w47a");
+		metadataBootstrap.semverCache.remove("1.0.1");
+		metadataBootstrap.metadataSources.clear();
+		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
+			metadataBootstrap.getVersions(executor);
+		}
+		assertTrue(metadataBootstrap.versionsById.containsKey("11w47a"));
+		assertTrue(metadataBootstrap.versionsById.containsKey("1.0.1"));
+		assertEquals("1.1.0-alpha.11.47.a", metadataBootstrap.versionsById.get("11w47a").semanticVersion());
+		assertTrue(metadataBootstrap.getParentVersion(metadataBootstrap.versionsById.get("11w47a")).containsAll(List.of("1.0.0", "1.0.1")));
 	}
 
 	@Test

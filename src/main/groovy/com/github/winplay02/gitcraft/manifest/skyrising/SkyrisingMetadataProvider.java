@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,13 +18,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingManifest, SkyrisingManifest.VersionEntry> {
 
-	private final Map<String, VersionDetails> versionDetails = new HashMap<>();
+	private final Map<String, VersionDetails> versionDetails = new ConcurrentHashMap<>();
 
 	public SkyrisingMetadataProvider() {
 		this("https://skyrising.github.io/mc-versions/version_manifest.json");
@@ -52,7 +52,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	protected void postLoadVersions() {
-		this.versionDetails.keySet().removeIf(version -> this.getVersionByVersionID(version) == null);
+		this.versionDetails.keySet().removeIf(version -> this.versionsById.get(version) == null);
 	}
 
 	@Override

@@ -18,11 +18,14 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class FileSystemNetworkManager {
 
@@ -35,20 +38,37 @@ public class FileSystemNetworkManager {
 	}
 
 	protected static final Map<Path, NetworkProgressInfo> downloadJobs = new HashMap<>();
+	protected static final ReadWriteLock downloadJobsLock = new ReentrantReadWriteLock();
+
+	private interface LockGuard extends AutoCloseable {
+		@Override
+		void close();
+	}
+
+	private static LockGuard acquireDownloadJobsWriteLock() {
+		downloadJobsLock.writeLock().lock();
+		return downloadJobsLock.writeLock()::unlock;
+	}
+
+	private static LockGuard acquireDownloadJobsReadLock() {
+		downloadJobsLock.readLock().lock();
+		return downloadJobsLock.readLock()::unlock;
+	}
+
 	protected static final Map<Path, NetworkProgressInfo> completedJobs = new ConcurrentHashMap<>();
 
 	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable) {
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
-			completedJobs.get(localFileInfo.targetFile()).integrityChecksum.equals(localFileInfo.checksum()) &&
-			completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm.getClass().equals(localFileInfo.integrityAlgorithm().getClass())) {
+			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum, localFileInfo.checksum()) &&
+			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm, localFileInfo.integrityAlgorithm())) {
 			return CompletableFuture.completedFuture(StepStatus.UP_TO_DATE);
 		}
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
-			!completedJobs.get(localFileInfo.targetFile()).integrityChecksum.equals(localFileInfo.checksum()) &&
-			completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm.getClass().equals(localFileInfo.integrityAlgorithm().getClass())) {
+			!Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum, localFileInfo.checksum()) &&
+			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm, localFileInfo.integrityAlgorithm())) {
 			MiscHelper.panic("Cannot fulfill download to %s, there are multiple requests with different outcomes to the same file", localFileInfo.targetFile());
 		}
-		synchronized (downloadJobs) {
+		try (LockGuard $ = acquireDownloadJobsWriteLock()) {
 			if (downloadJobs.containsKey(localFileInfo.targetFile())) {
 				return downloadJobs.get(localFileInfo.targetFile()).future();
 			}
@@ -84,7 +104,9 @@ public class FileSystemNetworkManager {
 				if (!retry && !checksumCheckFileIsValidAndExists(localFileInfo, true, true)) {
 					MiscHelper.panic("File download failed");
 				}
-				completedJobs.put(localFileInfo.targetFile(), downloadJobs.get(localFileInfo.targetFile()));
+				try (LockGuard $$ = acquireDownloadJobsReadLock()) {
+					completedJobs.put(localFileInfo.targetFile(), downloadJobs.get(localFileInfo.targetFile()));
+				}
 				return StepStatus.SUCCESS;
 			}, executor);
 			NetworkProgressInfo networkProgressInfo = new NetworkProgressInfo(f, url, localFileInfo.integrityAlgorithm(), localFileInfo.checksum());

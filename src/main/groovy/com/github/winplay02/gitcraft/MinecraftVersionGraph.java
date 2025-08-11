@@ -1,9 +1,12 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.MetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.nests.NestsFlavour;
+import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
@@ -336,13 +339,28 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return this.edgesBack.keySet().stream().filter(value -> value.semanticVersion().equalsIgnoreCase(semanticVersion)).findFirst().orElse(null);
 	}
 
-	public String repoTagsIdentifier(MappingFlavour mappingFlavour, MappingFlavour[] mappingFallback) {
+	public String repoTagsIdentifier(MappingFlavour mappingFlavour, MappingFlavour[] mappingFallback, boolean patchLvt, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour, ExceptionsFlavour exceptionsFlavour, boolean preening) {
 		List<String> sortedTags = new ArrayList<>();
 		sortedTags.add(mappingFlavour.toString());
 		if (mappingFallback != null && mappingFallback.length > 0) {
 			sortedTags.add(String.format("fallback-%s", Arrays.stream(mappingFallback).map(Object::toString).collect(Collectors.joining("-"))));
 		}
 		sortedTags.addAll(this.repoTags.stream().filter(tag -> !tag.equals(mappingFlavour.toString())).toList());
+		if (patchLvt) {
+			sortedTags.add("lvt");
+		}
+		if (signaturesFlavour != null && signaturesFlavour != SignaturesFlavour.NONE) {
+			sortedTags.add(String.format("sig_%s", signaturesFlavour));
+		}
+		if (nestsFlavour != null && nestsFlavour != NestsFlavour.NONE) {
+			sortedTags.add(String.format("nests_%s", nestsFlavour));
+		}
+		if (exceptionsFlavour != null && exceptionsFlavour != ExceptionsFlavour.NONE) {
+			sortedTags.add(String.format("exc_%s", exceptionsFlavour));
+		}
+		if (preening) {
+			sortedTags.add("preened");
+		}
 		return String.join("-", sortedTags);
 	}
 }

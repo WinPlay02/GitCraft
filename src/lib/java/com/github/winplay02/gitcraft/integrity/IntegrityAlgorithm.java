@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -212,5 +213,15 @@ public abstract class IntegrityAlgorithm {
 			hexsum.append(toHex(b));
 		}
 		return hexsum.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		return o != null && getClass() == o.getClass();
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(getClass());
 	}
 }

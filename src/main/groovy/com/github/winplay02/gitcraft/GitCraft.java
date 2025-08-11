@@ -178,7 +178,15 @@ public class GitCraft {
 
 	public static RepoWrapper getRepository() throws Exception {
 		if (!getTransientApplicationConfiguration().noRepo()) {
-			String identifier = GitCraft.versionGraph.repoTagsIdentifier(getApplicationConfiguration().usedMapping(), getApplicationConfiguration().fallbackMappings());
+			String identifier = GitCraft.versionGraph.repoTagsIdentifier(
+				getApplicationConfiguration().usedMapping(),
+				getApplicationConfiguration().fallbackMappings(),
+				getApplicationConfiguration().patchLvt(),
+				getApplicationConfiguration().usedSignatures(),
+				getApplicationConfiguration().usedNests(),
+				getApplicationConfiguration().usedExceptions(),
+				getApplicationConfiguration().enablePreening()
+			);
 			return new RepoWrapper(getTransientApplicationConfiguration().overrideRepositoryPath() != null ? getTransientApplicationConfiguration().overrideRepositoryPath() : (identifier.isEmpty() ? null : LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("minecraft-repo-%s", identifier))));
 		}
 		return null;
