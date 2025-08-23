@@ -38,7 +38,7 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 		if (!this.obfuscated && !config.mappingFlavour().supportsMergingPre1_3Versions()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.obfuscated ? PipelineFilesystemStorage.MERGED_JAR_OBFUSCATED : PipelineFilesystemStorage.MERGED_JAR_REMAPPED);
+		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.obfuscated ? PipelineFilesystemStorage.ARTIFACTS_MERGED_JAR : PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
 		if (Files.exists(mergedJarPath) && !MiscHelper.isJarEmpty(mergedJarPath)) {
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
