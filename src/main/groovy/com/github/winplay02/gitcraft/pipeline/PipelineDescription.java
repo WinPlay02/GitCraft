@@ -166,7 +166,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Map.of(
 				Step.UNPACK_ARTIFACTS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS),
 				Step.MERGE_OBFUSCATED_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS),
-				Step.DATAGEN, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.MERGE_OBFUSCATED_JARS),
+				Step.DATAGEN, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS)),
 				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_LIBRARIES), Set.of(Step.MERGE_OBFUSCATED_JARS)),
 				Step.APPLY_EXCEPTIONS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
 				Step.APPLY_SIGNATURES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS))
@@ -174,10 +174,10 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Map.of(
 				Step.REMAP_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES)),
 				Step.MERGE_REMAPPED_JARS, StepDependency.ofHardIntraVersionOnly(Step.REMAP_JARS),
-				Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
+				Step.UNPICK_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_LIBRARIES, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS)),
 				Step.PROVIDE_NESTS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
-				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.UNPICK_JARS)),
-				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.APPLY_NESTS, Step.UNPICK_JARS)),
+				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS)),
+				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS)),
 				Step.DECOMPILE_JARS, StepDependency.mergeDependencies(StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES, Step.REMAP_JARS, Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS, Step.PREEN_JARS)), StepDependency.ofInterVersion(Step.DECOMPILE_JARS)), // only allow one decompile job concurrently
 				Step.COMMIT, StepDependency.mergeDependencies(StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_ASSETS, Step.DECOMPILE_JARS, Step.DATAGEN), StepDependency.ofInterVersion(Step.COMMIT))
 			)
