@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class GitCraftQuirks {
 	/// Mapping quirks
-	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.16.11";
+	public static final String MIN_SUPPORTED_FABRIC_LOADER = "0.17.0";
 
 	public static final String FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID = "18w43b"; // 1.14 snapshot
 	public static final String YARN_MAPPINGS_START_VERSION_ID = "18w49a"; // 1.14 snapshot

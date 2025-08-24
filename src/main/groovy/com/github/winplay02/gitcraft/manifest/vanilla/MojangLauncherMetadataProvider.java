@@ -201,7 +201,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// END FIX
 	);
 
-	private String lookupSemanticVersion(Executor executor, VersionInfo versionMeta) {
+	public String lookupSemanticVersion(Executor executor, VersionInfo versionMeta) {
 		{
 			if (minecraftVersionSemVerOverride.containsKey(versionMeta.id())) {
 				return minecraftVersionSemVerOverride.get(versionMeta.id());

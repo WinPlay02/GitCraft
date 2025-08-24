@@ -8,6 +8,7 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,6 +54,14 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	@Override
 	protected void postLoadVersions() {
 		this.versionDetails.keySet().removeIf(version -> this.versionsById.get(version) == null);
+	}
+
+	public CompletableFuture<VersionInfo> fetchSpecificManifest(Executor executor, String id, VersionDetails.ManifestEntry manifestEntryPtr) {
+		try {
+			return this.fetchVersionMetadataFilename(executor, String.format("%s_%s.json", id, manifestEntryPtr.hash()), id, manifestEntryPtr.url(), manifestEntryPtr.hash(), this.manifestMetadata.resolve("manifests"), "version manifest", VersionInfo.class);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override

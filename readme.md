@@ -55,7 +55,7 @@ Powered by:
 - [Fabric Intermediary Mappings](https://github.com/FabricMC/intermediary)
 - [Parchment](https://github.com/ParchmentMC/Parchment)
 - [Skyrising Minecraft Version Manifest Collection](https://skyrising.github.io/mc-versions)
-- {Libraries, Tools, Mappings} of OrnitheMC
+- {Libraries, Tools, Mappings} of [OrnitheMC](https://github.com/OrnitheMC)
 
 ## Help / Usage
 
@@ -94,7 +94,7 @@ Options:
                                versions and the dependencies between versions.
                                The Minecraft Launcher Meta (from Mojang) is
                                selected by default. Possible values are:
-                               mojang, skyrising, ornithemc
+                               mojang, skyrising, ornithemc, mojang_historic
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
@@ -200,9 +200,10 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 
 ## Version Manifest Source
 - The manifest provider source is changeable, `ManifestProvider` needs to be extended.
-- By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
+- By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json) (`mojang`)
 - Known extra versions are fetched from mojang or other sources (like archive.org).
-- For more accurate asset versioning and a more complete set of versions, the [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) can be used
+- For more accurate asset versioning and a more complete set of versions, the [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) (`skyrising` or `ornithemc` for the [OrnitheMC flavored variant](https://ornithemc.net/mc-versions)) can be used
+- There is also the `mojang_historic` manifest provider, which aims to use most accurate asset indexes to the ones that were present at the time of release of these versions. The [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) is used to obtain older manifest versions and improve the data from mojang.
 
 ## Fork / Changes
 - This repository was originally forked from [dexman545/GitCraft](https://github.com/dexman545/GitCraft)

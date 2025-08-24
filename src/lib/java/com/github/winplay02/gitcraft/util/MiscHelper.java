@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.util;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -83,6 +85,24 @@ public class MiscHelper {
 			removeUnusedDirectories(pathUsage);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+		}
+	}
+
+	public static void moveLargeDir(Path source, Path target) throws IOException {
+		// Try moving first
+		try {
+			Files.move(source, target);
+			return;
+		} catch (IOException ignored) {
+		}
+		// Fallback to copying and deleting the directory
+		copyLargeDir(source, target);
+		deleteDirectory(source);
+	}
+
+	public static boolean isDirectoryEmpty(final Path target) throws IOException {
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(target)) {
+			return !stream.iterator().hasNext();
 		}
 	}
 
@@ -261,12 +281,12 @@ public class MiscHelper {
 	}
 
 	@SafeVarargs
-	public static <E> Set<E> mergeSets(Set<E> target, Set<E>... sets) {
+	public static <E> Set<E> mergeSetsUnion(Set<E> target, Set<E>... sets) {
 		Arrays.stream(sets).forEach(target::addAll);
 		return target;
 	}
 
-	public static <E> Set<E> mergeSets(Set<E> target, Collection<Set<E>> sets) {
+	public static <E> Set<E> mergeSetsUnion(Set<E> target, Collection<Set<E>> sets) {
 		sets.forEach(target::addAll);
 		return target;
 	}
@@ -274,6 +294,29 @@ public class MiscHelper {
 	public static <Source, T> T mergeEqualOrNull(Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
 		List<T> values = sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().toList();
 		if (values.size() > 1) {
+			MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value");
+		}
+		return values.size() == 1 ? values.getFirst() : null;
+	}
+
+	public static <Source, T> T mergeEqualOrNullResolveConflict(Collection<Source> sourceCollection, Function<Source, T> valueProducer, Function<List<T>, T> conflictResolver) {
+		List<T> values = sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().toList();
+		if (values.size() > 1) {
+			T resolved = conflictResolver.apply(values);
+			if (resolved == null) {
+				MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value. Conflict resolution failed");
+			}
+			return resolved;
+		}
+		return values.size() == 1 ? values.getFirst() : null;
+	}
+
+	public static <Source, T> T mergeEqualOrNullWithPreference(Supplier<T> preferred, Collection<Source> sourceCollection, Function<Source, T> valueProducer) {
+		List<T> values = sourceCollection.stream().map(valueProducer).filter(Objects::nonNull).distinct().toList();
+		if (values.size() > 1) {
+			if (values.contains(preferred.get())) {
+				return preferred.get();
+			}
 			MiscHelper.panic("Cannot merge values as there is more than one distinct and non-null value");
 		}
 		return values.size() == 1 ? values.getFirst() : null;
@@ -345,5 +388,14 @@ public class MiscHelper {
 			}
 		}
 		return results;
+	}
+
+	public static <T> T coalesce(T... values) {
+		for(T value : values) {
+			if(value != null) {
+				return value;
+			}
+		}
+		return null;
 	}
 }

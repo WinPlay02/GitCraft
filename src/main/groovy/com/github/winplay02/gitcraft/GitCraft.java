@@ -21,7 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class GitCraft {
-	public static final String VERSION = "0.2.0";
+	public static final String VERSION = "0.3.0";
 
 	public static final String FABRIC_MAVEN = "https://maven.fabricmc.net/";
 	public static final String ORNITHE_MAVEN = "https://maven.ornithemc.net/releases/";

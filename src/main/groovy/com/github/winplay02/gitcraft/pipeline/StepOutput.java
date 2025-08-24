@@ -26,7 +26,7 @@ public record StepOutput<T extends AbstractVersion<T>>(StepStatus status, StepRe
 		return new StepOutput<>(
 			StepStatus.merge(
 				Arrays.stream(outputs).filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
-			new StepResults<T>(MiscHelper.mergeSets(
+			new StepResults<T>(MiscHelper.mergeSetsUnion(
 				new HashSet<>(), Arrays.stream(outputs).filter(Objects::nonNull).map(output -> output.results().result()).toList()
 			))
 		);
@@ -36,7 +36,7 @@ public record StepOutput<T extends AbstractVersion<T>>(StepStatus status, StepRe
 		return new StepOutput<>(
 			StepStatus.merge(
 				outputs.stream().filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
-			new StepResults<T>(MiscHelper.mergeSets(
+			new StepResults<T>(MiscHelper.mergeSetsUnion(
 				new HashSet<>(), outputs.stream().filter(Objects::nonNull).map(output -> output.results().result()).toList()
 			))
 		);
@@ -47,7 +47,7 @@ public record StepOutput<T extends AbstractVersion<T>>(StepStatus status, StepRe
 		return new StepOutput<>(
 			StepStatus.merge(
 				Arrays.stream(outputs).filter(Objects::nonNull).map(StepOutput::status).collect(Collectors.toList())),
-			new StepResults<T>(MiscHelper.mergeSets(
+			new StepResults<T>(MiscHelper.mergeSetsUnion(
 				new HashSet<>(), Stream.concat(Stream.of(otherResults.result()), Arrays.stream(outputs).filter(Objects::nonNull).map(output -> output.results().result())).toList()
 			))
 		);

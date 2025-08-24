@@ -94,6 +94,11 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	 */
 	@Override
 	public final Map<String, OrderedVersion> getVersions(Executor executor) throws IOException {
+		this.initializeAndLoadVersions(executor);
+		return Collections.unmodifiableMap(this.versionsById);
+	}
+
+	public final void initializeAndLoadVersions(Executor executor) throws IOException {
 		synchronized (this) {
 			if (!this.versionsLoaded) {
 				this.loadVersions(executor);
@@ -101,10 +106,9 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 				this.writeSemverCache();
 			}
 		}
-		return Collections.unmodifiableMap(this.versionsById);
 	}
 
-	private void loadVersions(Executor executor) throws IOException {
+	protected void loadVersions(Executor executor) throws IOException {
 		this.versionsById.clear();
 		MiscHelper.println("Loading available versions from '%s'...", this.getName());
 		for (MetadataSources.RemoteVersionsManifest<M, E> manifestSource : this.manifestSources) {
@@ -194,6 +198,25 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		}
 		String fileName = url.substring(url.lastIndexOf('/') + 1);
 		Path filePath = targetDir.resolve(fileName);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
+		return status.thenApply($ -> {
+			try {
+				return this.loadVersionMetadata(filePath, metadataClass);
+			} catch (IOException e) {
+				MiscHelper.panicBecause(e, "Error while fetching version metadata");
+			}
+			return null;
+		});
+	}
+
+	protected final <T> CompletableFuture<T> fetchVersionMetadataFilename(Executor executor, String filename, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass) throws IOException {
+		URI uri = null;
+		try {
+			uri = new URI(url);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		Path filePath = targetDir.resolve(filename);
 		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
 		return status.thenApply($ -> {
 			try {
