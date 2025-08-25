@@ -135,16 +135,16 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 				Step.FETCH_ASSETS, EMPTY_INPUT_PROVIDER,
 				Step.UNPACK_ARTIFACTS, (storage, results) -> new ArtifactsUnpacker.Inputs(results.getKeyIfExists(ARTIFACTS_SERVER_ZIP)),
 				Step.MERGE_OBFUSCATED_JARS, (storage, results) -> new JarsMerger.Inputs(results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
-				Step.DATAGEN, (storage, results) -> new DataGenerator.Inputs(results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR).orElseThrow(), results.getKeyByPriority(MERGED_JAR_OBFUSCATED, ARTIFACTS_CLIENT_JAR).orElseThrow()),
+				Step.DATAGEN, (storage, results) -> new DataGenerator.Inputs(results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR).orElseThrow(), results.getKeyByPriority(ARTIFACTS_MERGED_JAR, ARTIFACTS_CLIENT_JAR).orElseThrow()),
 				Step.PROVIDE_MAPPINGS, EMPTY_INPUT_PROVIDER,
 				Step.PROVIDE_EXCEPTIONS, EMPTY_INPUT_PROVIDER,
 				Step.PROVIDE_SIGNATURES, EMPTY_INPUT_PROVIDER
 			),
 			Map.of(
-				Step.PATCH_LOCAL_VARIABLE_TABLES, (storage, results) -> new LvtPatcher.Inputs(results.getKeyIfExists(MERGED_JAR_OBFUSCATED), results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
-				Step.APPLY_EXCEPTIONS, (storage, results) -> new JarsExceptor.Inputs(results.getKeyByPriority(LVT_PATCHED_MERGED_JAR, MERGED_JAR_OBFUSCATED), results.getKeyByPriority(LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(LVT_PATCHED_SERVER_JAR, ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
-				Step.APPLY_SIGNATURES, (storage, results) -> new JarsSignatureChanger.Inputs(results.getKeyByPriority(EXCEPTIONS_PATCHED_MERGED_JAR, LVT_PATCHED_MERGED_JAR, MERGED_JAR_OBFUSCATED), results.getKeyByPriority(EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(EXCEPTIONS_PATCHED_SERVER_JAR, LVT_PATCHED_SERVER_JAR, ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
-				Step.REMAP_JARS, (storage, results) -> new Remapper.Inputs(results.getKeyByPriority(SIGNATURES_PATCHED_MERGED_JAR, EXCEPTIONS_PATCHED_MERGED_JAR, LVT_PATCHED_MERGED_JAR, MERGED_JAR_OBFUSCATED), results.getKeyByPriority(SIGNATURES_PATCHED_CLIENT_JAR, EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(SIGNATURES_PATCHED_SERVER_JAR, EXCEPTIONS_PATCHED_SERVER_JAR, LVT_PATCHED_SERVER_JAR, ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
+				Step.PATCH_LOCAL_VARIABLE_TABLES, (storage, results) -> new LvtPatcher.Inputs(results.getKeyIfExists(ARTIFACTS_MERGED_JAR), results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
+				Step.APPLY_EXCEPTIONS, (storage, results) -> new JarsExceptor.Inputs(results.getKeyByPriority(LVT_PATCHED_MERGED_JAR, ARTIFACTS_MERGED_JAR), results.getKeyByPriority(LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(LVT_PATCHED_SERVER_JAR, ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
+				Step.APPLY_SIGNATURES, (storage, results) -> new JarsSignatureChanger.Inputs(results.getKeyByPriority(EXCEPTIONS_PATCHED_MERGED_JAR, LVT_PATCHED_MERGED_JAR, ARTIFACTS_MERGED_JAR), results.getKeyByPriority(EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(EXCEPTIONS_PATCHED_SERVER_JAR, LVT_PATCHED_SERVER_JAR, ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
+				Step.REMAP_JARS, (storage, results) -> new Remapper.Inputs(results.getKeyByPriority(SIGNATURES_PATCHED_MERGED_JAR, EXCEPTIONS_PATCHED_MERGED_JAR, LVT_PATCHED_MERGED_JAR, ARTIFACTS_MERGED_JAR), results.getKeyByPriority(SIGNATURES_PATCHED_CLIENT_JAR, EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(SIGNATURES_PATCHED_SERVER_JAR, EXCEPTIONS_PATCHED_SERVER_JAR, LVT_PATCHED_SERVER_JAR, ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
 				Step.MERGE_REMAPPED_JARS, (storage, results) -> new JarsMerger.Inputs(results.getKeyIfExists(REMAPPED_CLIENT_JAR), results.getKeyIfExists(REMAPPED_SERVER_JAR)),
 				Step.UNPICK_JARS, (storage, results) -> new Unpicker.Inputs(results.getKeyIfExists(REMAPPED_MERGED_JAR), results.getKeyIfExists(REMAPPED_CLIENT_JAR), results.getKeyIfExists(REMAPPED_SERVER_JAR)),
 				Step.PROVIDE_NESTS, EMPTY_INPUT_PROVIDER,
@@ -155,7 +155,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 				Step.DECOMPILE_JARS, (storage, results) -> new Decompiler.Inputs(results.getKeyByPriority(PREENED_MERGED_JAR, NESTED_MERGED_JAR, UNPICKED_MERGED_JAR, REMAPPED_MERGED_JAR), results.getKeyByPriority(PREENED_CLIENT_JAR, NESTED_CLIENT_JAR, UNPICKED_CLIENT_JAR, REMAPPED_CLIENT_JAR), results.getKeyByPriority(PREENED_SERVER_JAR, NESTED_SERVER_JAR, UNPICKED_SERVER_JAR, REMAPPED_SERVER_JAR)),
 				Step.COMMIT, (storage, results) -> new Committer.Inputs(
 					results.getKeyIfExists(DECOMPILED_MERGED_JAR), results.getKeyIfExists(DECOMPILED_CLIENT_JAR), results.getKeyIfExists(DECOMPILED_SERVER_JAR),
-					results.getKeyIfExists(ARTIFACTS_SERVER_ZIP), results.getKeyByPriority(MERGED_JAR_OBFUSCATED, ARTIFACTS_CLIENT_JAR),
+					results.getKeyIfExists(ARTIFACTS_SERVER_ZIP), results.getKeyByPriority(ARTIFACTS_MERGED_JAR, ARTIFACTS_CLIENT_JAR),
 					results.getKeyIfExists(DATAGEN_REPORTS_ARCHIVE), results.getKeyIfExists(ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP), results.getKeyIfExists(DATAGEN_SNBT_ARCHIVE),
 					results.getKeyIfExists(ASSETS_INDEX_JSON), results.getKeyIfExists(ASSETS_OBJECTS)
 				)
@@ -166,7 +166,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Map.of(
 				Step.UNPACK_ARTIFACTS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS),
 				Step.MERGE_OBFUSCATED_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS),
-				Step.DATAGEN, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.MERGE_OBFUSCATED_JARS),
+				Step.DATAGEN, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS)),
 				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_LIBRARIES), Set.of(Step.MERGE_OBFUSCATED_JARS)),
 				Step.APPLY_EXCEPTIONS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
 				Step.APPLY_SIGNATURES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS))
@@ -174,10 +174,10 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Map.of(
 				Step.REMAP_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES)),
 				Step.MERGE_REMAPPED_JARS, StepDependency.ofHardIntraVersionOnly(Step.REMAP_JARS),
-				Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
+				Step.UNPICK_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_LIBRARIES, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS)),
 				Step.PROVIDE_NESTS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
-				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.UNPICK_JARS)),
-				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.APPLY_NESTS, Step.UNPICK_JARS)),
+				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS)),
+				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS)),
 				Step.DECOMPILE_JARS, StepDependency.mergeDependencies(StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES, Step.REMAP_JARS, Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS, Step.PREEN_JARS)), StepDependency.ofInterVersion(Step.DECOMPILE_JARS)), // only allow one decompile job concurrently
 				Step.COMMIT, StepDependency.mergeDependencies(StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_ASSETS, Step.DECOMPILE_JARS, Step.DATAGEN), StepDependency.ofInterVersion(Step.COMMIT))
 			)

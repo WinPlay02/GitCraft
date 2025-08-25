@@ -91,11 +91,11 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final ArtifactKey ARTIFACTS_SERVER_JAR = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_JAR);
 	public static final ArtifactKey ARTIFACTS_SERVER_EXE = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_EXE);
 	public static final ArtifactKey ARTIFACTS_SERVER_ZIP = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_ZIP);
+	public static final ArtifactKey ARTIFACTS_MERGED_JAR = new ArtifactKey(ARTIFACTS, SIDE_MERGED, DIST_JAR);
 	public static final ArtifactKey ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP = new ArtifactKey(ARTIFACTS, "vanilla-datapack", DIST_ZIP);
 	public static final ArtifactKey ASSETS_INDEX_JSON = new ArtifactKey(ASSETS_INDEX, DIST_JSON);
 	public static final ArtifactKey UNPACKED_SERVER_JAR = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_JAR, HINT_UNPACKED);
 	public static final ArtifactKey UNBUNDLED_SERVER_JAR = new ArtifactKey(ARTIFACTS, SIDE_SERVER, DIST_JAR, HINT_UNBUNDLED);
-	public static final ArtifactKey MERGED_JAR_OBFUSCATED = new ArtifactKey(ARTIFACTS, SIDE_MERGED, DIST_JAR, HINT_OBFUSCATED);
 	public static final ArtifactKey DATAGEN_SNBT_ARCHIVE = new ArtifactKey(ARTIFACTS, "datagen", "snbt", HINT_UNPACKED);
 	public static final ArtifactKey DATAGEN_REPORTS_ARCHIVE = new ArtifactKey(ARTIFACTS, "datagen", "reports", HINT_OBFUSCATED);
 
@@ -105,9 +105,6 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final ArtifactKey REMAPPED_CLIENT_JAR = new ArtifactKey(REMAPPED, SIDE_CLIENT, DIST_JAR);
 	public static final ArtifactKey REMAPPED_SERVER_JAR = new ArtifactKey(REMAPPED, SIDE_SERVER, DIST_JAR);
 	public static final ArtifactKey REMAPPED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR);
-
-	// For Merge Step (after remapping)
-	public static final ArtifactKey MERGED_JAR_REMAPPED = new ArtifactKey(ARTIFACTS, SIDE_MERGED, DIST_JAR, HINT_REMAPPED);
 
 	// For Unpick Step
 	public static final ArtifactKey UNPICKED_CLIENT_JAR = new ArtifactKey(REMAPPED, SIDE_CLIENT, DIST_JAR, HINT_UNPICKED);
@@ -149,7 +146,6 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 		GitCraftPaths.FILESYSTEM_ROOT,
 		Set.of(
 			REMAPPED_CLIENT_JAR, REMAPPED_SERVER_JAR, REMAPPED_MERGED_JAR,
-			MERGED_JAR_REMAPPED,
 			UNPICKED_CLIENT_JAR, UNPICKED_SERVER_JAR, UNPICKED_MERGED_JAR,
 			DECOMPILED_CLIENT_JAR, DECOMPILED_SERVER_JAR, DECOMPILED_MERGED_JAR
 		),
@@ -159,6 +155,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			ARTIFACTS_SERVER_JAR, createFromKey(ARTIFACTS, "server.jar"),
 			ARTIFACTS_SERVER_EXE, createFromKey(ARTIFACTS, "server.exe"),
 			ARTIFACTS_SERVER_ZIP, createFromKey(ARTIFACTS, "server.zip"),
+			ARTIFACTS_MERGED_JAR, createFromKey(ARTIFACTS, "merged.jar"),
 			ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, createFromKey(ARTIFACTS, "vanilla_worldgen.zip")
 		),
 		Map.of(
@@ -167,8 +164,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			ASSETS_OBJECTS, rootPathConst(PipelineFilesystemRoot::getAssetsObjects),
 			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, context -> context.targetVersion().assetsIndex().name()),
 			UNPACKED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unpacked.jar"),
-			UNBUNDLED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unbundled.jar"),
-			MERGED_JAR_OBFUSCATED, createFromKey(ARTIFACTS, "merged-obfuscated.jar")
+			UNBUNDLED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unbundled.jar")
 		),
 		Map.of(
 			ARTIFACTS_DATAGEN, createFromKey(ARTIFACTS, "datagenerator"),
@@ -184,8 +180,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			REMAPPED, rootPathVersioned(PipelineFilesystemRoot::getRemapped),
 			REMAPPED_CLIENT_JAR, createFromKey(REMAPPED, "client-remapped.jar"),
 			REMAPPED_SERVER_JAR, createFromKey(REMAPPED, "server-remapped.jar"),
-			REMAPPED_MERGED_JAR, createFromKey(REMAPPED, "merged-remapped-1.jar"),
-			MERGED_JAR_REMAPPED, createFromKey(ARTIFACTS, "merged-remapped-2.jar")
+			REMAPPED_MERGED_JAR, createFromKey(REMAPPED, "merged-remapped.jar")
 		),
 		Map.of(
 			UNPICKED_CLIENT_JAR, createFromKey(REMAPPED, "client-unpicked.jar"),
