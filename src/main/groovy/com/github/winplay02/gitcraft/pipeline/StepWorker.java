@@ -9,6 +9,7 @@ import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
+import com.github.winplay02.gitcraft.unpick.UnpickFlavour;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 import java.util.concurrent.ExecutorService;
@@ -29,12 +30,13 @@ public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 		return true;
 	}
 
-	record Config(MappingFlavour mappingFlavour, ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour) {
+	record Config(MappingFlavour mappingFlavour, UnpickFlavour unpickFlavour, ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour) {
 
 		@Override
 		public String toString() {
 			List<String> flavours = new ArrayList<>();
 			/*if (mappingFlavour != MappingFlavour.IDENTITY_UNMAPPED)*/ flavours.add("mappings: %s".formatted(mappingFlavour)); // prevent empty config information
+			if (unpickFlavour != UnpickFlavour.NONE) flavours.add("unpick: %s".formatted(unpickFlavour));
 			if (exceptionsFlavour != ExceptionsFlavour.NONE) flavours.add("exceptions: %s".formatted(exceptionsFlavour));
 			if (signaturesFlavour != SignaturesFlavour.NONE) flavours.add("signatures: %s".formatted(signaturesFlavour));
 			if (nestsFlavour != NestsFlavour.NONE) flavours.add("nests: %s".formatted(nestsFlavour));

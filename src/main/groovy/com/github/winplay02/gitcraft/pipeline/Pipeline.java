@@ -7,6 +7,7 @@ import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.unpick.UnpickFlavour;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import groovy.lang.Tuple;
@@ -179,6 +180,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		private StepWorker.Config getConfig(T version) {
 			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(
 				GitCraft.getApplicationConfiguration().getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED),
+				GitCraft.getApplicationConfiguration().getUnpickForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(UnpickFlavour.NONE),
 				GitCraft.getApplicationConfiguration().getExceptionsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(ExceptionsFlavour.NONE),
 				GitCraft.getApplicationConfiguration().getSignaturesForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(SignaturesFlavour.NONE),
 				GitCraft.getApplicationConfiguration().getNestsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(NestsFlavour.NONE)

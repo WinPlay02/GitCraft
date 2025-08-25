@@ -29,11 +29,24 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.Map;
 
 public class FeatherMappings extends Mapping {
 	private final int generation;
-	private final VersionMetaSource<GameVersionBuildMeta> featherVersions;
+	private static final Map<Integer, VersionMetaSource<GameVersionBuildMeta>> FEATHER_VERSIONS = new HashMap<>();
+
+	public static VersionMetaSource<GameVersionBuildMeta> featherVersions(int generation) {
+		return FEATHER_VERSIONS.computeIfAbsent(generation, gen -> new RemoteVersionMetaSource<>(
+			MetaUrls.ornitheFeather(gen),
+			SerializationTypes.TYPE_LIST_GAME_VERSION_BUILD_META,
+			GameVersionBuildMeta::gameVersion
+		));
+	}
+
+	private VersionMetaSource<GameVersionBuildMeta> featherVersions() {
+		return featherVersions(this.generation);
+	}
 
 	public FeatherMappings() {
 		if (GitCraft.getApplicationConfiguration().ornitheIntermediaryGeneration() < 1) {
@@ -41,21 +54,21 @@ public class FeatherMappings extends Mapping {
 		}
 
 		this.generation = GitCraft.getApplicationConfiguration().ornitheIntermediaryGeneration();
-		this.featherVersions = new RemoteVersionMetaSource<>(
-			MetaUrls.ornitheFeather(this.generation),
-			SerializationTypes.TYPE_LIST_GAME_VERSION_BUILD_META,
-			GameVersionBuildMeta::gameVersion
-		);
+		this.featherVersions();
 	}
 
-	private String versionKey(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+	public static String versionKey(int generation, OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return generation == 1
 			? mcVersion.launcherFriendlyVersionName() + (minecraftJar == MinecraftJar.MERGED ? "" : "-" + minecraftJar.name().toLowerCase())
 			: mcVersion.launcherFriendlyVersionName();
 	}
 
-	private GameVersionBuildMeta getLatestFeatherVersion(OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
-		return featherVersions.getLatest(versionKey(mcVersion, minecraftJar));
+	public static GameVersionBuildMeta getLatestFeatherVersion(int generation, OrderedVersion mcVersion, MinecraftJar minecraftJar) throws IOException {
+		try {
+			return featherVersions(generation).getLatest(versionKey(generation, mcVersion, minecraftJar));
+		} catch (URISyntaxException | InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -91,8 +104,8 @@ public class FeatherMappings extends Mapping {
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		try {
-			return getLatestFeatherVersion(mcVersion, minecraftJar) != null;
-		} catch (IOException | URISyntaxException | InterruptedException e) {
+			return getLatestFeatherVersion(this.generation, mcVersion, minecraftJar) != null;
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -106,35 +119,22 @@ public class FeatherMappings extends Mapping {
 
 	@Override
 	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
-		GameVersionBuildMeta featherVersion = getLatestFeatherVersion(versionContext.targetVersion(), minecraftJar);
+		GameVersionBuildMeta featherVersion = getLatestFeatherVersion(this.generation, versionContext.targetVersion(), minecraftJar);
 		if (featherVersion == null) {
 			return StepStatus.NOT_RUN;
 		}
+
 		Path mappingsFile = getMappingsPathInternal(versionContext.targetVersion(), minecraftJar);
-		Path unpickDefinitionsFile = getUnpickDefinitionsPath(versionContext.targetVersion(), minecraftJar);
-		Path unpickConstantsJarFile = getUnpickConstantsJarPath(versionContext.targetVersion(), minecraftJar);
 		if (Files.exists(mappingsFile) && validateMappings(mappingsFile)) {
-			if (!supportsConstantUnpicking() || (Files.exists(unpickDefinitionsFile) && validateUnpickDefinitions(unpickDefinitionsFile))) {
-				if (!supportsConstantUnpicking() || (Files.exists(unpickConstantsJarFile) && Files.size(unpickConstantsJarFile) > 22 /* not empty jar */)) {
-					return StepStatus.UP_TO_DATE;
-				}
-			}
+			return StepStatus.UP_TO_DATE;
 		}
 		Files.deleteIfExists(mappingsFile);
-		Files.deleteIfExists(unpickDefinitionsFile);
-		Files.deleteIfExists(unpickConstantsJarFile);
-		Path mappingsJarFile = getMappingsJarPath(versionContext.targetVersion(), minecraftJar);
+
+		Path mappingsJarFile = getMappingsJarPath(this.generation, versionContext.targetVersion(), minecraftJar);
 		StepStatus downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), featherVersion.makeMergedV2JarMavenUrl(GitCraft.ORNITHE_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsJarFile, null, null, "feather gen " + generation + " mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 		try (FileSystem fs = FileSystems.newFileSystem(mappingsJarFile)) {
 			Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 			Files.copy(mappingsPathInJar, mappingsFile, StandardCopyOption.REPLACE_EXISTING);
-			if (supportsConstantUnpicking()) {
-				Path unpickDefinitionsPathInJar = fs.getPath("extras", "definitions.unpick");
-				Files.copy(unpickDefinitionsPathInJar, unpickDefinitionsFile, StandardCopyOption.REPLACE_EXISTING);
-			}
-		}
-		if (supportsConstantUnpicking()) {
-			downloadStatus = StepStatus.merge(downloadStatus, RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), featherVersion.makeConstantsJarMavenUrl(GitCraft.ORNITHE_MAVEN), new FileSystemNetworkManager.LocalFileInfo(unpickConstantsJarFile, null, null, "feather gen " + generation + " unpicking constants", versionContext.targetVersion().launcherFriendlyVersionName())));
 		}
 		return StepStatus.merge(downloadStatus, StepStatus.SUCCESS);
 	}
@@ -142,62 +142,26 @@ public class FeatherMappings extends Mapping {
 	@Override
 	protected Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		try {
-			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(mcVersion, minecraftJar);
+			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(this.generation, mcVersion, minecraftJar);
 			if (featherVersion == null) {
 				return null;
 			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".tiny");
-		} catch (IOException | URISyntaxException | InterruptedException e) {
+			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".tiny");
+		} catch (IOException e) {
 			return null;
 		}
 	}
 
-	private Path getMappingsJarPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
+	public static Path getMappingsJarPath(int generation, OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		try {
-			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(mcVersion, minecraftJar);
+			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(generation, mcVersion, minecraftJar);
 			if (featherVersion == null) {
 				return null;
 			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".jar");
-		} catch (IOException | URISyntaxException | InterruptedException e) {
+			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".jar");
+		} catch (IOException e) {
 			return null;
 		}
-	}
-
-	private Path getUnpickDefinitionsPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		try {
-			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(mcVersion, minecraftJar);
-			if (featherVersion == null) {
-				return null;
-			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-definitions.unpick");
-		} catch (IOException | URISyntaxException | InterruptedException e) {
-			return null;
-		}
-	}
-
-	private Path getUnpickConstantsJarPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		try {
-			GameVersionBuildMeta featherVersion = getLatestFeatherVersion(mcVersion, minecraftJar);
-			if (featherVersion == null) {
-				return null;
-			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-constants.jar");
-		} catch (IOException | URISyntaxException | InterruptedException e) {
-			return null;
-		}
-	}
-
-	@Override
-	public Map<String, Path> getAdditionalMappingInformation(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		if (supportsConstantUnpicking()) {
-			Path unpickDefinitions = getUnpickDefinitionsPath(mcVersion, minecraftJar);
-			Path unpickConstants = getUnpickConstantsJarPath(mcVersion, minecraftJar);
-			if (Files.exists(unpickConstants) && Files.exists(unpickDefinitions)) {
-				return Map.of(KEY_UNPICK_CONSTANTS, unpickConstants, KEY_UNPICK_DEFINITIONS, unpickDefinitions);
-			}
-		}
-		return super.getAdditionalMappingInformation(mcVersion, minecraftJar);
 	}
 
 	@Override

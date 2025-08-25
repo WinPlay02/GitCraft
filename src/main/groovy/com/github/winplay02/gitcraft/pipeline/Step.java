@@ -20,6 +20,7 @@ import com.github.winplay02.gitcraft.pipeline.workers.Remapper;
 import com.github.winplay02.gitcraft.pipeline.workers.RepoGarbageCollector;
 import com.github.winplay02.gitcraft.pipeline.workers.Resetter;
 import com.github.winplay02.gitcraft.pipeline.workers.SignaturesProvider;
+import com.github.winplay02.gitcraft.pipeline.workers.UnpickProvider;
 import com.github.winplay02.gitcraft.pipeline.workers.Unpicker;
 
 import java.util.function.Function;
@@ -39,6 +40,7 @@ public enum Step {
 	PROVIDE_SIGNATURES("Provide Signatures", SignaturesProvider::new),
 	APPLY_SIGNATURES("Apply Signatures", JarsSignatureChanger::new),
 	PROVIDE_MAPPINGS("Provide Mappings", MappingsProvider::new),
+	PROVIDE_UNPICK("Provide Unpick Information", UnpickProvider::new),
 	REMAP_JARS("Remap Jars", Remapper::new),
 	MERGE_REMAPPED_JARS("Merge Remapped Jars", cfg -> new JarsMerger(false, cfg)),
 	UNPICK_JARS("Unpick Jars", Unpicker::new),

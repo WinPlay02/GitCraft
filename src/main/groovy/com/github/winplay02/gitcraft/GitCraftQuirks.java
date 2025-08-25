@@ -14,6 +14,8 @@ public class GitCraftQuirks {
 	public static final String YARN_MAPPINGS_START_VERSION_ID = "18w49a"; // 1.14 snapshot
 	public static final String YARN_CORRECTLY_ORIENTATED_MAPPINGS_VERSION_ID = "1.14.3";
 	public static final String PARCHMENT_START_VERSION_ID = "1.16.5";
+	public static final String YARN_UNPICK_START_VERSION_ID = "21w11a"; // build 22; 1.17 snapshot
+	public static final String YARN_UNPICK_NO_CONSTANTS_JAR_VERSION_ID = "25w32a"; // build 7; 1.21.9? snapshot
 
 	public static final ZonedDateTime RELEASE_TIME_1_3 = ZonedDateTime.parse("2012-07-25T22:00:00+00:00");
 	public static final ZonedDateTime RELEASE_TIME_B1_0 = ZonedDateTime.parse("2010-12-20T17:28:00+00:00");

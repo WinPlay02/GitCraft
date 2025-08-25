@@ -105,4 +105,8 @@ public enum MappingFlavour {
 	public Path executeCustomLogic(Path previousFile, OrderedVersion mcVersion, MinecraftJar minecraftJar) {
 		return impl.get().executeCustomRemappingLogic(previousFile, mcVersion, minecraftJar);
 	}
+
+	protected Mapping getImpl() {
+		return impl.get();
+	}
 }

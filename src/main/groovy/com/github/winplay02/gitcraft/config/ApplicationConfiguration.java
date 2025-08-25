@@ -6,6 +6,7 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.unpick.UnpickFlavour;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.google.gson.JsonElement;
 
@@ -28,6 +29,8 @@ import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
  * @param manifestSource Manifest source for versions
  * @param usedMapping Mappings used to make versions comparable and readable
  * @param fallbackMappings Mappings used if primary mappings are not available (they're tried in the order provided)
+ * @param usedUnpickFlavour Unpick information used to make constants more useful
+ * @param fallbackUnpickFlavours Unpick information used if primary unpick information is not available (tried in the order provided)
  * @param onlyStableReleases Whether only stable releases should be handled
  * @param onlySnapshots Whether only snapshots should be handled
  * @param skipNonLinear Whether non-linear versions are not handled
@@ -39,6 +42,8 @@ import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
 public record ApplicationConfiguration(ManifestSource manifestSource,
 									   MappingFlavour usedMapping,
 									   MappingFlavour[] fallbackMappings,
+									   UnpickFlavour usedUnpickFlavour,
+									   UnpickFlavour[] fallbackUnpickFlavours,
 									   boolean onlyStableReleases,
 									   boolean onlySnapshots,
 									   boolean skipNonLinear,
@@ -58,12 +63,17 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		if (onlyStableReleases && onlySnapshots) {
 			MiscHelper.panic("ERROR: Excluding both stable releases and snapshots would lead to doing nothing");
 		}
+		if (ornitheIntermediaryGeneration < 1) {
+			MiscHelper.panic("ERROR: Ornithe intermediary generation cannot be less than 1");
+		}
 	}
 
 	public static final ApplicationConfiguration DEFAULT = new ApplicationConfiguration(
 		ManifestSource.MOJANG,
 		MappingFlavour.MOJMAP,
 		new MappingFlavour[0],
+		UnpickFlavour.YARN, // To test
+		new UnpickFlavour[0],
 		false,
 		false,
 		false,
@@ -87,15 +97,17 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 				"manifestSource", prim(this.manifestSource().toString()),
 				"usedMapping", prim(this.usedMapping().toString()),
 				"fallbackMappings", array(Arrays.stream(this.fallbackMappings()).map(MappingFlavour::toString).toList()),
+				"usedUnpickFlavour", prim(this.usedUnpickFlavour().toString()),
+				"fallbackUnpickFlavours", array(Arrays.stream(this.fallbackUnpickFlavours()).map(UnpickFlavour::toString).toList()),
 				"onlyStableReleases", prim(this.onlyStableReleases()),
 				"onlySnapshots", prim(this.onlySnapshots()),
-				"skipNonLinear", prim(this.skipNonLinear()),
+				"skipNonLinear", prim(this.skipNonLinear())
+			),
+			Map.of(
 				"onlyVersion", this.onlyVersion() == null ? _null() : array(Arrays.stream(this.onlyVersion()).toList()),
 				"minVersion", this.minVersion() == null ? _null() : prim(this.minVersion()),
 				"maxVersion", this.maxVersion() == null ? _null() : prim(this.maxVersion()),
-				"excludedVersion", this.excludedVersion() == null ? _null() : array(Arrays.stream(this.excludedVersion()).toList())
-			),
-			Map.of(
+				"excludedVersion", this.excludedVersion() == null ? _null() : array(Arrays.stream(this.excludedVersion()).toList()),
 				"ornitheIntermediaryGeneration", prim(this.ornitheIntermediaryGeneration()),
 				"patchLvt", prim(this.patchLvt()),
 				"usedExceptions", prim(this.usedExceptions().toString()),
@@ -114,6 +126,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		if (this.fallbackMappings() != null && this.fallbackMappings().length > 0) {
 			info.add(String.format("Mappings used as fallback: %s", Arrays.stream(this.fallbackMappings()).map(Object::toString).collect(Collectors.joining(", "))));
 		}
+		info.add(String.format("Unpick information used: %s (fallback: %s)", this.usedUnpickFlavour(), this.fallbackUnpickFlavours() != null ? Arrays.stream(this.fallbackUnpickFlavours()).map(Object::toString).collect(Collectors.joining(", ")) : "<null>"));
 		String excludedBranches = this.onlyStableReleases() ? " (only stable releases)" : (this.onlySnapshots() ? " (only snapshots)" : "");
 		String excludedVersions = this.isAnyVersionExcluded() && this.excludedVersion().length > 0 ? String.format(" (excluding: %s)", String.join(", ", this.excludedVersion())) : "";
 		if (this.isOnlyVersion()) {
@@ -170,6 +183,24 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		return Optional.empty();
 	}
 
+	public Optional<UnpickFlavour> getUnpickForMinecraftVersion(OrderedVersion mcVersion) {
+		if (this.usedUnpickFlavour().exists(mcVersion)) {
+			return Optional.of(this.usedUnpickFlavour());
+		}
+		if (this.fallbackUnpickFlavours() != null && this.fallbackUnpickFlavours().length != 0) {
+			for (UnpickFlavour nextBestFallbackUnpick : this.fallbackUnpickFlavours()) {
+				if (nextBestFallbackUnpick.exists(mcVersion)) {
+					MiscHelper.println("WARNING: %s unpick information does not exist for %s. Falling back to %s", this.usedMapping(), mcVersion.launcherFriendlyVersionName(), nextBestFallbackUnpick);
+					return Optional.of(nextBestFallbackUnpick);
+				}
+			}
+			MiscHelper.panic("ERROR: %s unpick information does not exist for %s. All fallback options (%s) have been exhausted", this.usedMapping(), mcVersion.launcherFriendlyVersionName(), Arrays.stream(this.fallbackMappings()).map(Object::toString).collect(Collectors.joining(", ")));
+		} else {
+			MiscHelper.panic("ERROR: %s unpick information does not exist for %s. No fallback options were specified", this.usedMapping(), mcVersion.launcherFriendlyVersionName());
+		}
+		return Optional.empty();
+	}
+
 	public Optional<ExceptionsFlavour> getExceptionsForMinecraftVersion(OrderedVersion mcVersion) {
 		if (this.usedExceptions.exists(mcVersion)) {
 			return Optional.of(this.usedExceptions);
@@ -201,6 +232,8 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			ManifestSource.valueOf(Utils.getString(map, "manifestSource", DEFAULT.manifestSource().toString()).toUpperCase(Locale.ROOT)),
 			MappingFlavour.valueOf(Utils.getString(map, "usedMapping", DEFAULT.usedMapping().toString()).toUpperCase(Locale.ROOT)),
 			Utils.getStringArray(map, "fallbackMappings", List.of()).stream().map(MappingFlavour::valueOf).toArray(MappingFlavour[]::new),
+			UnpickFlavour.valueOf(Utils.getString(map, "usedUnpickFlavour", DEFAULT.usedUnpickFlavour().toString()).toUpperCase(Locale.ROOT)),
+			Utils.getStringArray(map, "fallbackUnpickFlavours", List.of()).stream().map(UnpickFlavour::valueOf).toArray(UnpickFlavour[]::new),
 			Utils.getBoolean(map, "onlyStableReleases", DEFAULT.onlyStableReleases()),
 			Utils.getBoolean(map, "onlySnapshots", DEFAULT.onlySnapshots()),
 			Utils.getBoolean(map, "skipNonLinear", DEFAULT.skipNonLinear()),

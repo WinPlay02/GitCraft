@@ -87,6 +87,11 @@ Options:
                                fabric_intermediary, yarn, mojmap_parchment,
                                calamus_intermediary, feather,
                                identity_unmapped
+      --fallback-unpick[=<mapping>[,<mapping>]...]
+                             If the primary unpick information fails, these are
+                               tried (in given order). By default none is tried
+                               as a fallback. Possible values are: none, yarn,
+                               feather
   -h, --help                 Displays this help screen
       --manifest-source=<manifestsrc>
                              Specifies the manifest source used to fetch the
@@ -189,6 +194,10 @@ Options:
                                models, language files, ...) in natural order.
                                This is disabled by default as it modifies
                                original data.
+      --unpick=<unpick>      Specifies the unpick information used to unpick
+                               constants in the source tree. None is selected
+                               by default. Possible values are: none, yarn,
+                               feather
 If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory

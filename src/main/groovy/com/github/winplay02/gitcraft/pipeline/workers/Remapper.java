@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
-import com.github.winplay02.gitcraft.Library;
-
+import com.github.winplay02.gitcraft.mappings.MappingUtils;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
@@ -20,7 +18,6 @@ import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.tinyremapper.IMappingProvider;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVersion, Remapper.Inputs> {
@@ -40,9 +37,6 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 	public record Inputs(Optional<StorageKey> mergedJar, Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {
 	}
 
-	// From Fabric-loom
-	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
-
 	private StepOutput<OrderedVersion> remapJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException {
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
@@ -59,20 +53,8 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 			Files.delete(jarOut);
 		}
 		IMappingProvider mappingProvider = config.mappingFlavour().getProvider(context.targetVersion(), type);
-		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
-			.renameInvalidLocals(true)
-			.rebuildSourceFilenames(true)
-			.invalidLvNamePattern(MC_LV_PATTERN)
-			.inferNameFromSameLvIndex(true)
-			.withMappings(mappingProvider)
-			.fixPackageAccess(true)
-			.threads(Library.CONF_GLOBAL.remappingThreads());
-		TinyRemapper remapper = remapperBuilder.build();
-		remapper.readInputs(jarIn);
-		try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(jarOut).build()) {
-			remapper.apply(consumer, remapper.createInputTag());
-		}
-		remapper.finish();
+		TinyRemapper remapper = MappingUtils.createTinyRemapper(mappingProvider);
+		MappingUtils.remapJar(remapper, jarIn, jarOut);
 		return StepOutput.ofSingle(StepStatus.SUCCESS, outputFile);
 	}
 }

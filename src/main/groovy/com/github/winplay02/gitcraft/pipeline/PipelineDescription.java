@@ -113,6 +113,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Step.MERGE_OBFUSCATED_JARS,
 			Step.DATAGEN,
 			Step.PROVIDE_MAPPINGS,
+			Step.PROVIDE_UNPICK,
 			Step.PROVIDE_EXCEPTIONS,
 			Step.PROVIDE_SIGNATURES,
 			Step.PATCH_LOCAL_VARIABLE_TABLES,
@@ -137,6 +138,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 				Step.MERGE_OBFUSCATED_JARS, (storage, results) -> new JarsMerger.Inputs(results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR)),
 				Step.DATAGEN, (storage, results) -> new DataGenerator.Inputs(results.getKeyByPriority(ARTIFACTS_SERVER_JAR, UNPACKED_SERVER_JAR).orElseThrow(), results.getKeyByPriority(MERGED_JAR_OBFUSCATED, ARTIFACTS_CLIENT_JAR).orElseThrow()),
 				Step.PROVIDE_MAPPINGS, EMPTY_INPUT_PROVIDER,
+				Step.PROVIDE_UNPICK, EMPTY_INPUT_PROVIDER,
 				Step.PROVIDE_EXCEPTIONS, EMPTY_INPUT_PROVIDER,
 				Step.PROVIDE_SIGNATURES, EMPTY_INPUT_PROVIDER
 			),
@@ -174,7 +176,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Map.of(
 				Step.REMAP_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES)),
 				Step.MERGE_REMAPPED_JARS, StepDependency.ofHardIntraVersionOnly(Step.REMAP_JARS),
-				Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
+				Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_UNPICK, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
 				Step.PROVIDE_NESTS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
 				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.UNPICK_JARS)),
 				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.APPLY_NESTS, Step.UNPICK_JARS)),

@@ -11,6 +11,7 @@ import com.github.winplay02.gitcraft.manifest.ManifestSource
 import com.github.winplay02.gitcraft.mappings.MappingFlavour
 import com.github.winplay02.gitcraft.nests.NestsFlavour
 import com.github.winplay02.gitcraft.signatures.SignaturesFlavour
+import com.github.winplay02.gitcraft.unpick.UnpickFlavour
 import com.github.winplay02.gitcraft.util.MiscHelper
 import groovy.cli.picocli.CliBuilder
 import groovy.cli.picocli.OptionAccessor
@@ -55,6 +56,8 @@ class GitCraftCli {
 				'version', 'Restricts the max. refreshed version to the one provided. This options will cause the git repository to refresh.');
 		cli_args._(longOpt: 'mappings', "Specifies the mappings used to decompile the source tree. Mojmaps are selected by default. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour, argName: "mapping", defaultValue: "mojmap");
 		cli_args._(longOpt: 'fallback-mappings', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary mapping fails, these mappings are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(MappingFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: MappingFlavour[]);
+		cli_args._(longOpt: 'unpick', "Specifies the unpick information used to unpick constants in the source tree. None is selected by default. Possible values are: ${Arrays.stream(UnpickFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: UnpickFlavour, argName: "unpick", defaultValue: "none");
+		cli_args._(longOpt: 'fallback-unpick', args: -2 /*CliBuilder.COMMONS_CLI_UNLIMITED_VALUES*/, valueSeparator: ',', argName: "mapping", "If the primary unpick information fails, these are tried (in given order). By default none is tried as a fallback. Possible values are: ${Arrays.stream(UnpickFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: UnpickFlavour[]);
 		cli_args._(longOpt: 'ornithe-intermediary-generation', "Specifies which generation of Ornithe intermediary to use for Ornithe's mapping flavours", type: int, argName: "generation", defaultValue: "1")
 		cli_args._(longOpt: 'patch-lvt', "Generates local variable tables of the Minecraft jars for versions where they were stripped during obfuscation.");
 		cli_args._(longOpt: 'preening-enabled', "Undo merging of specialized and bridge methods.");
@@ -135,6 +138,18 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
 			fallbackMappings = cli_args_parsed.'fallback-mappingss';
 		}
+
+		UnpickFlavour usedUnpick = null;
+		try {
+			usedUnpick = cli_args_parsed.'unpick';
+		} catch (IllegalArgumentException ignored) {
+			MiscHelper.println("Ignoring value for 'unpick': %s (not recognized)", cli_args_parsed.'unpick')
+		}
+		UnpickFlavour[] fallbackUnpicks = null;
+		if (cli_args_parsed.hasOption("fallback-unpick")) {
+			fallbackMappings = cli_args_parsed.'fallback-unpicks';
+		}
+
 		boolean onlyStableReleases = cli_args_parsed.hasOption("only-stable");
 		boolean onlySnapshots = cli_args_parsed.hasOption("only-snapshot");
 		boolean skipNonLinear = cli_args_parsed.hasOption("skip-nonlinear");
@@ -177,6 +192,8 @@ class GitCraftCli {
 			manifestSource != null ? manifestSource : original.manifestSource(),
 			usedMapping != null ? usedMapping : original.usedMapping(),
 			fallbackMappings != null ? fallbackMappings : original.fallbackMappings(),
+			usedUnpick != null ? usedUnpick : original.usedUnpickFlavour(),
+			fallbackUnpicks != null ? fallbackUnpicks : original.fallbackUnpickFlavours(),
 			original.onlyStableReleases() || onlyStableReleases,
 			original.onlySnapshots() || onlySnapshots,
 			original.skipNonLinear() || skipNonLinear,

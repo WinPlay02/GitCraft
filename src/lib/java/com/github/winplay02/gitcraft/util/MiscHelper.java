@@ -350,6 +350,14 @@ public class MiscHelper {
 		return result;
 	}
 
+	public static <E> Stream<E> concatStreams(Stream<E> first, Stream<E>... others) {
+		Stream<E> output = first;
+		for (Stream<E> other : others) {
+			output = Stream.concat(output, other);
+		}
+		return output;
+	}
+
 	public static <T extends Throwable> void throwUnchecked(Throwable t) throws T {
 		throw (T) t;
 	}
