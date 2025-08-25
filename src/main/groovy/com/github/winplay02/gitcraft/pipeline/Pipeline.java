@@ -210,7 +210,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 				} catch (Exception e) {
 					failedTasks.put(task, e);
 					failed = true;
-					MiscHelper.println("Step %s for version %s failed: %s", task.step(), task.version(), e);
+					MiscHelper.println("Step '%s' for %s (%s) failed: %s", task.step().getName(), context, config, e);
 					e.printStackTrace();
 				}
 				signalUpdate();
