@@ -38,6 +38,9 @@ To disable special versions (e.g. april fools or combat snapshots), specify `--s
 To disable either snapshots or stable releases, use either `--only-stable` or `--only-snapshot`.
 
 To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `mojmap_parchment`, `fabric_intermediary` and `yarn`.
+The combination of mojmaps and yarn mappings `mojmap_yarn` (like used in Paper) is also available, which uses mojmaps as a base and includes comments and additionally function parameter names from yarn.
+For legacy versions, there are {`calamus_intermediary`, `feather`} mappings from OrnitheMC.
+For just comparing changes without using mappings, `identity_unmapped` can be used.
 
 Fallback mappings can be used with `--fallback-mappings`. For example `mojmap` could be used as a fallback to a `mojmap_parchment` mapping, as not every version of minecraft is available.
 
@@ -86,7 +89,7 @@ Options:
                                as a fallback. Possible values are: mojmap,
                                fabric_intermediary, yarn, mojmap_parchment,
                                calamus_intermediary, feather,
-                               identity_unmapped
+                               identity_unmapped, mojmap_yarn
       --fallback-unpick[=<mapping>[,<mapping>]...]
                              If the primary unpick information fails, these are
                                tried (in given order). By default none is tried
@@ -105,7 +108,7 @@ Options:
                                Possible values are: mojmap,
                                fabric_intermediary, yarn, mojmap_parchment,
                                calamus_intermediary, feather,
-                               identity_unmapped
+                               identity_unmapped, mojmap_yarn
       --max-version=<version>
                              Specify the max. version to decompile. Every
                                version before (and including) the specified
@@ -212,7 +215,7 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 - By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json) (`mojang`)
 - Known extra versions are fetched from mojang or other sources (like archive.org).
 - For more accurate asset versioning and a more complete set of versions, the [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) (`skyrising` or `ornithemc` for the [OrnitheMC flavored variant](https://ornithemc.net/mc-versions)) can be used
-- There is also the `mojang_historic` manifest provider, which aims to use most accurate asset indexes to the ones that were present at the time of release of these versions. The [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) is used to obtain older manifest versions and improve the data from mojang.
+- There is also the `mojang_historic` manifest provider, which aims to use most accurate asset indexes to the ones that were present at the time of release of these versions. The [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) is used to obtain older manifest versions and improve on the data from mojang.
 
 ## Fork / Changes
 - This repository was originally forked from [dexman545/GitCraft](https://github.com/dexman545/GitCraft)
@@ -235,6 +238,11 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
   - Some combat snapshots are located in a non-standard-path (on maven.fabricmc.net and on meta.fabricmc.net). Affected versions: `1.15_combat-6`, `1.16_combat-0`
 - Version `1.16_combat-1`, `1.16_combat-2`, `1.16_combat-4`, `1.16_combat-5`, `1.16_combat-6` do not exist at all
 - Javadoc comments and constant unpicking is supported
+
+## Unpick
+- all versions of the (fabric) unpick format are supported
+- all versions of yarn unpick can be used on any mapping
+  - e.g. mojmaps can be used as a primary mapping, and yarn unpick can be applied on top; both settings are independent of each other
 
 ## Notes about Parchment
 - Parchment supports only release versions of minecraft
