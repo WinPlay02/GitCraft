@@ -30,8 +30,8 @@ public record ArtifactsUnpacker(StepWorker.Config config) implements StepWorker<
 		if (fetchedServerJarKey.isPresent()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path serverZip = pipeline.getStoragePath(input.serverZip().orElseThrow(), context);
-		Path unpackedServerJar = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.UNPACKED_SERVER_JAR);
+		Path serverZip = pipeline.getStoragePath(input.serverZip().orElseThrow(), context, this.config);
+		Path unpackedServerJar = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.UNPACKED_SERVER_JAR);
 
 		if (Files.exists(unpackedServerJar) && !MiscHelper.isJarEmpty(unpackedServerJar)) {
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);

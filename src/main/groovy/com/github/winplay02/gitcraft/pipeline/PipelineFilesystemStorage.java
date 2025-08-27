@@ -8,6 +8,7 @@ import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import com.github.winplay02.gitcraft.pipeline.StepWorker.Config.FlavourMatcher;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -18,37 +19,50 @@ import java.util.function.Function;
 
 public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFilesystemRoot rootFilesystem,
 																   Set<StorageKey> resettableKeys,
-																   Map<StorageKey, BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path>> paths) {
+																   Map<StorageKey, PathDeriver<T>> paths) {
+	@FunctionalInterface
+	public interface PathDeriver<T extends AbstractVersion<T>>  {
+		Path derive(PipelineFilesystemStorage<T> storage, StepWorker.Context<T> context, StepWorker.Config config);
+	}
+
 	@SafeVarargs
-	public PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem, Set<StorageKey> resettableKeys, Map<StorageKey, BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path>>... paths) {
+	public PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem, Set<StorageKey> resettableKeys, Map<StorageKey, PathDeriver<T>>... paths) {
 		this(rootFilesystem, resettableKeys, MiscHelper.mergeMaps(new HashMap<>(), paths));
 	}
 
-	public Path getPath(StorageKey key, StepWorker.Context<T> context) {
+	public Path getPath(StorageKey key, StepWorker.Context<T> context, StepWorker.Config config) {
 		if (key == null || !this.paths.containsKey(key)) {
 			return null;
 		}
-		return this.paths.get(key).apply(this, context);
+		return this.paths.get(key).derive(this, context, config);
 	}
 
-	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> rootPathConst(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
-		return (root, _context) -> rootPathConstFunction.apply(root.rootFilesystem());
+	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathConst(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
+		return (root, _context, _config) -> rootPathConstFunction.apply(root.rootFilesystem());
 	}
 
-	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> rootPathVersioned(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
-		return (root, context) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(context.targetVersion().pathName());
+	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathVersioned(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
+		return (root, context, _config) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(context.targetVersion().pathName());
 	}
 
-	private Path resolvePath(StorageKey key, StepWorker.Context<T> context, String toResolveFirst, String... toResolve) {
-		return this.paths.get(key).apply(this, context).resolve(toResolveFirst, toResolve);
+	private Path resolvePath(StorageKey key, StepWorker.Context<T> context, StepWorker.Config config, String toResolveFirst, String... toResolve) {
+		return this.paths.get(key).derive(this, context, config).resolve(toResolveFirst, toResolve);
 	}
 
-	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> createFromKey(StorageKey key, String toResolveFirst, String... toResolve) {
-		return (root, context) -> root.resolvePath(key, context, toResolveFirst, toResolve);
+	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKey(StorageKey key, String toResolveFirst, String... toResolve) {
+		return (root, context, config) -> root.resolvePath(key, context, config, toResolveFirst, toResolve);
 	}
 
-	private static <T extends AbstractVersion<T>> BiFunction<PipelineFilesystemStorage<T>, StepWorker.Context<T>, Path> createFromKey(StorageKey key, Function<StepWorker.Context<T>, String> toResolve) {
-		return (root, context) -> root.resolvePath(key, context, toResolve.apply(context));
+	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKey(StorageKey key, Function<StepWorker.Context<T>, String> toResolve) {
+		return (root, context, config) -> root.resolvePath(key, context, config, toResolve.apply(context));
+	}
+
+	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKey(StorageKey key, BiFunction<StepWorker.Context<T>, StepWorker.Config, String> toResolve) {
+		return (root, context, config) -> root.resolvePath(key, context, config, toResolve.apply(context, config));
+	}
+
+	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKeyWithConfig(StorageKey key, String pattern, FlavourMatcher... flavours) {
+		return (root, context, config) -> root.resolvePath(key, context, config, String.format(pattern, config.createArtifactComponentString(flavours)));
 	}
 
 	private static final String SIDE_CLIENT = "client";
@@ -141,7 +155,6 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final ArtifactKey PREENED_SERVER_JAR = new ArtifactKey(REMAPPED, SIDE_SERVER, DIST_JAR, HINT_PREENED);
 	public static final ArtifactKey PREENED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR, HINT_PREENED);
 
-
 	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion>(
 		GitCraftPaths.FILESYSTEM_ROOT,
 		Set.of(
@@ -162,7 +175,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			LIBRARIES, rootPathConst(PipelineFilesystemRoot::getLibraryStore),
 			ASSETS_INDEX, rootPathConst(PipelineFilesystemRoot::getAssetsIndex),
 			ASSETS_OBJECTS, rootPathConst(PipelineFilesystemRoot::getAssetsObjects),
-			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, context -> context.targetVersion().assetsIndex().name()),
+			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, (context, config) -> context.targetVersion().assetsIndex().name()),
 			UNPACKED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unpacked.jar"),
 			UNBUNDLED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unbundled.jar")
 		),
@@ -178,37 +191,37 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 		),
 		Map.of(
 			REMAPPED, rootPathVersioned(PipelineFilesystemRoot::getRemapped),
-			REMAPPED_CLIENT_JAR, createFromKey(REMAPPED, "client-remapped.jar"),
-			REMAPPED_SERVER_JAR, createFromKey(REMAPPED, "server-remapped.jar"),
-			REMAPPED_MERGED_JAR, createFromKey(REMAPPED, "merged-remapped.jar")
+			REMAPPED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-remapped-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
+			REMAPPED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-remapped-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
+			REMAPPED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-remapped-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING)
 		),
 		Map.of(
-			UNPICKED_CLIENT_JAR, createFromKey(REMAPPED, "client-unpicked.jar"),
-			UNPICKED_SERVER_JAR, createFromKey(REMAPPED, "server-unpicked.jar"),
-			UNPICKED_MERGED_JAR, createFromKey(REMAPPED, "merged-unpicked.jar"),
+			UNPICKED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-unpicked-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
+			UNPICKED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-unpicked-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
+			UNPICKED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-unpicked-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
 			DECOMPILED, rootPathVersioned(PipelineFilesystemRoot::getDecompiled),
-			DECOMPILED_CLIENT_JAR, createFromKey(DECOMPILED, "client.jar"),
-			DECOMPILED_SERVER_JAR, createFromKey(DECOMPILED, "server.jar"),
-			DECOMPILED_MERGED_JAR, createFromKey(DECOMPILED, "merged.jar")
+			DECOMPILED_CLIENT_JAR, createFromKeyWithConfig(DECOMPILED, "client-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
+			DECOMPILED_SERVER_JAR, createFromKeyWithConfig(DECOMPILED, "server-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
+			DECOMPILED_MERGED_JAR, createFromKeyWithConfig(DECOMPILED, "merged-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
 		),
 		Map.of(
 			PATCHED, rootPathVersioned(PipelineFilesystemRoot::getPatchedStore),
 			LVT_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-lvt.jar"),
 			LVT_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-lvt.jar"),
 			LVT_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-lvt.jar"),
-			EXCEPTIONS_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-exc.jar"),
-			EXCEPTIONS_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-exc.jar"),
-			EXCEPTIONS_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-exc.jar"),
-			SIGNATURES_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-sig.jar"),
-			SIGNATURES_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-sig.jar"),
-			SIGNATURES_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-sig.jar")
+			EXCEPTIONS_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-exc-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
+			EXCEPTIONS_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-exc-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
+			EXCEPTIONS_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-exc-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
+			SIGNATURES_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-sig-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES),
+			SIGNATURES_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-sig-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES),
+			SIGNATURES_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-sig-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES)
 		),
 		Map.of(
-			NESTED_CLIENT_JAR, createFromKey(REMAPPED, "client-nested.jar"),
-			NESTED_SERVER_JAR, createFromKey(REMAPPED, "server-nested.jar"),
-			NESTED_MERGED_JAR, createFromKey(REMAPPED, "merged-nested.jar"),
-			PREENED_CLIENT_JAR, createFromKey(REMAPPED, "client-preened.jar"),
-			PREENED_SERVER_JAR, createFromKey(REMAPPED, "server-preened.jar"),
-			PREENED_MERGED_JAR, createFromKey(REMAPPED, "merged-preened.jar")
+			NESTED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-nested-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			NESTED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-nested-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			NESTED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-nested-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			PREENED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			PREENED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			PREENED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS)
 		)));
 }

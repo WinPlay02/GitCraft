@@ -22,23 +22,23 @@ public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<O
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS));
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ARTIFACTS));
 
 		OrderedVersion mcVersion = context.targetVersion();
 
 		List<Callable<StepOutput<OrderedVersion>>> outputTasks = new ArrayList<>(4);
 
 		if (mcVersion.hasClientCode()) {
-			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.clientJar(), PipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, "client jar"));
+			outputTasks.add(() -> fetchArtifact(pipeline, context, this.config, mcVersion.clientJar(), PipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, "client jar"));
 		}
 		if (mcVersion.hasServerJar()) {
-			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.serverDist().serverJar(), PipelineFilesystemStorage.ARTIFACTS_SERVER_JAR, "server jar"));
+			outputTasks.add(() -> fetchArtifact(pipeline, context, this.config, mcVersion.serverDist().serverJar(), PipelineFilesystemStorage.ARTIFACTS_SERVER_JAR, "server jar"));
 		}
 		if (mcVersion.hasServerWindows()) {
-			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.serverDist().windowsServer(), PipelineFilesystemStorage.ARTIFACTS_SERVER_EXE, "server exe"));
+			outputTasks.add(() -> fetchArtifact(pipeline, context, this.config, mcVersion.serverDist().windowsServer(), PipelineFilesystemStorage.ARTIFACTS_SERVER_EXE, "server exe"));
 		}
 		if (mcVersion.hasServerZip()) {
-			outputTasks.add(() -> fetchArtifact(pipeline, context, mcVersion.serverDist().serverZip(), PipelineFilesystemStorage.ARTIFACTS_SERVER_ZIP, "server zip"));
+			outputTasks.add(() -> fetchArtifact(pipeline, context, this.config, mcVersion.serverDist().serverZip(), PipelineFilesystemStorage.ARTIFACTS_SERVER_ZIP, "server zip"));
 		}
 		return StepOutput.merge(results, StepOutput.merge(MiscHelper.runTasksInParallelAndAwaitResult(
 			4,
@@ -47,8 +47,8 @@ public record ArtifactsFetcher(StepWorker.Config config) implements StepWorker<O
 		)));
 	}
 
-	static StepOutput<OrderedVersion> fetchArtifact(Pipeline<OrderedVersion> pipeline, StepWorker.Context<OrderedVersion> context, Artifact artifact, StorageKey resultFile, String artifactKind) {
-		Path resultPath = pipeline.getStoragePath(resultFile, context);
+	static StepOutput<OrderedVersion> fetchArtifact(Pipeline<OrderedVersion> pipeline, StepWorker.Context<OrderedVersion> context, StepWorker.Config config, Artifact artifact, StorageKey resultFile, String artifactKind) {
+		Path resultPath = pipeline.getStoragePath(resultFile, context, config);
 		StepStatus status = artifact.fetchArtifactToFile(context.executorService(), resultPath, artifactKind);
 		if (status.hasRun()) {
 			return StepOutput.ofSingle(status, resultFile);

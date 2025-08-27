@@ -35,7 +35,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 
 	private final PipelineDescription<T> pipelineDescription;
 	private final PipelineFilesystemStorage<T> pipelineFilesystemStorage;
-	private final Map<Tuple2<StorageKey, T>, T> overriddenPaths = new ConcurrentHashMap<>();
+	private final Map<Tuple2<StorageKey, T>, Tuple2<T, StepWorker.Config>> overriddenPaths = new ConcurrentHashMap<>();
 	private final Map<T, StepResults<T>> versionedResults = new ConcurrentHashMap<>();
 
 	public Pipeline(PipelineDescription<T> pipelineDescription, PipelineFilesystemStorage<T> pipelineFilesystemStorage) {
@@ -52,16 +52,17 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		return this.pipelineFilesystemStorage;
 	}
 
-	public Path getStoragePath(StorageKey key, StepWorker.Context<T> context) {
+	public Path getStoragePath(StorageKey key, StepWorker.Context<T> context, StepWorker.Config config) {
 		Tuple2<StorageKey, T> versionOverride = Tuple.tuple(key, context.targetVersion());
 		if (this.overriddenPaths.containsKey(versionOverride)) {
-			return this.getStoragePath(key, context.withDifferingVersion(this.overriddenPaths.get(versionOverride)));
+			Tuple2<T, StepWorker.Config> override = this.overriddenPaths.get(versionOverride);
+			return this.getStoragePath(key, context.withDifferingVersion(override.getV1()), override.getV2());
 		}
-		return this.getFilesystemStorage().getPath(key, context);
+		return this.getFilesystemStorage().getPath(key, context, config);
 	}
 
-	protected void relinkStoragePathToDifferentVersion(StorageKey key, StepWorker.Context<T> context, T version) {
-		this.overriddenPaths.put(Tuple.tuple(key, context.targetVersion()), version);
+	protected void relinkStoragePathToDifferentVersion(StorageKey key, StepWorker.Context<T> context, StepWorker.Config config, T version) {
+		this.overriddenPaths.put(Tuple.tuple(key, context.targetVersion()), Tuple.tuple(version, config));
 	}
 
 	protected void runSingleVersionSingleStep(TupleVersionStep<T> versionStep, StepWorker.Context<T> context, StepWorker.Config config) {
@@ -183,7 +184,9 @@ public class Pipeline<T extends AbstractVersion<T>> {
 				GitCraft.getApplicationConfiguration().getUnpickForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(UnpickFlavour.NONE),
 				GitCraft.getApplicationConfiguration().getExceptionsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(ExceptionsFlavour.NONE),
 				GitCraft.getApplicationConfiguration().getSignaturesForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(SignaturesFlavour.NONE),
-				GitCraft.getApplicationConfiguration().getNestsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(NestsFlavour.NONE)
+				GitCraft.getApplicationConfiguration().getNestsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(NestsFlavour.NONE),
+				GitCraft.getApplicationConfiguration().patchLvt(),
+				GitCraft.getApplicationConfiguration().enablePreening()
 			)); // TODO fix dependency on OrderedVersion
 		}
 

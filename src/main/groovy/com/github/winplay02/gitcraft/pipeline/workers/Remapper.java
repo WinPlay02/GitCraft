@@ -24,7 +24,7 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Remapper.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.REMAPPED));
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.REMAPPED));
 		StepOutput<OrderedVersion> mergedStatus = remapJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
@@ -44,8 +44,8 @@ public record Remapper(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (!config.mappingFlavour().canBeUsedOn(context.targetVersion(), type)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}

@@ -5,11 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
@@ -30,7 +28,7 @@ public record JarsNester(StepWorker.Config config) implements StepWorker<Ordered
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, JarsNester.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.REMAPPED));
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.REMAPPED));
 		StepOutput<OrderedVersion> mergedStatus = nestJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.NESTED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
@@ -44,11 +42,11 @@ public record JarsNester(StepWorker.Config config) implements StepWorker<Ordered
 		if (!config.nestsFlavour().canBeUsedOn(context.targetVersion(), inFile, config.mappingFlavour())) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}

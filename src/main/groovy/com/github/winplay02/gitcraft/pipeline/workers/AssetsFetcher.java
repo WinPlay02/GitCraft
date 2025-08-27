@@ -30,11 +30,11 @@ public record AssetsFetcher(StepWorker.Config config) implements StepWorker<Orde
 		if (context.targetVersion().assetsIndex() == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ASSETS_INDEX));
-		Path assetsObjectsDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ASSETS_OBJECTS));
-		Path assetsIndexPath = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ASSETS_INDEX_JSON);
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ASSETS_INDEX));
+		Path assetsObjectsDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ASSETS_OBJECTS));
+		Path assetsIndexPath = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ASSETS_INDEX_JSON);
 		List<StepOutput<OrderedVersion>> statuses = new ArrayList<>();
-		statuses.add(ArtifactsFetcher.fetchArtifact(pipeline, context, context.targetVersion().assetsIndex(), PipelineFilesystemStorage.ASSETS_INDEX_JSON, "assets index"));
+		statuses.add(ArtifactsFetcher.fetchArtifact(pipeline, context, this.config, context.targetVersion().assetsIndex(), PipelineFilesystemStorage.ASSETS_INDEX_JSON, "assets index"));
 		AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMetadata.class));
 
 		int maxRunningTasks = 16;

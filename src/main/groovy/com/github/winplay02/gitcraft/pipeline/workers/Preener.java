@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
@@ -21,11 +20,13 @@ import net.ornithemc.preen.Preen;
 public record Preener(StepWorker.Config config) implements StepWorker<OrderedVersion, Preener.Inputs> {
 
 	@Override
+	public boolean shouldExecute(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context) {
+		return config.preen();
+	}
+
+	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Preener.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		if (!GitCraft.getApplicationConfiguration().enablePreening()) {
-			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
-		}
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.REMAPPED)); // this directory might be confusing?
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.REMAPPED)); // this directory might be confusing?
 		StepOutput<OrderedVersion> mergedStatus = preenJar(pipeline, context, input.mergedJar().orElse(null), PipelineFilesystemStorage.PREENED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
@@ -36,11 +37,11 @@ public record Preener(StepWorker.Config config) implements StepWorker<OrderedVer
 	}
 
 	private StepOutput<OrderedVersion> preenJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StorageKey inputFile, StorageKey outputFile) throws IOException {
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}

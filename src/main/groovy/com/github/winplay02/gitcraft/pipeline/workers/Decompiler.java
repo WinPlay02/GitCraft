@@ -43,7 +43,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Decompiler.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(pipeline.getStoragePath(PipelineFilesystemStorage.DECOMPILED, context));
+		Files.createDirectories(pipeline.getStoragePath(PipelineFilesystemStorage.DECOMPILED, context, this.config));
 		StepOutput<OrderedVersion> mergedStatus = decompileJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
@@ -62,11 +62,11 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
@@ -74,7 +74,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 		if (Files.exists(jarOut)) {
 			Files.delete(jarOut);
 		}
-		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context);
+		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}

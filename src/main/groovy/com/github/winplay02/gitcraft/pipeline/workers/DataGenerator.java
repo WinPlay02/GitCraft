@@ -53,12 +53,12 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 		Path artifactReportsArchive = null;
 
 		if (GitCraft.getDataConfiguration().readableNbt()) {
-			artifactSnbtArchive = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.DATAGEN_SNBT_ARCHIVE);
+			artifactSnbtArchive = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.DATAGEN_SNBT_ARCHIVE);
 			MiscHelper.deleteJarIfEmpty(artifactSnbtArchive);
 		}
 
 		if (GitCraft.getDataConfiguration().loadDatagenRegistry()) {
-			artifactReportsArchive = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.DATAGEN_REPORTS_ARCHIVE);
+			artifactReportsArchive = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.DATAGEN_REPORTS_ARCHIVE);
 			MiscHelper.deleteJarIfEmpty(artifactReportsArchive);
 		}
 
@@ -67,22 +67,22 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
 
-		Path executablePath = pipeline.getStoragePath(input.serverJar(), context);
-		Path datagenDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS_DATAGEN);
+		Path executablePath = pipeline.getStoragePath(input.serverJar(), context, this.config);
+		Path datagenDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ARTIFACTS_DATAGEN);
 		Files.createDirectories(datagenDirectory);
 
 		if (GitCraft.getDataConfiguration().readableNbt()) {
 			// Structures (& more)
 			{
-				Path dataJarPath = pipeline.getStoragePath(input.dataJar(), context);
-				Path nbtSourceDataDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DATA_DIRECTORY);
+				Path dataJarPath = pipeline.getStoragePath(input.dataJar(), context, this.config);
+				Path nbtSourceDataDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DATA_DIRECTORY);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(dataJarPath)) {
 					MiscHelper.copyLargeDir(fs.get().getPath("data"), nbtSourceDataDirectory);
 				}
 			}
-			Path nbtSourceDirectory = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DIRECTORY);
+			Path nbtSourceDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DIRECTORY);
 			// Delete Output files, as some versions do not work, when files already exist
-			Path datagenSnbtOutput = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY);
+			Path datagenSnbtOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenSnbtOutput);
 			runDatagen(mcVersion, datagenDirectory, executablePath, "--dev",
 				"--input", nbtSourceDirectory.toAbsolutePath().toString(),
@@ -93,7 +93,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			if (!Files.exists(datagenSnbtOutput) || !Files.isDirectory(datagenSnbtOutput)) {
 				MiscHelper.panic("Datagen step was required, but SNBT files were not generated");
 			}
-			Path datagenSnbtOutputData = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY);
+			Path datagenSnbtOutputData = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY);
 			// Copy to artifact jar
 			try (FileSystemUtil.Delegate snbtArchive = FileSystemUtil.getJarFileSystem(artifactSnbtArchive, true)) {
 				MiscHelper.copyLargeDir(datagenSnbtOutputData, snbtArchive.getPath("data"));
@@ -104,11 +104,11 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			StepStatus status = null;
 			Tuple2<OrderedVersion, Artifact> worldgenPack = EXTERNAL_WORLDGEN_PACKS.get(mcVersion);
 			if (worldgenPack != null) {
-				Path vanillaWorldgenDatapack = results.getPathForDifferentVersionKeyAndAdd(pipeline, context, PipelineFilesystemStorage.ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, worldgenPack.getV1());
+				Path vanillaWorldgenDatapack = results.getPathForDifferentVersionKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, worldgenPack.getV1());
 				status = worldgenPack.getV2().fetchArtifactToFile(context.executorService(), vanillaWorldgenDatapack, "vanilla worldgen datapack");
 			}
 			// Datagen
-			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
+			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenReportsOutput);
 			runDatagen(mcVersion, datagenDirectory, executablePath, "--reports");
 			if (!Files.exists(datagenReportsOutput) || !Files.isDirectory(datagenReportsOutput)) {

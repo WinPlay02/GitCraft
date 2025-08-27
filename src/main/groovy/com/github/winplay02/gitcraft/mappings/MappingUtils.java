@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,6 +43,20 @@ public class MappingUtils {
 			.inferNameFromSameLvIndex(true)
 			.withMappings(mappingProvider)
 			.fixPackageAccess(true)
+			.threads(Library.CONF_GLOBAL.remappingThreads());
+		TinyRemapper remapper = remapperBuilder.build();
+		return remapper;
+	}
+
+	public static TinyRemapper createTinyRemapperSkipLocals(IMappingProvider mappingProvider) {
+		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper()
+			.renameInvalidLocals(true)
+			.rebuildSourceFilenames(true)
+			.invalidLvNamePattern(MC_LV_PATTERN)
+			.inferNameFromSameLvIndex(true)
+			.withMappings(mappingProvider)
+			.fixPackageAccess(true)
+			.skipLocalVariableMapping(true)
 			.threads(Library.CONF_GLOBAL.remappingThreads());
 		TinyRemapper remapper = remapperBuilder.build();
 		return remapper;
@@ -108,29 +123,46 @@ public class MappingUtils {
 	}
 
 	public static VisitableMappingTree invert(VisitableMappingTree mapping, String newSrc) throws IOException {
+		return invert(mapping, newSrc, false);
+	}
+
+	public static VisitableMappingTree invert(VisitableMappingTree mapping, String newSrc, boolean allowNamespaceMerge) throws IOException {
 		MemoryMappingTree outMappingTree = new MemoryMappingTree();
-		mapping.accept(new MappingSourceNsSwitch(outMappingTree, newSrc));
+		mapping.accept(new MappingSourceNsSwitch(outMappingTree, newSrc, !allowNamespaceMerge));
 		return outMappingTree;
 	}
 
-	public static VisitableMappingTree fuseKeep(VisitableMappingTree mappingAtoB, VisitableMappingTree mappingBtoC) throws IOException {
+	public static VisitableMappingTree fuseKeep(VisitableMappingTree mappingAtoB, VisitableMappingTree mappingBtoC, boolean allowNamespaceMerge) throws IOException {
 		MemoryMappingTree intermediateMappingTree = new MemoryMappingTree();
 		mappingBtoC.accept(intermediateMappingTree);
 		Set<String> nsToRename = getNamespaces(mappingBtoC).collect(Collectors.toSet());
 		Map<String, String> nsRename = getNamespaces(mappingAtoB).filter(ns -> !ns.equals(mappingBtoC.getSrcNamespace())).filter(nsToRename::contains).collect(Collectors.toMap(ns -> ns, ns -> String.format("second_ns_%s", ns)));
-		mappingAtoB.accept(new MappingNsRenamer(new MappingSourceNsSwitch(intermediateMappingTree, mappingBtoC.getSrcNamespace()), nsRename));
-
+		mappingAtoB.accept(new MappingSourceNsSwitch(new MappingNsRenamer(intermediateMappingTree, nsRename), mappingBtoC.getSrcNamespace(), !allowNamespaceMerge));
 		MemoryMappingTree outMappingTree = new MemoryMappingTree();
-		intermediateMappingTree.accept(new MappingSourceNsSwitch(outMappingTree, mappingAtoB.getSrcNamespace()));
+		intermediateMappingTree.accept(new MappingSourceNsSwitch(outMappingTree, mappingAtoB.getSrcNamespace(), !allowNamespaceMerge));
 		return outMappingTree;
 	}
 
 	public static VisitableMappingTree fuse(VisitableMappingTree mappingAtoB, VisitableMappingTree mappingBtoC) throws IOException {
+		return fuse(mappingAtoB, mappingBtoC, false);
+	}
+
+	public static VisitableMappingTree fuse(VisitableMappingTree mappingAtoB, VisitableMappingTree mappingBtoC, boolean allowNamespaceMerge) throws IOException {
 		MemoryMappingTree intermediateMappingTree = new MemoryMappingTree();
+		// do not create unwanted mixtures of mappings
+		Map<String, String> fallbackMappingsToCommon = MiscHelper.concatStreams(
+			getNamespaces(mappingAtoB),
+			getNamespaces(mappingBtoC)
+		).filter(ns -> !ns.equals(mappingBtoC.getSrcNamespace())).distinct().collect(Collectors.toMap(Function.identity(),$ -> mappingBtoC.getSrcNamespace()));
+		//MappingVisitor intermediateMappingTreeCompleter = new MappingNsCompleter(intermediateMappingTree, fallbackMappingsToCommon);
+		//
 		mappingBtoC.accept(new MappingDstNsReorder(intermediateMappingTree, mappingBtoC.getDstNamespaces().stream().filter(ns -> !ns.equals(mappingAtoB.getSrcNamespace())).toList()));
-		mappingAtoB.accept(new MappingDstNsReorder(new MappingSourceNsSwitch(intermediateMappingTree, mappingBtoC.getSrcNamespace()), mappingAtoB.getSrcNamespace()));
+		mappingAtoB.accept(new MappingSourceNsSwitch(new MappingDstNsReorder(intermediateMappingTree, mappingAtoB.getSrcNamespace()), mappingBtoC.getSrcNamespace(), !allowNamespaceMerge));
+		// mappingBtoC.accept(new MappingDstNsReorder(new MappingNsCompleter(intermediateMappingTree, fallbackMappingsToCommon, true), mappingBtoC.getDstNamespaces().stream().filter(ns -> !ns.equals(mappingAtoB.getSrcNamespace())).toList()));
 		MemoryMappingTree outMappingTree = new MemoryMappingTree();
-		intermediateMappingTree.accept(new MappingSourceNsSwitch(outMappingTree, mappingAtoB.getSrcNamespace()));
+
+		// System.out.println(fallbackMappingsToCommon);
+		intermediateMappingTree.accept(new MappingSourceNsSwitch(outMappingTree, mappingAtoB.getSrcNamespace(), !allowNamespaceMerge));
 		return outMappingTree;
 	}
 

@@ -6,11 +6,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.GitCraft;
-
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
@@ -25,12 +22,14 @@ import net.ornithemc.condor.Options;
 public record LvtPatcher(StepWorker.Config config) implements StepWorker<OrderedVersion, LvtPatcher.Inputs> {
 
 	@Override
+	public boolean shouldExecute(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context) {
+		return config.lvtPatch();
+	}
+
+	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, LvtPatcher.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		if (!GitCraft.getApplicationConfiguration().patchLvt()) {
-			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
-		}
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.PATCHED));
-		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context);
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.PATCHED));
+		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, config);
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}
@@ -45,11 +44,11 @@ public record LvtPatcher(StepWorker.Config config) implements StepWorker<Ordered
 	}
 
 	private StepOutput<OrderedVersion> patchLocalVariableTables(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StorageKey inputFile, StorageKey outputFile, List<Path> libraries) throws IOException {
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}

@@ -3,6 +3,9 @@ package com.github.winplay02.gitcraft.pipeline;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
@@ -12,7 +15,9 @@ import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.unpick.UnpickFlavour;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 
@@ -30,7 +35,11 @@ public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 		return true;
 	}
 
-	record Config(MappingFlavour mappingFlavour, UnpickFlavour unpickFlavour, ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour) {
+	record Config(MappingFlavour mappingFlavour, UnpickFlavour unpickFlavour, ExceptionsFlavour exceptionsFlavour, SignaturesFlavour signaturesFlavour, NestsFlavour nestsFlavour, boolean lvtPatch, boolean preen) {
+
+		public enum FlavourMatcher {
+			MAPPING, UNPICK, EXCEPTIONS, SIGNATURES, NESTS, LVT, PREEN;
+		}
 
 		@Override
 		public String toString() {
@@ -40,7 +49,22 @@ public interface StepWorker<T extends AbstractVersion<T>, S extends StepInput> {
 			if (exceptionsFlavour != ExceptionsFlavour.NONE) flavours.add("exceptions: %s".formatted(exceptionsFlavour));
 			if (signaturesFlavour != SignaturesFlavour.NONE) flavours.add("signatures: %s".formatted(signaturesFlavour));
 			if (nestsFlavour != NestsFlavour.NONE) flavours.add("nests: %s".formatted(nestsFlavour));
+			if (lvtPatch) flavours.add("lvt-patch");
+			if (preen) flavours.add("preen");
 			return String.join(", ", flavours);
+		}
+
+		public String createArtifactComponentString(FlavourMatcher... matchingFlavours) {
+			EnumSet<FlavourMatcher> flavoursSet = EnumSet.copyOf(Arrays.stream(matchingFlavours).toList());
+			Map<String, String> flavours = new LinkedHashMap<>();
+			if (flavoursSet.contains(FlavourMatcher.MAPPING)) flavours.put("map", String.valueOf(mappingFlavour));
+			if (flavoursSet.contains(FlavourMatcher.UNPICK)) flavours.put("un", String.valueOf(unpickFlavour));
+			if (flavoursSet.contains(FlavourMatcher.EXCEPTIONS)) flavours.put("exc", String.valueOf(exceptionsFlavour));
+			if (flavoursSet.contains(FlavourMatcher.SIGNATURES)) flavours.put("sig", String.valueOf(signaturesFlavour));
+			if (flavoursSet.contains(FlavourMatcher.NESTS)) flavours.put("nests", String.valueOf(nestsFlavour));
+			if (flavoursSet.contains(FlavourMatcher.LVT) && this.lvtPatch()) flavours.put("lvt", "patch");
+			if (flavoursSet.contains(FlavourMatcher.PREEN) && this.preen()) flavours.put("preen", "1");
+			return flavours.entrySet().stream().map(entry -> String.format("%s_%s", entry.getKey(), entry.getValue())).collect(Collectors.joining("-"));
 		}
 	}
 

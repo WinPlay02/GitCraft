@@ -82,9 +82,6 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		// TODO if (!config.mappingFlavour().canBeUsedOn(context.targetVersion(), type) || !config.mappingFlavour().supportsConstantUnpicking()) {
-		//	return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
-		// }
 		if (!config.unpickFlavour().exists(context.targetVersion())) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -92,13 +89,13 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (unpickContext == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}
 		Files.deleteIfExists(jarOut);
-		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context);
+		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}
@@ -123,7 +120,8 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 		if (unpickContext.unpickDescription() == null || !Files.exists(unpickContext.unpickDescription())) {
 			return DEFAULT_LEGACY_UNPICK_DESCRIPTION;
 		}
-		return SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(unpickContext.unpickDescription()), UnpickDescriptionFile.class);
+		UnpickDescriptionFile read = SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(unpickContext.unpickDescription()), UnpickDescriptionFile.class);
+		return read.namespace() == null ? new UnpickDescriptionFile(read.version(), DEFAULT_LEGACY_UNPICK_DESCRIPTION.namespace()) : read;
 	}
 
 	private static Class<UnpickV3Remapper> c_UnpickRemapperService$UnpickRemapper;
@@ -179,9 +177,11 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 
 	private static void unpickSingleJar(Context<OrderedVersion> context, MappingFlavour mappingFlavour, UnpickFlavour unpickFlavour, MinecraftJar type, Path inputJar, Path outputJar, Path unpickDefinition, Path unpickConstants, Collection<Path> libraries, UnpickDescriptionFile unpickDescription) throws IOException, URISyntaxException, InterruptedException {
 		List<FileSystemUtil.Delegate> openedLibraries = libraries.stream().map(Unpicker::openReadNoExcept).toList();
+		List<Path> jarsClasspath = new ArrayList<>(libraries);
 		final FileSystemUtil.Delegate unpickConstantsPath;
 		if (unpickConstants != null) {
 			unpickConstantsPath = FileSystemUtil.getJarFileSystem(unpickConstants);
+			jarsClasspath.add(unpickConstants);
 		} else {
 			unpickConstantsPath = null;
 		}
@@ -191,22 +191,15 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 			Reader unpickDefinitionReader = Files.newBufferedReader(unpickDefinition);
 			FileSystemUtil.Delegate outputPath = FileSystemUtil.getJarFileSystem(outputJar, true);
 		) {
-			List<Path> jarsClasspath = new ArrayList<>();
-
 			IClassResolver inputClassResolver = ClassResolvers.fromDirectory(inputPath.getRoot());
-			jarsClasspath.add(inputPath.getRoot());
+			jarsClasspath.add(inputJar);
 
 			IClassResolver unpickConstantsClassResolver = unpickConstantsPath != null ? ClassResolvers.fromDirectory(unpickConstantsPath.getRoot()) : null;
-
-			if (unpickConstantsPath != null) {
-				jarsClasspath.add(unpickConstantsPath.getRoot());
-			}
 
 			IClassResolver chainedInputClassResolver = ClassResolvers.classpath(ClassLoader.getPlatformClassLoader())
 				.chain(
 					openedLibraries.stream().map(library -> ClassResolvers.fromDirectory(library.getRoot())).toArray(IClassResolver[]::new)
 				);
-			jarsClasspath.addAll(openedLibraries.stream().map(FileSystemUtil.Delegate::getRoot).toList());
 
 			if (unpickConstantsClassResolver != null) {
 				chainedInputClassResolver = chainedInputClassResolver.chain(
@@ -225,27 +218,52 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 			if (applicableMappingFlavour != mappingFlavour) {
 				if (unpickFlavour.supportsRemapping(unpickDescription)) {
 					UnpickV3Reader unpickReader = new UnpickV3Reader(unpickDefinitionReader);
-					TinyRemapper remapper = MappingUtils.createTinyRemapper(
-						MappingUtils.createProvider(
-							MappingUtils.fuse(
-								MappingUtils.invert(
-									MappingUtils.prepareAndCreateTreeFromMappingFlavour(applicableMappingFlavour, context, type),
-									mappingFlavour.getSourceNS()
-								),
-								MappingUtils.prepareAndCreateTreeFromMappingFlavour(mappingFlavour, context, type)
+					VisitableMappingTree applicableUnpickMappingToConfiguredMapping = MappingUtils.fuse(
+						MappingUtils.renameNamespace(
+							MappingUtils.invert(
+								MappingUtils.prepareAndCreateTreeFromMappingFlavour(applicableMappingFlavour, context, type),
+								applicableMappingFlavour.getDestinationNS()
 							),
-							applicableMappingFlavour.getSourceNS(),
-							applicableMappingFlavour.getDestinationNS()
+							Map.of(
+								applicableMappingFlavour.getDestinationNS(), "remap_unpick_domain",
+								applicableMappingFlavour.getSourceNS(), "remap_unpick_common"
+							)
+						),
+						MappingUtils.renameNamespace(
+							MappingUtils.prepareAndCreateTreeFromMappingFlavour(mappingFlavour, context, type),
+							Map.of(
+								mappingFlavour.getSourceNS(), "remap_unpick_common",
+								mappingFlavour.getDestinationNS(), "remap_unpick_target"
+							)
 						)
 					);
-					Consumer<UnpickV3Visitor> unpickVisitorConsumer = createUnpickV3VisitorRemapper(unpickReader, remapper, JarPackageIndex.create(jarsClasspath));
-					DataDrivenConstantGrouper constantGrouper = (DataDrivenConstantGrouper) ConstantGroupers.dataDriven().lenient(true).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).mappingSource(unpickVisitorConsumer).build();
-					unInliner = ConstantUninliner.builder().logger(Library.getSubLogger("GitCraft/Unpicker", Level.ALL)).classResolver(chainedInputClassResolver).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).grouper(constantGrouper).build();
+					try (
+						LibraryPaths.TmpFileGuard tmpFileRemapped = LibraryPaths.getTmpFile("unpick-remapped", String.join("-", mappingFlavour.toString(), unpickFlavour.toString(), applicableMappingFlavour.toString()) + ".jar");
+					) {
+						// Create JAR for unpick domain
+						IMappingProvider mapJarToUnpick = MappingUtils.createProvider(MappingUtils.invert(applicableUnpickMappingToConfiguredMapping, "remap_unpick_target"), "remap_unpick_target", "remap_unpick_domain");
+						MappingUtils.remapJar(MappingUtils.createTinyRemapperSkipLocals(mapJarToUnpick), inputJar, tmpFileRemapped.filePath());
+						// Remap unpick; Prepare remapper
+						TinyRemapper remapper = MappingUtils.createTinyRemapper(
+							MappingUtils.createProvider(
+								applicableUnpickMappingToConfiguredMapping,
+								"remap_unpick_domain",
+								"remap_unpick_target"
+							)
+						);
+						remapper.readInputs(tmpFileRemapped.filePath());
+						remapper.readInputs(libraries.toArray(Path[]::new));
+						// Create unpick stuff
+						Consumer<UnpickV3Visitor> unpickVisitorConsumer = createUnpickV3VisitorRemapper(unpickReader, remapper, JarPackageIndex.create(jarsClasspath));
+						DataDrivenConstantGrouper constantGrouper = (DataDrivenConstantGrouper) ConstantGroupers.dataDriven().lenient(true).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).mappingSource(unpickVisitorConsumer).build();
+						unInliner = ConstantUninliner.builder().logger(Library.getSubLogger("GitCraft/Unpicker", Level.ALL)).classResolver(chainedInputClassResolver).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).grouper(constantGrouper).build();
+						remapper.finish();
+					}
 				} else {
 					// Remap Jar
 					try (
-						LibraryPaths.TmpFileGuard tmpFileRemapped = LibraryPaths.getTmpFile("unpick-remapped", String.join("-", mappingFlavour.toString(), unpickFlavour.toString(), applicableMappingFlavour.toString()));
-						LibraryPaths.TmpFileGuard tmpFileRemappedAndUnpicked = LibraryPaths.getTmpFile("unpick-remapped", String.join("-", mappingFlavour.toString(), unpickFlavour.toString(), applicableMappingFlavour.toString(), "unpicked"))
+						LibraryPaths.TmpFileGuard tmpFileRemapped = LibraryPaths.getTmpFile("unpick-remapped", String.join("-", mappingFlavour.toString(), unpickFlavour.toString(), applicableMappingFlavour.toString()) + ".jar");
+						LibraryPaths.TmpFileGuard tmpFileRemappedAndUnpicked = LibraryPaths.getTmpFile("unpick-remapped", String.join("-", mappingFlavour.toString(), unpickFlavour.toString(), applicableMappingFlavour.toString(), "unpicked") + ".jar")
 					) {
 						VisitableMappingTree jarMappings = MappingUtils.prepareAndCreateTreeFromMappingFlavour(mappingFlavour, context, type);
 						VisitableMappingTree unpickMappings = MappingUtils.prepareAndCreateTreeFromMappingFlavour(applicableMappingFlavour, context, type);
@@ -268,7 +286,7 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 								)
 							);
 							IMappingProvider mapJarToUnpick = MappingUtils.createProvider(fusedMappingsBackwards, "remap_unpick_src", "remap_unpick_dst");
-							MappingUtils.remapJar(MappingUtils.createTinyRemapper(mapJarToUnpick), inputJar, tmpFileRemapped.filePath());
+							MappingUtils.remapJar(MappingUtils.createTinyRemapperSkipLocals(mapJarToUnpick), inputJar, tmpFileRemapped.filePath());
 						}
 						// Do unpick in correct mapping space
 						if (applicableMappingFlavour != unpickFlavour.applicableMappingFlavour(unpickDescription)) {
@@ -294,7 +312,7 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 								)
 							);
 							IMappingProvider mapJarToUnpick = MappingUtils.createProvider(fusedMappingsForwards, "remap_unpick_dst", "remap_unpick_src");
-							MappingUtils.remapJar(MappingUtils.createTinyRemapper(mapJarToUnpick), tmpFileRemapped.filePath(), outputJar);
+							MappingUtils.remapJar(MappingUtils.createTinyRemapper(mapJarToUnpick), tmpFileRemappedAndUnpicked.filePath(), outputJar);
 						}
 						return;
 					}

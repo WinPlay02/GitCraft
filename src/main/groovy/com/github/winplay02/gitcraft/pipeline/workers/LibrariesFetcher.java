@@ -19,7 +19,7 @@ public record LibrariesFetcher(StepWorker.Config config) implements StepWorker<O
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
-		Path librariesDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.LIBRARIES));
+		Path librariesDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LIBRARIES));
 
 		int maxRunningTasks = 16;
 		List<StepStatus> statuses = MiscHelper.runTasksInParallelAndAwaitResult(

@@ -187,18 +187,18 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 	private void copyCode(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		RepoWrapper repo = context.repository();
 		if (input.decompiledMerged().isPresent()) {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledMerged().orElseThrow(), context))) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledMerged().orElseThrow(), context, this.config))) {
 				MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("src"));
 			}
 			return;
 		}
 		if (input.decompiledClientOnly().isPresent()) {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledClientOnly().orElseThrow(), context))) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledClientOnly().orElseThrow(), context, this.config))) {
 				MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("client"));
 			}
 		}
 		if (input.decompiledServerOnly().isPresent()) {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledServerOnly().orElseThrow(), context))) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledServerOnly().orElseThrow(), context, this.config))) {
 				MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("server"));
 			}
 		}
@@ -211,7 +211,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		RepoWrapper repo = context.repository();
 		if (GitCraft.getDataConfiguration().loadAssets() || GitCraft.getDataConfiguration().loadIntegratedDatapack()) {
 			if (input.serverZip().isPresent()) {
-				Path artifactRootPath = pipeline.getStoragePath(input.serverZip().orElseThrow(), context);
+				Path artifactRootPath = pipeline.getStoragePath(input.serverZip().orElseThrow(), context, this.config);
 
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifactRootPath)) {
 					for (Path rootPath : fs.get().getRootDirectories()) {
@@ -220,7 +220,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 				}
 			}
 			if (input.assetsDataJar().isPresent()) {
-				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.assetsDataJar().orElseThrow(), context))) {
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.assetsDataJar().orElseThrow(), context, this.config))) {
 					if (GitCraft.getDataConfiguration().loadAssets()) {
 						Path assetsSrcPath = fs.get().getPath("assets");
 						if (Files.exists(assetsSrcPath)) {
@@ -243,19 +243,19 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		}
 		if (GitCraft.getDataConfiguration().loadDatagenRegistry() || (GitCraft.getDataConfiguration().readableNbt() && GitCraft.getDataConfiguration().loadIntegratedDatapack())) {
 			if (GitCraft.getDataConfiguration().loadDatagenRegistry() && input.datagenArtifactsReportsJar().isPresent()) {
-				Path datagenReportsArchive = pipeline.getStoragePath(input.datagenArtifactsReportsJar().orElseThrow(), context);
+				Path datagenReportsArchive = pipeline.getStoragePath(input.datagenArtifactsReportsJar().orElseThrow(), context, this.config);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenReportsArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("reports"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-reports"));
 				}
 				if (input.datagenExperimentalVanillaDatapack().isPresent()) {
-					Path experimentalWorldgenPackPath = pipeline.getStoragePath(input.datagenExperimentalVanillaDatapack().orElseThrow(), context);
+					Path experimentalWorldgenPackPath = pipeline.getStoragePath(input.datagenExperimentalVanillaDatapack().orElseThrow(), context, this.config);
 					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(experimentalWorldgenPackPath)) {
 						MiscHelper.copyLargeDir(fs.get().getPath("."), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("exp-vanilla-worldgen"));
 					}
 				}
 			}
 			if (GitCraft.getDataConfiguration().readableNbt() && GitCraft.getDataConfiguration().loadIntegratedDatapack() && input.datagenArtifactsSnbtJar().isPresent()) {
-				Path datagenSnbtArchive = pipeline.getStoragePath(input.datagenArtifactsSnbtJar().orElseThrow(), context);
+				Path datagenSnbtArchive = pipeline.getStoragePath(input.datagenArtifactsSnbtJar().orElseThrow(), context, this.config);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(datagenSnbtArchive)) {
 					MiscHelper.copyLargeDir(fs.getPath("data"), repo.getRootPath().resolve("minecraft").resolve("resources").resolve("datagen-snbt"));
 				}
@@ -279,8 +279,8 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 			if (input.assetsIndexPath().isEmpty() || input.assetsObjectStore().isEmpty()) {
 				MiscHelper.panic("Assets for version %s do not exist", context.targetVersion().launcherFriendlyVersionName());
 			}
-			Path assetsIndexPath = pipeline.getStoragePath(input.assetsIndexPath().orElseThrow(), context);
-			Path artifactObjectStore = pipeline.getStoragePath(input.assetsObjectStore().orElseThrow(), context);
+			Path assetsIndexPath = pipeline.getStoragePath(input.assetsIndexPath().orElseThrow(), context, this.config);
+			Path artifactObjectStore = pipeline.getStoragePath(input.assetsObjectStore().orElseThrow(), context, this.config);
 
 			AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMetadata.class));
 			// Copy Assets

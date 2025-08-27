@@ -38,19 +38,19 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 		if (!this.obfuscated && !config.mappingFlavour().supportsMergingPre1_3Versions()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.obfuscated ? PipelineFilesystemStorage.ARTIFACTS_MERGED_JAR : PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
+		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.config, this.obfuscated ? PipelineFilesystemStorage.ARTIFACTS_MERGED_JAR : PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
 		if (Files.exists(mergedJarPath) && !MiscHelper.isJarEmpty(mergedJarPath)) {
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
 		Files.deleteIfExists(mergedJarPath);
-		Path clientJar = pipeline.getStoragePath(input.clientJar().orElseThrow(), context);
-		Path serverJar = pipeline.getStoragePath(input.serverJar().orElseThrow(), context);
+		Path clientJar = pipeline.getStoragePath(input.clientJar().orElseThrow(), context, this.config);
+		Path serverJar = pipeline.getStoragePath(input.serverJar().orElseThrow(), context, this.config);
 
 		// unbundle if bundled
 		if (this.obfuscated) {
 			BundleMetadata sbm = BundleMetadata.fromJar(serverJar);
 			if (sbm != null) {
-				Path unbundledServerJar = results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.UNBUNDLED_SERVER_JAR);
+				Path unbundledServerJar = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.UNBUNDLED_SERVER_JAR);
 
 				if (sbm.versions().size() != 1) {
 					throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(sbm.versions().size()));

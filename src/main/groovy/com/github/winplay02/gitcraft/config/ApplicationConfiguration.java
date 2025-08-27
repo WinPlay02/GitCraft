@@ -72,7 +72,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		ManifestSource.MOJANG,
 		MappingFlavour.MOJMAP,
 		new MappingFlavour[0],
-		UnpickFlavour.YARN, // To test
+		UnpickFlavour.NONE,
 		new UnpickFlavour[0],
 		false,
 		false,

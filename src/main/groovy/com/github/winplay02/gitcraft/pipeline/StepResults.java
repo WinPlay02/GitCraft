@@ -17,17 +17,17 @@ public record StepResults<T extends AbstractVersion<T>>(Set<StorageKey> result) 
 		this.result.add(storageKey);
 	}
 
-	public Path getPathForKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StorageKey storageKey) {
+	public Path getPathForKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StepWorker.Config config, StorageKey storageKey) {
 		this.result.add(storageKey);
-		return pipeline.getStoragePath(storageKey, context);
+		return pipeline.getStoragePath(storageKey, context, config);
 	}
 
-	public Path getPathForDifferentVersionKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StorageKey storageKey, T version) {
+	public Path getPathForDifferentVersionKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StepWorker.Config config, StorageKey storageKey, T version) {
 		this.result.add(storageKey);
 		if (!version.equals(context.targetVersion())) {
-			pipeline.relinkStoragePathToDifferentVersion(storageKey, context, version);
+			pipeline.relinkStoragePathToDifferentVersion(storageKey, context, config, version);
 		}
-		return pipeline.getStoragePath(storageKey, context);
+		return pipeline.getStoragePath(storageKey, context, config);
 	}
 
 	public Optional<StorageKey> getKeyIfExists(StorageKey key) {

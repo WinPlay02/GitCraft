@@ -36,6 +36,6 @@ public class LibraryPaths {
 	}
 
 	public static TmpFileGuard getTmpFile(String prefix, String suffix) throws IOException {
-		return new TmpFileGuard(Files.createTempFile(TMP_DIR, prefix, suffix));
+		return new TmpFileGuard(TMP_DIR.resolve(prefix + "-" + System.nanoTime() + "-" + suffix));
 	}
 }

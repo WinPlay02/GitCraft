@@ -26,7 +26,7 @@ public record Resetter(StepWorker.Config config) implements StepWorker<OrderedVe
 			// resettable artifacts are described by the storage layer
 			// initial artifacts won't ever be different, so those mc jars can stay
 			for (StorageKey storageKey : pipeline.getFilesystemStorage().resettableKeys()) {
-				Path subjectPath = pipeline.getStoragePath(storageKey, context);
+				Path subjectPath = pipeline.getStoragePath(storageKey, context, this.config);
 				MiscHelper.deleteFile(subjectPath);
 			}
 		}

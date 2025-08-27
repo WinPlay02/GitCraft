@@ -6,10 +6,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
@@ -31,7 +29,7 @@ public record JarsSignatureChanger(StepWorker.Config config) implements StepWork
 
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, JarsSignatureChanger.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, PipelineFilesystemStorage.PATCHED));
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.PATCHED));
 		StepOutput<OrderedVersion> mergedStatus = patchJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.SIGNATURES_PATCHED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
@@ -45,11 +43,11 @@ public record JarsSignatureChanger(StepWorker.Config config) implements StepWork
 		if (!config.signaturesFlavour().canBeUsedOn(context.targetVersion(), inFile)) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarIn = pipeline.getStoragePath(inputFile, context);
+		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path jarOut = pipeline.getStoragePath(outputFile, context);
+		Path jarOut = pipeline.getStoragePath(outputFile, context, this.config);
 		if (Files.exists(jarOut) && !MiscHelper.isJarEmpty(jarOut)) {
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}

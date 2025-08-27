@@ -1,7 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline.workers;
 
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.Step;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
