@@ -173,7 +173,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	protected void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException {
 		try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
 			for (Path file : dirStream) {
-				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
+				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class, file.getFileName().toString());
 
 				// we could check every field but this ought to be enough
 				if (info.id() != null && info.assets() != null) {

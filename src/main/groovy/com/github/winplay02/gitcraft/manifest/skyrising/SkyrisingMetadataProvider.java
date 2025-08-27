@@ -83,13 +83,13 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dir, f -> Files.isRegularFile(f) && (f.endsWith(".json") || f.endsWith(".zip")))) {
 			for (Path file : directoryStream) {
-				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class);
+				VersionInfo info = this.loadVersionMetadata(file, VersionInfo.class, file.getFileName().toString());
 
 				// we could check every field but this ought to be enough
 				if (info.id() != null && info.assets() != null) {
 					infos.add(info);
 				} else {
-					VersionDetails details = this.loadVersionMetadata(file, VersionDetails.class);
+					VersionDetails details = this.loadVersionMetadata(file, VersionDetails.class, file.getFileName().toString());
 
 					// we could check every field but this ought to be enough
 					if (details.id() != null && details.normalizedVersion() != null) {

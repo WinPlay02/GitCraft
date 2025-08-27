@@ -23,9 +23,106 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider<MojangLauncherManifest, MojangLauncherManifest.VersionEntry> {
+	private static final Map<String, String> MOJANG_SKYRISING_VERSION_ID_MAPPING = Map.<String, String>ofEntries(
+		// Version Strings
+		Map.entry("1.0", "1.0.0"),
+		Map.entry("1.3", "1.3-pre-07261249"),
+		Map.entry("1.4", "1.4-pre"),
+		Map.entry("1.4.1", "1.4.1-pre-10231538"),
+		Map.entry("1.4.3", "1.4.3-pre"),
+		Map.entry("1.6", "1.6-pre-06251516"),
+		Map.entry("1.6.2", "1.6.2-091847"),
+		Map.entry("1.6.3", "1.6.3-pre-171231"),
+		Map.entry("1.7", "1.7-pre"),
+		Map.entry("1.7.1", "1.7.1-pre"),
+		Map.entry("1.7.3", "1.7.3-pre"),
+		Map.entry("1.7.7", "1.7.7-101331"),
+		Map.entry("1.16", "1.16-1420"), // or should this map to 1.16-1149?
+		// Pre
+		Map.entry("1.12-pre3", "1.12-pre3-1409"), // or should this map to 1.12-pre3-1316?
+		Map.entry("1.14 Pre-Release 1", "1.14-pre1"),
+		Map.entry("1.14 Pre-Release 2", "1.14-pre2"),
+		Map.entry("1.14 Pre-Release 3", "1.14-pre3"),
+		Map.entry("1.14 Pre-Release 4", "1.14-pre4"),
+		Map.entry("1.14 Pre-Release 5", "1.14-pre5"),
+		Map.entry("1.14.1 Pre-Release 1", "1.14.1-pre1"),
+		Map.entry("1.14.1 Pre-Release 2", "1.14.1-pre2"),
+		Map.entry("1.14.2 Pre-Release 1", "1.14.2-pre1"),
+		Map.entry("1.14.2 Pre-Release 2", "1.14.2-pre2"),
+		Map.entry("1.14.2 Pre-Release 3", "1.14.2-pre3"),
+		Map.entry("1.14.2 Pre-Release 4", "1.14.2-pre4-270720"), // or should this map to 1.14.2-pre4-241548?
+		Map.entry("1.16.5-rc1", "1.16.5-rc1-2"), // or should this map to 1.16.5-rc1-1?
+		// Snapshot Strings
+		Map.entry("13w16a", "13w16a-04192037"),
+		Map.entry("13w16b", "13w16b-04232151"),
+		Map.entry("13w23b", "13w23b-06080101"),
+		Map.entry("13w36a", "13w36a-09051446"),
+		Map.entry("13w36b", "13w36b-09061310"),
+		Map.entry("13w41b", "13w41b-1523"),
+		Map.entry("14w04b", "14w04b-1554"),
+		Map.entry("14w27b", "14w27b-07021646"),
+		Map.entry("14w34c", "14w34c-08191549"),
+		Map.entry("16w50a", "16w50a-1438"),
+		Map.entry("19w13b", "19w13b-1653"),
+		// Combat; they are already in historic condition
+		Map.entry("1.14_combat-0", "combat-2"),
+		Map.entry("1.14_combat-212796", "combat-1"),
+		Map.entry("1.14_combat-3", "combat-3"),
+		Map.entry("1.15_combat-1", "combat-4"),
+		Map.entry("1.15_combat-6", "combat-5"),
+		Map.entry("1.16_combat-0", "combat-6"),
+		Map.entry("1.16_combat-1", "combat-7a"),
+		Map.entry("1.16_combat-2", "combat-7b"),
+		Map.entry("1.16_combat-3", "combat-7c"),
+		// Map.entry("1.16_combat-4", "combat-8a"),
+		Map.entry("1.16_combat-5", "combat-8b"),
+		Map.entry("1.16_combat-6", "combat-8c"),
+		// April
+		Map.entry("15w14a", "af-2015"),
+		Map.entry("1.RV-Pre1", "af-2016"),
+		Map.entry("3D Shareware v1.34", "af-2019"),
+		Map.entry("20w14infinite", "af-2020"),
+		Map.entry("22w13oneblockatatime", "af-2022"),
+		Map.entry("23w13a_or_b", "af-2023-2"),
+		Map.entry("23w13a_or_b_original", "af-2023-1"),
+		Map.entry("24w14potato", "af-2024-2"),
+		Map.entry("24w14potato_original", "af-2024"),
+		Map.entry("25w14craftmine", "af-2025"),
+		// Other
+		Map.entry("rd-132211", "rd-132211-launcher"),
+		Map.entry("rd-132328", "rd-132328-launcher"),
+		Map.entry("rd-160052", "rd-160052-launcher"),
+		Map.entry("rd-161348", "rd-161348-launcher"),
+		Map.entry("c0.0.11a", "c0.0.11a-launcher"),
+		Map.entry("c0.0.13a", "c0.0.13a-launcher"),
+		Map.entry("c0.0.13a_03", "c0.0.13a_03-launcher"),
+		Map.entry("c0.30_01c", "c0.30-c-renew"),
+		Map.entry("a1.0.14", "a1.0.14-1659"), // or should this map to a1.0.14-1603, a1.0.14-1659-launcher?
+		Map.entry("a1.1.0", "a1.1.0-131933"), // or should this map to a1.1.0-101847, a1.1.0-101847-launcher?
+		// Map.entry("a1.2.1", "a1.2.1_01"), // just a duplicate, no need to include this
+		Map.entry("a1.2.2a", "a1.2.2-1624"),
+		Map.entry("a1.2.2b", "a1.2.2-1938"),
+		Map.entry("a1.2.3_01", "a1.2.3_01-0958"),
+		Map.entry("b1.3b", "b1.3-1750"), // or should this map to b1.3-1647, b1.3-1713, b1.3-1731?
+		Map.entry("b1.4", "b1.4-1634") // or should this map to b1.4-1507?
+	);
+
+	private static final Map<String, String> SKYRISING_MOJANG_VERSION_ID_MAPPING = MiscHelper.invertMapping(MOJANG_SKYRISING_VERSION_ID_MAPPING);
+
+	static {
+		if (MOJANG_SKYRISING_VERSION_ID_MAPPING.size() != SKYRISING_MOJANG_VERSION_ID_MAPPING.size()) {
+			MiscHelper.panic("Inconsistent (non-bijective) mapping between mojang <-> skyrising version manifest subset");
+		}
+	}
+
+	private static final Set<String> VERSION_IDS_INCLUDE_EVEN_IF_NOT_PAIRED = Set.of(
+		"1.16_combat-4"
+	);
+
 	private final MojangLauncherMetadataProvider mojangLauncherMetadataProvider;
 	private final SkyrisingMetadataProvider skyrisingMetadataProvider;
 
@@ -78,12 +175,12 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 		}
 	}
 
-	private CompletableFuture<OrderedVersion> constructMostHistoricallyTruthfulVersionEntry(Executor executor, OrderedVersion mojangLauncherVersion, VersionDetails skyrisingVersion) {
-		MiscHelper.println("Merging version %s", mojangLauncherVersion.launcherFriendlyVersionName());
-		List<Map.Entry<VersionDetails.ManifestEntry, CompletableFuture<VersionInfo>>> futures = skyrisingVersion.manifests().stream().map(f -> Map.entry(f, this.skyrisingMetadataProvider.fetchSpecificManifest(executor, mojangLauncherVersion.launcherFriendlyVersionName(), f))).toList();
+	private CompletableFuture<OrderedVersion> constructMostHistoricallyTruthfulVersionEntry(Executor executor, String versionId, OrderedVersion mojangLauncherVersion, VersionDetails skyrisingVersion) {
+		MiscHelper.println("Merging version %s", versionId);
+		List<Map.Entry<VersionDetails.ManifestEntry, CompletableFuture<VersionInfo>>> futures = skyrisingVersion.manifests().stream().map(f -> Map.entry(f, this.skyrisingMetadataProvider.fetchSpecificManifest(executor, versionId, f))).toList();
 		return CompletableFuture.allOf(futures.stream().map(Map.Entry::getValue).toArray(CompletableFuture[]::new)).thenApply($ -> {
 			Map<VersionDetails.ManifestEntry, VersionInfo> versionInfos = futures.stream().map(entry -> Map.entry(entry.getKey(), entry.getValue().join())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-			VersionInfo info = mergeVersionInfo(mojangLauncherVersion.launcherFriendlyVersionName(), mojangLauncherVersion, versionInfos);
+			VersionInfo info = mergeVersionInfo(versionId, mojangLauncherVersion, versionInfos);
 			String semanticVersion = this.mojangLauncherMetadataProvider.lookupSemanticVersion(executor, info);
 			return OrderedVersion.from(info, semanticVersion);
 		});
@@ -94,11 +191,19 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 		this.versionsById.clear();
 		this.mojangLauncherMetadataProvider.initializeAndLoadVersions(executor);
 		this.skyrisingMetadataProvider.initializeAndLoadVersions(executor);
-		Set<String> commonVersionIds = MiscHelper.calculateSetIntersection(this.mojangLauncherMetadataProvider.getVersions(null).keySet(), this.skyrisingMetadataProvider.getVersions(null).keySet());
+		Set<String> mojangVersionIds = this.mojangLauncherMetadataProvider.getVersions(null).keySet();
+		Set<String> skyrisingVersionIds = this.skyrisingMetadataProvider.getVersions(null).keySet();
+		Set<String> transformedSkyrisingVersionIds = MiscHelper.concatStreams(
+			skyrisingVersionIds.stream().filter(SKYRISING_MOJANG_VERSION_ID_MAPPING::containsKey).map(SKYRISING_MOJANG_VERSION_ID_MAPPING::get),
+			skyrisingVersionIds.stream().filter(Predicate.not(SKYRISING_MOJANG_VERSION_ID_MAPPING::containsKey))
+		).collect(Collectors.toSet());
+		Set<String> commonVersionIds = MiscHelper.calculateSetIntersection(mojangVersionIds, transformedSkyrisingVersionIds);
+		Set<String> unpairedMojangVersions = MiscHelper.calculateAsymmetricSetDifference(mojangVersionIds, commonVersionIds);
 		Map<String, CompletableFuture<OrderedVersion>> futureVersionsMap = new HashMap<>();
+		// Paired
 		for (String versionId : commonVersionIds) {
 			OrderedVersion mojangLauncherVersion = this.mojangLauncherMetadataProvider.getVersionByVersionID(versionId);
-			VersionDetails skyrisingVersion = this.skyrisingMetadataProvider.getVersionDetails(versionId); //
+			VersionDetails skyrisingVersion = this.skyrisingMetadataProvider.getVersionDetails(MOJANG_SKYRISING_VERSION_ID_MAPPING.containsKey(versionId) ? MOJANG_SKYRISING_VERSION_ID_MAPPING.get(versionId) : versionId);
 
 			Optional<VersionDetails.ManifestEntry> bestMatchingManifestEntry = Optional.empty();
 			if (skyrisingVersion
@@ -112,9 +217,14 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 				futureVersion = this.loadVersionFromManifest(executor, new MojangLauncherManifest.VersionEntry(versionId, bestMatchingManifestEntry.orElseThrow().url(), bestMatchingManifestEntry.orElseThrow().hash()), this.manifestMetadata);
 			}
 			else {
-				futureVersion = constructMostHistoricallyTruthfulVersionEntry(executor, mojangLauncherVersion, skyrisingVersion);
+				futureVersion = constructMostHistoricallyTruthfulVersionEntry(executor, versionId, mojangLauncherVersion, skyrisingVersion);
 			}
 			futureVersionsMap.put(versionId, futureVersion);
+		}
+		// Unpaired
+		for (String versionId : MiscHelper.calculateSetIntersection(unpairedMojangVersions, VERSION_IDS_INCLUDE_EVEN_IF_NOT_PAIRED)) {
+			OrderedVersion mojangLauncherVersion = this.mojangLauncherMetadataProvider.getVersionByVersionID(versionId);
+			futureVersionsMap.put(versionId, CompletableFuture.completedFuture(mojangLauncherVersion));
 		}
 		CompletableFuture.allOf(futureVersionsMap.values().toArray(new CompletableFuture[0])).join();
 		for (Map.Entry<String, CompletableFuture<OrderedVersion>> futureEntry : futureVersionsMap.entrySet()) {
@@ -126,6 +236,7 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
 		CompletableFuture<VersionInfo> futureInfo = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir, "version info", VersionInfo.class);
 		return futureInfo.thenApply(info -> {
+			info = info.withUpdatedId(manifestEntry.id());
 			String semanticVersion = this.mojangLauncherMetadataProvider.lookupSemanticVersion(executor, info);
 			return OrderedVersion.from(info, semanticVersion);
 		});

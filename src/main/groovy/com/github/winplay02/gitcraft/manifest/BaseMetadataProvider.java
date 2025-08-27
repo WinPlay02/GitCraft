@@ -197,11 +197,13 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			throw new IOException(e);
 		}
 		String fileName = url.substring(url.lastIndexOf('/') + 1);
-		Path filePath = targetDir.resolve(fileName);
+		String fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+		String fileExt = fileName.lastIndexOf(".") != -1 ? fileName.substring(fileName.lastIndexOf(".") + 1) : "";
+		Path filePath = sha1 != null ? targetDir.resolve(String.format("%s_%s.%s", fileNameWithoutExt, sha1, fileExt)) : targetDir.resolve(fileName); // allow multiple files with same hash to coexist (in case of reuploads with same meta name, referenced from different versions)
 		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
 		return status.thenApply($ -> {
 			try {
-				return this.loadVersionMetadata(filePath, metadataClass);
+				return this.loadVersionMetadata(filePath, metadataClass, fileName);
 			} catch (IOException e) {
 				MiscHelper.panicBecause(e, "Error while fetching version metadata");
 			}
@@ -220,7 +222,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
 		return status.thenApply($ -> {
 			try {
-				return this.loadVersionMetadata(filePath, metadataClass);
+				return this.loadVersionMetadata(filePath, metadataClass, filePath.getFileName().toString());
 			} catch (IOException e) {
 				MiscHelper.panicBecause(e, "Error while fetching version metadata");
 			}
@@ -228,17 +230,17 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		});
 	}
 
-	protected final <T> T loadVersionMetadata(Path targetFile, Class<T> metadataClass) throws IOException {
+	protected final <T> T loadVersionMetadata(Path targetFile, Class<T> metadataClass, String originalFileName) throws IOException {
 		String fileName = targetFile.getFileName().toString();
 		if (!fileName.endsWith(".json")) {
 			if (fileName.endsWith(".zip")) {
-				fileName = fileName.substring(0, fileName.length() - ".zip".length()) + ".json";
+				originalFileName = originalFileName.substring(0, originalFileName.length() - ".zip".length()) + ".json";
 				try (FileSystem fs = FileSystems.newFileSystem(targetFile)) {
-					Optional<Path> zipFile = MiscHelper.findRecursivelyByName(fs.getPath("."), fileName);
+					Optional<Path> zipFile = MiscHelper.findRecursivelyByName(fs.getPath("."), originalFileName);
 					if (zipFile.isPresent()) {
-						return this.loadVersionMetadata(zipFile.get(), metadataClass);
+						return this.loadVersionMetadata(zipFile.get(), metadataClass, originalFileName);
 					} else {
-						MiscHelper.panic("cannot find metadata file json inside %s", targetFile);
+						MiscHelper.panic("cannot find metadata file json (%s) inside %s", originalFileName, targetFile);
 					}
 				}
 			} else {

@@ -406,4 +406,8 @@ public class MiscHelper {
 		}
 		return null;
 	}
+
+	public static <K, V> Map<K, V> invertMapping(Map<V, K> map) {
+		return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+	}
 }
