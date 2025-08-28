@@ -1,6 +1,11 @@
 package com.github.winplay02.gitcraft.util;
 
+import com.github.winplay02.gitcraft.Library;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -23,10 +28,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -211,26 +218,43 @@ public class MiscHelper {
 		println("\tFinished: %dm %02ds", deltaDuration.toMinutes(), deltaDuration.toSecondsPart());
 	}
 
-	public static void createJavaCpSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+	public static void createJavaSubprocess(Executor executor, String description, Path cwd, List<String> args) throws IOException, InterruptedException {
 		List<String> processArgs = new ArrayList<>(List.of("java"));
-		processArgs.addAll(List.of(jvmArgs));
-		processArgs.add("-cp");
-		processArgs.add(jarFile.toFile().getAbsolutePath());
-		processArgs.addAll(List.of(args));
-		ProcessBuilder processBuilder = new ProcessBuilder(processArgs).directory(cwd.toFile()).inheritIO();
+		processArgs.addAll(args);
+		ProcessBuilder processBuilder = new ProcessBuilder(processArgs)
+			.directory(cwd.toFile())
+			.redirectOutput(ProcessBuilder.Redirect.PIPE)
+			.redirectErrorStream(true);
 		Process process = processBuilder.start();
+		process.getOutputStream().close();
+		Logger logger = Library.getSubLogger(String.format("GitCraft/Subprocess/%s", description));
+		executor.execute(() -> {
+			try (BufferedReader reader = process.inputReader()) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					logger.info(line);
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		});
 		process.waitFor();
 	}
 
-	public static void createJavaJarSubprocess(Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
-		List<String> processArgs = new ArrayList<>(List.of("java"));
-		processArgs.addAll(List.of(jvmArgs));
+	public static void createJavaCpSubprocess(Executor executor, String description, Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+		List<String> processArgs = new ArrayList<>(List.of(jvmArgs));
+		processArgs.add("-cp");
+		processArgs.add(jarFile.toFile().getAbsolutePath());
+		processArgs.addAll(List.of(args));
+		createJavaSubprocess(executor, description, cwd, processArgs);
+	}
+
+	public static void createJavaJarSubprocess(Executor executor, String description, Path jarFile, Path cwd, String[] jvmArgs, String[] args) throws IOException, InterruptedException {
+		List<String> processArgs = new ArrayList<>(List.of(jvmArgs));
 		processArgs.add("-jar");
 		processArgs.add(jarFile.toFile().getAbsolutePath());
 		processArgs.addAll(List.of(args));
-		ProcessBuilder processBuilder = new ProcessBuilder(processArgs).directory(cwd.toFile()).inheritIO();
-		Process process = processBuilder.start();
-		process.waitFor();
+		createJavaSubprocess(executor, description, cwd, processArgs);
 	}
 
 	public static void tryJavaExecution() {

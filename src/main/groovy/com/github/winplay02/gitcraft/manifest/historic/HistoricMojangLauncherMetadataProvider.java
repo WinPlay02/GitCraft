@@ -167,7 +167,8 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::mainClass),
 				(ZonedDateTime) MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::releaseTime),
 				(ZonedDateTime) MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::time),
-				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::type)
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::type),
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::arguments)
 			);
 		} catch (Exception e) {
 			MiscHelper.panicBecause(e, "Couldn't merge version info of version '%s'", versionId);

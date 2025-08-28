@@ -1,5 +1,7 @@
 package com.github.winplay02.gitcraft.pipeline;
 
+import com.github.winplay02.gitcraft.launcher.LaunchStepHardlinkAssets;
+import com.github.winplay02.gitcraft.launcher.LaunchStepLaunch;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsFetcher;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsUnpacker;
 import com.github.winplay02.gitcraft.pipeline.workers.AssetsFetcher;
@@ -49,7 +51,9 @@ public enum Step {
 	PREEN_JARS("Preen Jars", Preener::new),
 	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
 	COMMIT("Commit to repository", Committer::new),
-	REPO_GARBAGE_COLLECTOR("GC repository", RepoGarbageCollector::new);
+	REPO_GARBAGE_COLLECTOR("GC repository", RepoGarbageCollector::new),
+	HARDLINK_ASSETS("Hardlink Assets to Launch Environment", LaunchStepHardlinkAssets::new),
+	LAUNCH_CLIENT("Launch Client", LaunchStepLaunch::new);
 
 	private final String name;
 	private final Function<StepWorker.Config, StepWorker<?, ?>> workerFactory;

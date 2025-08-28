@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -26,7 +27,9 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.function.Function;
 
 public class SerializationHelper {
 	protected static Gson gson;
@@ -77,7 +80,24 @@ public class SerializationHelper {
 					return ZonedDateTime.parse(in.nextString(), RFC_3339_DATE_TIME_FORMATTER);
 				}
 			}
+		}).registerTypeAdapterFactory(new TypeAdapterFactory() {
+			@Override
+			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+				Class<? super T> requestedType = type.getRawType();
+				Optional<Class<T>> assignableClass = (Optional<Class<T>>) (Optional<?>) registeredTypeAdapters.keySet().stream().filter(classInstance -> classInstance.isAssignableFrom(requestedType)).findAny();
+				if (assignableClass.isEmpty()) {
+					return null;
+				}
+				TypeAdapter<T> delegate = gson.getDelegateAdapter(this, type);
+				return (TypeAdapter<T>) registeredTypeAdapters.get(assignableClass.orElseThrow()).apply(delegate);
+			}
 		}).setPrettyPrinting().create();
+	}
+
+	private static final Map<Class<?>, Function<TypeAdapter<?>, TypeAdapter<?>>> registeredTypeAdapters = new HashMap<>();
+
+	public static <T> void registerTypeAdapter(Class<T> classInstance, Function<TypeAdapter<T>, TypeAdapter<T>> typeAdapter) {
+		registeredTypeAdapters.put(classInstance, (Function<TypeAdapter<?>, TypeAdapter<?>>) (Function<?, ?>) typeAdapter);
 	}
 
 	public static <T> String serialize(T objectToSerialize) {

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.Executor;
 
 public record DataGenerator(StepWorker.Config config) implements StepWorker<OrderedVersion, DataGenerator.Inputs> {
 
@@ -84,7 +85,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			// Delete Output files, as some versions do not work, when files already exist
 			Path datagenSnbtOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenSnbtOutput);
-			runDatagen(mcVersion, datagenDirectory, executablePath, "--dev",
+			runDatagen(context.executorService(), mcVersion, datagenDirectory, executablePath, "--dev",
 				"--input", nbtSourceDirectory.toAbsolutePath().toString(),
 				"--output", datagenSnbtOutput.toAbsolutePath().toString()
 			);
@@ -110,7 +111,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			// Datagen
 			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenReportsOutput);
-			runDatagen(mcVersion, datagenDirectory, executablePath, "--reports");
+			runDatagen(context.executorService(), mcVersion, datagenDirectory, executablePath, "--reports");
 			if (!Files.exists(datagenReportsOutput) || !Files.isDirectory(datagenReportsOutput)) {
 				MiscHelper.panic("Datagen step was required, but reports were not generated");
 			}
@@ -129,15 +130,15 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 	public record Inputs(StorageKey serverJar, StorageKey dataJar) implements StepInput {
 	}
 
-	private void runDatagen(OrderedVersion mcVersion, Path cwd, Path executable, String... args) throws IOException, InterruptedException {
+	private void runDatagen(Executor executor, OrderedVersion mcVersion, Path cwd, Path executable, String... args) throws IOException, InterruptedException {
 		if (mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(DATAGEN_BUNDLER_START_VERSION)) >= 0) {
 			// >= DATAGEN_BUNDLER: java -DbundlerMainClass=net.minecraft.data.Main -jar minecraft_server.jar
-			MiscHelper.createJavaJarSubprocess(executable, cwd, new String[]{"-DbundlerMainClass=net.minecraft.data.Main"}, args);
+			MiscHelper.createJavaJarSubprocess(executor, String.format("Datagenerator-%s", mcVersion.launcherFriendlyVersionName()), executable, cwd, new String[]{"-DbundlerMainClass=net.minecraft.data.Main"}, args);
 		} else {
 			// < DATAGEN_BUNDLER: java -cp minecraft_server.jar net.minecraft.data.Main
 			ArrayList<String> argsList = new ArrayList<>(List.of("net.minecraft.data.Main"));
 			argsList.addAll(List.of(args));
-			MiscHelper.createJavaCpSubprocess(executable, cwd, new String[0], argsList.toArray(String[]::new));
+			MiscHelper.createJavaCpSubprocess(executor, String.format("Datagenerator-%s", mcVersion.launcherFriendlyVersionName()), executable, cwd, new String[0], argsList.toArray(String[]::new));
 		}
 	}
 

@@ -8,77 +8,38 @@ import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.FabricHelper;
-import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
-import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.logging.Logger;
-
-public class GitCraft {
+public class GitCraft extends GitCraftApplication {
+	public static final String NAME = "GitCraft";
 	public static final String VERSION = "0.3.0";
 
 	public static final String FABRIC_MAVEN = "https://maven.fabricmc.net/";
 	public static final String ORNITHE_MAVEN = "https://maven.ornithemc.net/releases/";
 
-
-	public static MinecraftVersionGraph versionGraph = null;
-	public static MinecraftVersionGraph resetVersionGraph = null;
-
-	public static RepositoryConfiguration getRepositoryConfiguration() {
-		return Configuration.getConfiguration(RepositoryConfiguration.class);
+	public static void main(String... args) throws Exception {
+		new GitCraft().mainEntrypoint(args);
 	}
 
-	public static DataConfiguration getDataConfiguration() {
-		return Configuration.getConfiguration(DataConfiguration.class);
-	}
-
-	public static ApplicationConfiguration getApplicationConfiguration() {
-		return Configuration.getConfiguration(ApplicationConfiguration.class);
-	}
-
-	public static TransientApplicationConfiguration getTransientApplicationConfiguration() {
-		return Configuration.getConfiguration(TransientApplicationConfiguration.class);
-	}
-
-	public static Logger applicationLogger = null;
-
-	public static void main(String[] args) throws Exception {
-		Library.initialize();
+	@Override
+	public boolean initialize(String... args) {
 		Configuration.register("gitcraft_repository", RepositoryConfiguration.class, RepositoryConfiguration::deserialize);
 		Configuration.register("gitcraft_dataimport", DataConfiguration.class, DataConfiguration::deserialize);
 		Configuration.register("gitcraft_application", ApplicationConfiguration.class, ApplicationConfiguration::deserialize);
 		Configuration.register("gitcraft_application_transient", TransientApplicationConfiguration.class, TransientApplicationConfiguration::deserialize);
 		if (!GitCraftCli.handleCliArgs(args)) {
-			return;
+			return false;
 		}
-		applicationLogger = Library.getSubLogger("GitCraft/Application");
-		Library.applyConfiguration();
-		GitCraftPaths.initializePaths();
-		FabricHelper.checkFabricLoaderVersion();
-		MiscHelper.println("If generated semver is incorrect, it will break the order of the generated repo.\nConsider updating Fabric Loader. (run ./gradlew run --refresh-dependencies)");
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				RemoteHelper.saveMavenCache();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}, "Shutdown-Hook-Maven-Cache-Saver"));
-		// Create Graph
-		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Manifest-Metadata-Input").factory())) {
-			GitCraft.versionGraph = MinecraftVersionGraph.createFromMetadata(executor, getApplicationConfiguration().manifestSource().getMetadataProvider());
-		}
+		return true;
+	}
 
-		RemoteHelper.saveMavenCache();
+	@Override
+	public void run() throws Exception {
 		MiscHelper.println("Decompiler log output is suppressed!");
-		GitCraft.versionGraph = doVersionGraphOperations(GitCraft.versionGraph);
-		GitCraft.resetVersionGraph = doVersionGraphOperationsForReset(GitCraft.versionGraph);
-		try (RepoWrapper repo = GitCraft.getRepository()) {
+		versionGraph = doVersionGraphOperations(versionGraph);
+		resetVersionGraph = doVersionGraphOperationsForReset(versionGraph);
+		try (RepoWrapper repo = getRepository()) {
 			if (getTransientApplicationConfiguration().refreshDecompilation()) {
 				Pipeline.run(PipelineDescription.RESET_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
 			}
@@ -90,105 +51,5 @@ public class GitCraft {
 				MiscHelper.println("Repo can be found at: %s", repo.getRootPath().toString());
 			}
 		}
-	}
-
-	private static MinecraftVersionGraph doVersionGraphOperations(MinecraftVersionGraph graph) {
-		graph = graph.filterMapping(GitCraft.getApplicationConfiguration().usedMapping(), GitCraft.getApplicationConfiguration().fallbackMappings());
-		if (getApplicationConfiguration().isOnlyVersion()) {
-			if (getApplicationConfiguration().onlyVersion().length == 0) {
-				MiscHelper.panic("No version provided");
-			}
-			OrderedVersion[] mc_versions = new OrderedVersion[getApplicationConfiguration().onlyVersion().length];
-			for (int i = 0; i < mc_versions.length; ++i) {
-				mc_versions[i] = graph.getMinecraftVersionByName(getApplicationConfiguration().onlyVersion()[i]);
-				if (mc_versions[i] == null) {
-					MiscHelper.panic("%s is invalid", getApplicationConfiguration().onlyVersion()[i]);
-				}
-			}
-			graph = graph.filterOnlyVersion(mc_versions);
-		} else {
-			if (getApplicationConfiguration().isMinVersion()) {
-				OrderedVersion mc_version = graph.getMinecraftVersionByName(getApplicationConfiguration().minVersion());
-				if (mc_version == null) {
-					MiscHelper.panic("%s is invalid", getApplicationConfiguration().minVersion());
-				}
-				graph = graph.filterMinVersion(mc_version);
-			}
-			if (getApplicationConfiguration().isMaxVersion()) {
-				OrderedVersion mc_version = graph.getMinecraftVersionByName(getApplicationConfiguration().maxVersion());
-				if (mc_version == null) {
-					MiscHelper.panic("%s is invalid", getApplicationConfiguration().maxVersion());
-				}
-				graph = graph.filterMaxVersion(mc_version);
-			}
-		}
-		if (getApplicationConfiguration().isAnyVersionExcluded()) {
-			OrderedVersion[] mc_versions = new OrderedVersion[getApplicationConfiguration().excludedVersion().length];
-			for (int i = 0; i < mc_versions.length; ++i) {
-				mc_versions[i] = graph.getMinecraftVersionByName(getApplicationConfiguration().excludedVersion()[i]);
-				if (mc_versions[i] == null) {
-					MiscHelper.panic("%s is invalid", getApplicationConfiguration().onlyVersion()[i]);
-				}
-			}
-			graph = graph.filterExcludeVersion(mc_versions);
-		}
-		if (getApplicationConfiguration().onlyStableReleases()) {
-			graph = graph.filterStableRelease();
-		}
-		if (getApplicationConfiguration().onlySnapshots()) {
-			graph = graph.filterSnapshots();
-		}
-		if (getApplicationConfiguration().skipNonLinear()) {
-			graph = graph.filterMainlineVersions();
-		}
-		return graph;
-	}
-
-	private static MinecraftVersionGraph doVersionGraphOperationsForReset(MinecraftVersionGraph graph) {
-		if (getTransientApplicationConfiguration().isRefreshOnlyVersion()) {
-			if (getTransientApplicationConfiguration().refreshOnlyVersion().length == 0) {
-				MiscHelper.panic("No version to refresh provided");
-			}
-			OrderedVersion[] mc_versions = new OrderedVersion[getTransientApplicationConfiguration().refreshOnlyVersion().length];
-			for (int i = 0; i < mc_versions.length; ++i) {
-				mc_versions[i] = graph.getMinecraftVersionByName(getTransientApplicationConfiguration().refreshOnlyVersion()[i]);
-				if (mc_versions[i] == null) {
-					MiscHelper.panic("%s is invalid", getTransientApplicationConfiguration().refreshOnlyVersion()[i]);
-				}
-			}
-			graph = graph.filterOnlyVersion(mc_versions);
-		} else {
-			if (getTransientApplicationConfiguration().isRefreshMinVersion()) {
-				OrderedVersion mc_version = graph.getMinecraftVersionByName(getTransientApplicationConfiguration().refreshMinVersion());
-				if (mc_version == null) {
-					MiscHelper.panic("%s is invalid", getTransientApplicationConfiguration().refreshMinVersion());
-				}
-				graph = graph.filterMinVersion(mc_version);
-			}
-			if (getTransientApplicationConfiguration().isRefreshMaxVersion()) {
-				OrderedVersion mc_version = graph.getMinecraftVersionByName(getTransientApplicationConfiguration().refreshMaxVersion());
-				if (mc_version == null) {
-					MiscHelper.panic("%s is invalid", getTransientApplicationConfiguration().refreshMaxVersion());
-				}
-				graph = graph.filterMaxVersion(mc_version);
-			}
-		}
-		return graph;
-	}
-
-	public static RepoWrapper getRepository() throws Exception {
-		if (!getTransientApplicationConfiguration().noRepo()) {
-			String identifier = GitCraft.versionGraph.repoTagsIdentifier(
-				getApplicationConfiguration().usedMapping(),
-				getApplicationConfiguration().fallbackMappings(),
-				getApplicationConfiguration().patchLvt(),
-				getApplicationConfiguration().usedSignatures(),
-				getApplicationConfiguration().usedNests(),
-				getApplicationConfiguration().usedExceptions(),
-				getApplicationConfiguration().enablePreening()
-			);
-			return new RepoWrapper(getTransientApplicationConfiguration().overrideRepositoryPath() != null ? getTransientApplicationConfiguration().overrideRepositoryPath() : (identifier.isEmpty() ? null : LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("minecraft-repo-%s", identifier))));
-		}
-		return null;
 	}
 }

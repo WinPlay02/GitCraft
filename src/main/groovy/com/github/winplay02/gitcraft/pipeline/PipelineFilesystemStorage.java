@@ -41,6 +41,10 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 		return (root, _context, _config) -> rootPathConstFunction.apply(root.rootFilesystem());
 	}
 
+	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathConstSubDir(Function<PipelineFilesystemRoot, Path> rootPathConstFunction, String subDir1, String... subDirs) {
+		return (root, _context, _config) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(subDir1, subDirs);
+	}
+
 	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathVersioned(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
 		return (root, context, _config) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(context.targetVersion().pathName());
 	}
@@ -155,6 +159,13 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final ArtifactKey PREENED_SERVER_JAR = new ArtifactKey(REMAPPED, SIDE_SERVER, DIST_JAR, HINT_PREENED);
 	public static final ArtifactKey PREENED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR, HINT_PREENED);
 
+	// Launching Step
+	public static final DirectoryKey LAUNCH_GAME = new DirectoryKey("launch/game");
+	public static final DirectoryKey LAUNCH_ASSETS = new DirectoryKey("launch/assets");
+	public static final DirectoryKey LAUNCH_ASSETS_OBJECTS = new DirectoryKey("launch/assets/objects");
+	public static final DirectoryKey LAUNCH_ASSETS_INDEXES = new DirectoryKey("launch/assets/indexes");
+	public static final DirectoryKey LAUNCH_NATIVES = new DirectoryKey("launch/natives");
+
 	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion>(
 		GitCraftPaths.FILESYSTEM_ROOT,
 		Set.of(
@@ -223,5 +234,14 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			PREENED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
 			PREENED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
 			PREENED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS)
-		)));
+		),
+		Map.of(
+			LAUNCH_GAME, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "game"),
+			LAUNCH_ASSETS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets"),
+			LAUNCH_ASSETS_OBJECTS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "objects"),
+			LAUNCH_ASSETS_INDEXES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "indexes"),
+			LAUNCH_NATIVES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "natives")
+		)
+	)
+	);
 }

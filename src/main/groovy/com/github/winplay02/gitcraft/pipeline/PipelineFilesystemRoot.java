@@ -62,6 +62,10 @@ public record PipelineFilesystemRoot(Supplier<Path> root) {
 		return this.getRoot().resolve("patched");
 	}
 
+	public Path getRuntimeDirectory() {
+		return this.getRoot().resolve("runtime");
+	}
+
 	public void initialize() throws IOException {
 		Files.createDirectories(getDecompiled());
 		Files.createDirectories(getMappings());
@@ -75,5 +79,6 @@ public record PipelineFilesystemRoot(Supplier<Path> root) {
 		Files.createDirectories(getAssetsObjects());
 		Files.createDirectories(getPatchesStore());
 		Files.createDirectories(getPatchedStore());
+		Files.createDirectories(getRuntimeDirectory());
 	}
 }

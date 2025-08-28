@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
+import com.github.winplay02.gitcraft.launcher.LaunchStepLaunch;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsUnpacker;
 import com.github.winplay02.gitcraft.pipeline.workers.Committer;
 import com.github.winplay02.gitcraft.pipeline.workers.DataGenerator;
@@ -192,6 +193,29 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		List.of(Step.REPO_GARBAGE_COLLECTOR),
 		Map.of(Step.REPO_GARBAGE_COLLECTOR, EMPTY_INPUT_PROVIDER),
 		Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependency.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)),
+		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
+	);
+
+	public static final PipelineDescription<OrderedVersion> LAUNCH_PIPELINE = new PipelineDescription<>(
+		"Launch Client",
+		List.of(
+			Step.FETCH_ARTIFACTS,
+			Step.FETCH_LIBRARIES,
+			Step.FETCH_ASSETS,
+			Step.HARDLINK_ASSETS,
+			Step.LAUNCH_CLIENT
+		),
+		Map.of(
+			Step.FETCH_ARTIFACTS, EMPTY_INPUT_PROVIDER,
+			Step.FETCH_LIBRARIES, EMPTY_INPUT_PROVIDER,
+			Step.FETCH_ASSETS, EMPTY_INPUT_PROVIDER,
+			Step.HARDLINK_ASSETS, EMPTY_INPUT_PROVIDER,
+			Step.LAUNCH_CLIENT, (storage, results) -> new LaunchStepLaunch.Inputs(results.getKeyIfExists(ARTIFACTS_CLIENT_JAR))
+		),
+		Map.of(
+			Step.HARDLINK_ASSETS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
+			Step.LAUNCH_CLIENT, StepDependency.ofHardIntraVersionOnly(Step.HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS)
+		),
 		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
 	);
 }
