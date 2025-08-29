@@ -1,0 +1,14 @@
+plugins {
+	id 'java'
+}
+
+jar {
+	manifest {
+		attributes {
+			"Premain-Class": "com.github.winplay02.gitcraft.launchagent.GitCraftLauncherAgent"
+		}
+	}
+	metadataCharset = "UTF-8"
+	preserveFileTimestamps = false
+	reproducibleFileOrder = true
+}

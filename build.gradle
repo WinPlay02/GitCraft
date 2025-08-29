@@ -34,6 +34,11 @@ sourceSets {
 
 		}
 	}
+	launcher_agent {
+		java {
+
+		}
+	}
 }
 
 dependencies {
