@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -145,7 +146,9 @@ public class MiscHelper {
 					}
 				}
 			}
-			removeUnusedDirectories(pathUsage);
+			try {
+				removeUnusedDirectories(pathUsage);
+			} catch (DirectoryNotEmptyException ignored) {}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -433,5 +436,12 @@ public class MiscHelper {
 
 	public static <K, V> Map<K, V> invertMapping(Map<V, K> map) {
 		return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+	}
+
+	public static Path crossResolvePath(Path target, Path relativizedPath) {
+		for (Path part : relativizedPath) {
+			target = target.resolve(part.getFileName().toString());
+		}
+		return target;
 	}
 }

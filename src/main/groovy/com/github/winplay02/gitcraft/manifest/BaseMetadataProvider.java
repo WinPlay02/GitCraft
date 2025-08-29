@@ -20,6 +20,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -41,7 +42,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	protected final List<MetadataSources.LocalRepository> repositorySources;
 	protected final LinkedHashMap<String, OrderedVersion> versionsById = new LinkedHashMap<>();
 	protected final TreeMap<String, String> semverCache = new TreeMap<>();
-	private boolean versionsLoaded;
+	protected boolean versionsLoaded;
 
 	protected BaseMetadataProvider() {
 		this.manifestMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcMetaStore().resolve(this.getInternalName());

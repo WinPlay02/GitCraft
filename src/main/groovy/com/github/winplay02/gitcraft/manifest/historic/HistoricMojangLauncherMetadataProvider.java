@@ -168,7 +168,8 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 				(ZonedDateTime) MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::releaseTime),
 				(ZonedDateTime) MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::time),
 				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::type),
-				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::arguments)
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::arguments),
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::minecraftArguments)
 			);
 		} catch (Exception e) {
 			MiscHelper.panicBecause(e, "Couldn't merge version info of version '%s'", versionId);
@@ -231,6 +232,7 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 		for (Map.Entry<String, CompletableFuture<OrderedVersion>> futureEntry : futureVersionsMap.entrySet()) {
 			this.versionsById.put(futureEntry.getKey(), futureEntry.getValue().join());
 		}
+		this.versionsLoaded = true;
 	}
 
 	@Override

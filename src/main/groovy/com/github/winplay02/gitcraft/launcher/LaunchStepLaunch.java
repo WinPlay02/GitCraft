@@ -1,6 +1,9 @@
 package com.github.winplay02.gitcraft.launcher;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.LibraryMetadata;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
@@ -9,31 +12,148 @@ import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
+import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
+import groovy.lang.Tuple2;
+import net.fabricmc.loom.util.FileSystemUtil;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<OrderedVersion, LaunchStepLaunch.Inputs> {
 
+	protected static List<VersionInfo.VersionArgumentWithRules> DEFAULT_JVM_ARGS = List.of(
+		new VersionInfo.VersionArgumentWithRules(
+			List.of("-XstartOnFirstThread"),
+			List.of(
+				new VersionInfo.VersionArgumentRule(
+					"allow",
+					VersionInfo.VersionArgumentRuleFeatures.EMPTY,
+					new VersionInfo.VersionArgumentOS(
+						"osx",
+						null,
+						null
+					)
+				)
+			)
+		),
+		new VersionInfo.VersionArgumentWithRules(
+			List.of("-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump"),
+			List.of(
+				new VersionInfo.VersionArgumentRule(
+					"allow",
+					VersionInfo.VersionArgumentRuleFeatures.EMPTY,
+					new VersionInfo.VersionArgumentOS(
+						"windows",
+						null,
+						null
+					)
+				)
+			)
+		),
+		new VersionInfo.VersionArgumentWithRules(
+			List.of(
+				"-Dos.name=Windows 10",
+				"-Dos.version=10.0"
+			),
+			List.of(
+				new VersionInfo.VersionArgumentRule(
+					"allow",
+					VersionInfo.VersionArgumentRuleFeatures.EMPTY,
+					new VersionInfo.VersionArgumentOS(
+						"windows",
+						"^10\\\\.",
+						null
+					)
+				)
+			)
+		),
+		new VersionInfo.VersionArgumentWithRules(
+			List.of("-Xss1M"),
+			List.of(
+				new VersionInfo.VersionArgumentRule(
+					"allow",
+					VersionInfo.VersionArgumentRuleFeatures.EMPTY,
+					new VersionInfo.VersionArgumentOS(
+						null,
+						null,
+						"x86"
+					)
+				)
+			)
+		),
+		new VersionInfo.VersionArgumentWithRules(
+			List.of(
+				"-Djava.library.path=${natives_directory}",
+				"-Dminecraft.launcher.brand=${launcher_name}",
+				"-Dminecraft.launcher.version=${launcher_version}",
+				"-cp",
+				"${classpath}"
+			),
+			List.of()
+		)
+	);
+
+	private Tuple2<List<Artifact>, Map<Artifact, LibraryMetadata.Extract>> getLibrariesNeededForLaunch(VersionInfo versionInfo, Map<String, String> args) {
+		List<Artifact> libs = new ArrayList<>();
+		Map<Artifact, LibraryMetadata.Extract> extractions = new HashMap<>();
+		for (LibraryMetadata library : versionInfo.libraries()) {
+			if (library.downloads() == null) {
+				continue;
+			}
+			if (library.downloads().artifact() != null) {
+				ArtifactMetadata artifactMeta = library.downloads().artifact();
+				Artifact artifact = Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1());
+				libs.add(artifact);
+				if (library.extract() != null) {
+					extractions.put(artifact, library.extract());
+				}
+			}
+			if (library.rules() != null && library.downloads().classifiers() != null && library.natives() != null) {
+				boolean applicable = library.rules().stream().map(LauncherUtils::evaluateLauncherRuleFast).reduce(Boolean::logicalAnd).orElse(true);
+				if (applicable) {
+					ArtifactMetadata artifactMeta = library.downloads().classifiers().get(LauncherUtils.evaluateLauncherString(library.natives().get(LauncherUtils.getOperatingSystem()), args));
+					Artifact artifact = Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1());
+					libs.add(artifact);
+					if (library.extract() != null) {
+						extractions.put(artifact, library.extract());
+					}
+				}
+			}
+		}
+		return Tuple2.tuple(libs, extractions);
+	}
+
 	@Override
 	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, LaunchStepLaunch.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Path assetsPath = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS));
-		Path nativesPath = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_NATIVES));
+		Path assetsPath = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS);
+		Path assetsPathVirtualFs = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS_VIRTUALFS);
+		Path nativesPath = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_NATIVES);
+		{
+			// Clean natives path
+			MiscHelper.deleteDirectory(nativesPath);
+			Files.createDirectories(nativesPath);
+		}
 		Path gamePath = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_GAME));
 		Path librariesPath = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
 		Path clientPath = pipeline.getStoragePath(input.clientJar().orElse(null), context, this.config);
 		// Classpath
-		List<Path> classpath = context.targetVersion().libraries().stream().map(artifact -> artifact.resolve(librariesPath)).collect(Collectors.toList());
+		Tuple2<List<Artifact>, Map<Artifact, LibraryMetadata.Extract>> libraries = getLibrariesNeededForLaunch(context.targetVersion().versionInfo(), Map.of("arch", LauncherUtils.getShortArch()));
+		List<Path> classpath = libraries.getV1().stream().map(artifact -> artifact.resolve(librariesPath)).collect(Collectors.toList());
+		Map<Path, LibraryMetadata.Extract> extractInfo = libraries.getV2().entrySet().stream().map(entry -> Map.entry(entry.getKey().resolve(librariesPath), entry.getValue())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		classpath.add(clientPath);
 		// Args
 		Map<String, String> args = new HashMap<>();
@@ -49,21 +169,51 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 		args.put("auth_access_token", "none"); // TODO access token
 		args.put("user_type", "legacy");
 		args.put("version_type", context.targetVersion().versionInfo().type());
+		args.put("user_properties", "{}");
+		args.put("game_assets", assetsPathVirtualFs.toAbsolutePath().toString());
+		args.put("auth_session", "none");
 		// JVM Args
 		args.put("classpath", classpath.stream().map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.joining(File.pathSeparator)));
 		args.put("natives_directory", nativesPath.toAbsolutePath().toString());
 		args.put("launcher_name", GitCraft.NAME);
 		args.put("launcher_version", GitCraft.VERSION);
+		// Other used args
+		args.put("arch", LauncherUtils.getArch());
+		// Extract
+		for (Map.Entry<Path, LibraryMetadata.Extract> entry : extractInfo.entrySet()) {
+			try (
+				FileSystemUtil.Delegate toExtractJar = FileSystemUtil.getJarFileSystem(entry.getKey());
+				Stream<Path> extractStream = Files.list(toExtractJar.getRoot());
+			) {
+				Set<Path> exclusions = entry.getValue().exclude().stream().map(exclusion -> toExtractJar.getRoot().resolve(exclusion)).collect(Collectors.toSet());
+				for (Path toExtractPath : extractStream.toList()) {
+					Path outputPath = MiscHelper.crossResolvePath(nativesPath, toExtractJar.getRoot().relativize(toExtractPath));
+					if (exclusions.contains(toExtractPath)) {
+						continue;
+					}
+					if (Files.isRegularFile(toExtractPath)) {
+						Files.copy(toExtractPath, outputPath, StandardCopyOption.REPLACE_EXISTING);
+					} else if (Files.isDirectory(toExtractPath)) {
+						MiscHelper.copyLargeDirExcept(toExtractPath, outputPath, exclusions.stream().toList());
+					}
+				}
+			}
+		}
 		// Launch
 		String os = LauncherUtils.getOperatingSystem();
 		String arch = LauncherUtils.getArch();
 		// JVM Args
-		List<String> jvmArgs = LauncherUtils.evaluateArgs(context.targetVersion().versionInfo().arguments().jvm(), args, os, arch);
+		List<String> jvmArgs = LauncherUtils.evaluateArgs(
+			context.targetVersion().versionInfo().arguments() != null && context.targetVersion().versionInfo().arguments().jvm() != null ?
+				context.targetVersion().versionInfo().arguments().jvm() : DEFAULT_JVM_ARGS,
+			args, os, arch);
 		List<String> cmdArgs = new ArrayList<>(jvmArgs);
 		// Main Class
 		cmdArgs.add(context.targetVersion().mainClass());
 		// Program Args
-		List<String> programArgs = LauncherUtils.evaluateArgs(context.targetVersion().versionInfo().arguments().game(), args, os, arch);
+		List<String> programArgs = LauncherUtils.evaluateArgs(
+			context.targetVersion().versionInfo().arguments() != null && context.targetVersion().versionInfo().arguments().game() != null ?
+				context.targetVersion().versionInfo().arguments().game() : List.of(new VersionInfo.VersionArgumentWithRules(Arrays.stream(context.targetVersion().versionInfo().minecraftArguments().split("\\s")).toList(), List.of())), args, os, arch);
 		cmdArgs.addAll(programArgs);
 		MiscHelper.println(String.join(" ", cmdArgs));
 		MiscHelper.createJavaSubprocess(context.executorService(), String.format("Client/%s", context.targetVersion().launcherFriendlyVersionName()), pipeline.getFilesystemStorage().rootFilesystem().getRuntimeDirectory(), cmdArgs);

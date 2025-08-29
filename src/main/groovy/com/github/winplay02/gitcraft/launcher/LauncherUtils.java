@@ -17,7 +17,7 @@ public class LauncherUtils {
 	public static String getOperatingSystem() {
 		String osName = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH);
 		if ((osName.contains("mac")) || (osName.contains("darwin"))) {
-			return "macos";
+			return "osx";
 		} else if (osName.contains("win")) {
 			return "windows";
 		} else if (osName.contains("nux")) {
@@ -29,6 +29,14 @@ public class LauncherUtils {
 
 	public static String getArch() {
 		return System.getProperty("os.arch", "").toLowerCase(Locale.ENGLISH);
+	}
+
+	public static String getShortArch() {
+		return System.getProperty("sun.arch.data.model", "").toLowerCase(Locale.ENGLISH);
+	}
+
+	public static boolean evaluateLauncherRuleFast(VersionInfo.VersionArgumentRule rule) {
+		return evaluateLauncherRule(rule, getOperatingSystem(), getArch());
 	}
 
 	public static boolean evaluateLauncherRule(VersionInfo.VersionArgumentRule rule, String os, String arch) {
@@ -88,15 +96,19 @@ public class LauncherUtils {
 		return protoArgs.stream()
 			.filter(arg -> arg.rules().isEmpty() ||
 				arg.rules().stream().map(rule -> LauncherUtils.evaluateLauncherRule(rule, os, arch)).reduce(true, Boolean::logicalAnd))
-			.map(arg -> arg.value().stream().map(value -> LauncherUtils.replaceLambda(value, LAUNCH_PARAMETER_REGEX, (replaced) -> {
-				String argsVar = replaced.substring(2, replaced.length() - 1);
-				if (args.containsKey(argsVar)) {
-					return args.get(argsVar);
-				}
-				return replaced;
-			})).collect(Collectors.toList())).reduce(new ArrayList<>(), (list, next) -> {
+			.map(arg -> arg.value().stream().map(value -> evaluateLauncherString(value, args)).collect(Collectors.toList())).reduce(new ArrayList<>(), (list, next) -> {
 				list.addAll(next);
 				return list;
 			});
+	}
+
+	public static String evaluateLauncherString(String toEvaluate, Map<String, String> args) {
+		return LauncherUtils.replaceLambda(toEvaluate, LAUNCH_PARAMETER_REGEX, (replaced) -> {
+			String argsVar = replaced.substring(2, replaced.length() - 1);
+			if (args.containsKey(argsVar)) {
+				return args.get(argsVar);
+			}
+			return replaced;
+		});
 	}
 }

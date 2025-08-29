@@ -38,8 +38,8 @@ public class GitCraftLauncher extends GitCraftApplication {
 	@Override
 	public void run() throws Exception {
 		versionGraph = doVersionGraphOperations(versionGraph);
-		OrderedVersion mc_version = versionGraph.getMinecraftVersionByName("1.20");
-		versionGraph = versionGraph.filterMinVersion(mc_version);
+		OrderedVersion mc_version = versionGraph.getMinecraftVersionByName("13w19a");
+		versionGraph = versionGraph.filterOnlyVersion(mc_version);
 		Pipeline.run(PipelineDescription.LAUNCH_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), null, versionGraph);
 	}
 }

@@ -15,7 +15,7 @@ public record AssetsIndex(AssetsIndexMetadata assetsIndex, List<Artifact> assets
 		return new AssetsIndex(assetsIndex, Collections.unmodifiableList(assets));
 	}
 
-	private static String makeMinecraftAssetUrl(String hash) {
+	public static String makeMinecraftAssetUrl(String hash) {
 		return String.format("https://resources.download.minecraft.net/%s/%s", hash.substring(0, 2), hash);
 	}
 }

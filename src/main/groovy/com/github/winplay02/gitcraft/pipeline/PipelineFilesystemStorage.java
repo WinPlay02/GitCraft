@@ -160,11 +160,15 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 	public static final ArtifactKey PREENED_MERGED_JAR = new ArtifactKey(REMAPPED, SIDE_MERGED, DIST_JAR, HINT_PREENED);
 
 	// Launching Step
+	public static final DirectoryKey LAUNCH_VERSIONS = new DirectoryKey("launch/versions");
 	public static final DirectoryKey LAUNCH_GAME = new DirectoryKey("launch/game");
 	public static final DirectoryKey LAUNCH_ASSETS = new DirectoryKey("launch/assets");
 	public static final DirectoryKey LAUNCH_ASSETS_OBJECTS = new DirectoryKey("launch/assets/objects");
 	public static final DirectoryKey LAUNCH_ASSETS_INDEXES = new DirectoryKey("launch/assets/indexes");
+	public static final DirectoryKey LAUNCH_ASSETS_VIRTUALFS = new DirectoryKey("launch/assets/virtual");
 	public static final DirectoryKey LAUNCH_NATIVES = new DirectoryKey("launch/natives");
+
+	public static final ArtifactKey LAUNCHABLE_CLIENT_JAR = new ArtifactKey(LAUNCH_VERSIONS, SIDE_CLIENT, DIST_JAR);
 
 	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion>(
 		GitCraftPaths.FILESYSTEM_ROOT,
@@ -236,11 +240,16 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			PREENED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS)
 		),
 		Map.of(
+			LAUNCH_VERSIONS, rootPathVersioned(pipelineFsRoot -> pipelineFsRoot.getRuntimeDirectory().resolve("launch_versions")),
 			LAUNCH_GAME, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "game"),
 			LAUNCH_ASSETS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets"),
 			LAUNCH_ASSETS_OBJECTS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "objects"),
 			LAUNCH_ASSETS_INDEXES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "indexes"),
+			LAUNCH_ASSETS_VIRTUALFS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "virtual"),
 			LAUNCH_NATIVES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "natives")
+		),
+		Map.of(
+			LAUNCHABLE_CLIENT_JAR, createFromKeyWithConfig(LAUNCH_VERSIONS, "client-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
 		)
 	)
 	);

@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
+import com.github.winplay02.gitcraft.launcher.LaunchStepCopyStrippedResources;
 import com.github.winplay02.gitcraft.launcher.LaunchStepLaunch;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsUnpacker;
 import com.github.winplay02.gitcraft.pipeline.workers.Committer;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -202,19 +204,27 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Step.FETCH_ARTIFACTS,
 			Step.FETCH_LIBRARIES,
 			Step.FETCH_ASSETS,
-			Step.HARDLINK_ASSETS,
+			Step.LAUNCH_PREPARE_HARDLINK_ASSETS,
+			Step.PROVIDE_MAPPINGS,
+			Step.REMAP_JARS,
+			Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR,
 			Step.LAUNCH_CLIENT
 		),
 		Map.of(
 			Step.FETCH_ARTIFACTS, EMPTY_INPUT_PROVIDER,
 			Step.FETCH_LIBRARIES, EMPTY_INPUT_PROVIDER,
 			Step.FETCH_ASSETS, EMPTY_INPUT_PROVIDER,
-			Step.HARDLINK_ASSETS, EMPTY_INPUT_PROVIDER,
-			Step.LAUNCH_CLIENT, (storage, results) -> new LaunchStepLaunch.Inputs(results.getKeyIfExists(ARTIFACTS_CLIENT_JAR))
+			Step.LAUNCH_PREPARE_HARDLINK_ASSETS, EMPTY_INPUT_PROVIDER,
+			Step.PROVIDE_MAPPINGS, EMPTY_INPUT_PROVIDER,
+			Step.REMAP_JARS, (storage, results) -> new Remapper.Inputs(Optional.empty(), results.getKeyByPriority(ARTIFACTS_CLIENT_JAR), Optional.empty()),
+			Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR, (storage, results) -> new LaunchStepCopyStrippedResources.Inputs(results.getKeyByPriority(REMAPPED_CLIENT_JAR)),
+			Step.LAUNCH_CLIENT, (storage, results) -> new LaunchStepLaunch.Inputs(results.getKeyByPriority(LAUNCHABLE_CLIENT_JAR, ARTIFACTS_CLIENT_JAR))
 		),
 		Map.of(
-			Step.HARDLINK_ASSETS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
-			Step.LAUNCH_CLIENT, StepDependency.ofHardIntraVersionOnly(Step.HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS)
+			Step.LAUNCH_PREPARE_HARDLINK_ASSETS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
+			Step.REMAP_JARS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS, Step.FETCH_ARTIFACTS),
+			Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR, StepDependency.ofIntraVersion(Set.of(), Set.of(Step.REMAP_JARS)),
+			Step.LAUNCH_CLIENT, StepDependency.ofIntraVersion(Set.of(Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR, Step.LAUNCH_PREPARE_HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS), Set.of(Step.REMAP_JARS))
 		),
 		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
 	);

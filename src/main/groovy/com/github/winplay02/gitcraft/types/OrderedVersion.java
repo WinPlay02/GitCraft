@@ -14,6 +14,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -91,9 +92,11 @@ public record OrderedVersion(
 		// Ignores natives, not needed as we don't have a runtime
 		Set<Artifact> libs = new HashSet<>();
 		for (LibraryMetadata library : versionInfo.libraries()) {
-			ArtifactMetadata artifactMeta = library.getArtifact();
-			if (artifactMeta != null) {
-				libs.add(Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1()));
+			List<ArtifactMetadata> artifactMeta = library.getArtifact();
+			for (ArtifactMetadata singleArtifactMeta : artifactMeta) {
+				if (singleArtifactMeta != null) {
+					libs.add(Artifact.fromURL(singleArtifactMeta.url(), singleArtifactMeta.sha1()));
+				}
 			}
 		}
 		String assetsIndexId = versionInfo.id() + "_" + versionInfo.assets();
