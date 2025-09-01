@@ -73,7 +73,6 @@ public abstract class GitCraftApplication {
 	}
 
 	protected static MinecraftVersionGraph doVersionGraphOperations(MinecraftVersionGraph graph) {
-		graph = graph.filterMapping(getApplicationConfiguration().usedMapping(), getApplicationConfiguration().fallbackMappings());
 		if (getApplicationConfiguration().isOnlyVersion()) {
 			if (getApplicationConfiguration().onlyVersion().length == 0) {
 				MiscHelper.panic("No version provided");
@@ -121,6 +120,7 @@ public abstract class GitCraftApplication {
 		if (getApplicationConfiguration().skipNonLinear()) {
 			graph = graph.filterMainlineVersions();
 		}
+		graph = graph.filterMapping(getApplicationConfiguration().usedMapping(), getApplicationConfiguration().fallbackMappings());
 		return graph;
 	}
 

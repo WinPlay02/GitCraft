@@ -423,6 +423,24 @@ public class MiscHelper {
 			);
 	}
 
+	public static <T> Supplier<T> supplierFromCallable(Callable<T> callable) {
+		return () -> {
+			try {
+				return callable.call();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		};
+	}
+
+	public static <T> List<T> runTasksInParallelAndAwaitResult(final ExecutorService executorService, final Iterable<Callable<T>> tasks) {
+		List<CompletableFuture<T>> futures = new ArrayList<>();
+		for (Callable<T> task : tasks) {
+			futures.add(CompletableFuture.supplyAsync(supplierFromCallable(task)));
+		}
+		return awaitAllFutures(futures).join();
+	}
+
 	public static <T> List<T> runTasksInParallelAndAwaitResult(final int maxParallelRunningTasks, final ExecutorService executorService, final Iterable<Callable<T>> tasks) {
 		assert maxParallelRunningTasks > 0;
 		CompletionService<T> completionService = new ExecutorCompletionService<>(executorService);

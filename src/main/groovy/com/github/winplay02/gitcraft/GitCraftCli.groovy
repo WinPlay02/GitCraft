@@ -80,6 +80,10 @@ class GitCraftCli {
 		CliBuilder cli_args = createCli();
 		OptionAccessor cli_args_parsed = cli_args.parse(args);
 
+		if (cli_args_parsed == null) {
+			return false;
+		}
+
 		// Help
 		if (cli_args_parsed.hasOption("help")) {
 			cli_args.usage();

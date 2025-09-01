@@ -5,11 +5,14 @@ import com.github.winplay02.gitcraft.config.Configuration;
 import com.github.winplay02.gitcraft.config.DataConfiguration;
 import com.github.winplay02.gitcraft.config.RepositoryConfiguration;
 import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration;
+import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
+import com.github.winplay02.gitcraft.util.SerializationHelper;
+import com.github.winplay02.gitcraft.util.SerializationTypes;
 
 public class GitCraft extends GitCraftApplication {
 	public static final String NAME = "GitCraft";
@@ -28,6 +31,7 @@ public class GitCraft extends GitCraftApplication {
 		Configuration.register("gitcraft_dataimport", DataConfiguration.class, DataConfiguration::deserialize);
 		Configuration.register("gitcraft_application", ApplicationConfiguration.class, ApplicationConfiguration::deserialize);
 		Configuration.register("gitcraft_application_transient", TransientApplicationConfiguration.class, TransientApplicationConfiguration::deserialize);
+		SerializationHelper.registerTypeAdapter(VersionInfo.VersionArgumentWithRules.class, SerializationTypes.VersionArgumentWithRulesAdapter::new);
 		if (!GitCraftCli.handleCliArgs(args)) {
 			return false;
 		}

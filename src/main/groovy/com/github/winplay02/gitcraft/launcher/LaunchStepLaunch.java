@@ -131,8 +131,8 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 					extractions.put(artifact, library.extract());
 				}
 			}
-			if (library.rules() != null && library.downloads().classifiers() != null && library.natives() != null) {
-				boolean applicable = library.rules().stream().map(LauncherUtils::evaluateLauncherRuleFast).reduce(Boolean::logicalAnd).orElse(true);
+			if (library.downloads().classifiers() != null && library.natives() != null) {
+				boolean applicable = library.rules() != null ? library.rules().stream().map(LauncherUtils::evaluateLauncherRuleFast).reduce(Boolean::logicalAnd).orElse(true) : true;
 				if (applicable) {
 					ArtifactMetadata artifactMeta = library.downloads().classifiers().get(LauncherUtils.evaluateLauncherString(library.natives().get(LauncherUtils.getOperatingSystem()), args));
 					Artifact artifact = Artifact.fromURL(artifactMeta.url(), artifactMeta.sha1());

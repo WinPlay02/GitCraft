@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.pipeline;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.pipeline.key.ArtifactKey;
 import com.github.winplay02.gitcraft.pipeline.key.DirectoryKey;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
@@ -65,8 +66,8 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 		return (root, context, config) -> root.resolvePath(key, context, config, toResolve.apply(context, config));
 	}
 
-	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKeyWithConfig(StorageKey key, String pattern, FlavourMatcher... flavours) {
-		return (root, context, config) -> root.resolvePath(key, context, config, String.format(pattern, config.createArtifactComponentString(flavours)));
+	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKeyWithConfig(StorageKey key, String pattern, MinecraftJar dist, FlavourMatcher... flavours) {
+		return (root, context, config) -> root.resolvePath(key, context, config, String.format(pattern, config.createArtifactComponentString(dist, flavours)));
 	}
 
 	private static final String SIDE_CLIENT = "client";
@@ -179,11 +180,11 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 		),
 		Map.of(
 			ARTIFACTS, rootPathVersioned(PipelineFilesystemRoot::getMcVersionStore),
-			ARTIFACTS_CLIENT_JAR, createFromKey(ARTIFACTS, "client.jar"),
-			ARTIFACTS_SERVER_JAR, createFromKey(ARTIFACTS, "server.jar"),
-			ARTIFACTS_SERVER_EXE, createFromKey(ARTIFACTS, "server.exe"),
-			ARTIFACTS_SERVER_ZIP, createFromKey(ARTIFACTS, "server.zip"),
-			ARTIFACTS_MERGED_JAR, createFromKey(ARTIFACTS, "merged.jar"),
+			ARTIFACTS_CLIENT_JAR, createFromKeyWithConfig(ARTIFACTS, "client-%s.jar", MinecraftJar.CLIENT),
+			ARTIFACTS_SERVER_JAR, createFromKeyWithConfig(ARTIFACTS, "server-%s.jar", MinecraftJar.SERVER),
+			ARTIFACTS_SERVER_EXE, createFromKeyWithConfig(ARTIFACTS, "server-%s.exe", MinecraftJar.SERVER),
+			ARTIFACTS_SERVER_ZIP, createFromKeyWithConfig(ARTIFACTS, "server-%s.zip", MinecraftJar.SERVER),
+			ARTIFACTS_MERGED_JAR, createFromKeyWithConfig(ARTIFACTS, "merged-%s.jar", MinecraftJar.MERGED),
 			ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, createFromKey(ARTIFACTS, "vanilla_worldgen.zip")
 		),
 		Map.of(
@@ -191,8 +192,8 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			ASSETS_INDEX, rootPathConst(PipelineFilesystemRoot::getAssetsIndex),
 			ASSETS_OBJECTS, rootPathConst(PipelineFilesystemRoot::getAssetsObjects),
 			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, (context, config) -> context.targetVersion().assetsIndex().name()),
-			UNPACKED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unpacked.jar"),
-			UNBUNDLED_SERVER_JAR, createFromKey(ARTIFACTS, "server-unbundled.jar")
+			UNPACKED_SERVER_JAR, createFromKeyWithConfig(ARTIFACTS, "server-unpacked-%s.jar", MinecraftJar.SERVER),
+			UNBUNDLED_SERVER_JAR, createFromKeyWithConfig(ARTIFACTS, "server-unbundled-%s.jar", MinecraftJar.SERVER)
 		),
 		Map.of(
 			ARTIFACTS_DATAGEN, createFromKey(ARTIFACTS, "datagenerator"),
@@ -201,43 +202,43 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY, createFromKey(ARTIFACTS_DATAGEN, "output"),
 			TEMP_DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY, createFromKey(TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY, "data"),
 			TEMP_DATAGEN_REPORTS_DIRECTORY, createFromKey(ARTIFACTS_DATAGEN, "generated", "reports"),
-			DATAGEN_SNBT_ARCHIVE, createFromKey(ARTIFACTS, "datagen-snbt.jar"),
-			DATAGEN_REPORTS_ARCHIVE, createFromKey(ARTIFACTS, "datagen-reports.jar")
+			DATAGEN_SNBT_ARCHIVE, createFromKeyWithConfig(ARTIFACTS, "datagen-snbt-%s.jar", MinecraftJar.SERVER),
+			DATAGEN_REPORTS_ARCHIVE, createFromKeyWithConfig(ARTIFACTS, "datagen-reports-%s.jar", MinecraftJar.SERVER)
 		),
 		Map.of(
 			REMAPPED, rootPathVersioned(PipelineFilesystemRoot::getRemapped),
-			REMAPPED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-remapped-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
-			REMAPPED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-remapped-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
-			REMAPPED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-remapped-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING)
+			REMAPPED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-remapped-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
+			REMAPPED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-remapped-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
+			REMAPPED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-remapped-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING)
 		),
 		Map.of(
-			UNPICKED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-unpicked-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
-			UNPICKED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-unpicked-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
-			UNPICKED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-unpicked-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
+			UNPICKED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-unpicked-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
+			UNPICKED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-unpicked-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
+			UNPICKED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-unpicked-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
 			DECOMPILED, rootPathVersioned(PipelineFilesystemRoot::getDecompiled),
-			DECOMPILED_CLIENT_JAR, createFromKeyWithConfig(DECOMPILED, "client-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
-			DECOMPILED_SERVER_JAR, createFromKeyWithConfig(DECOMPILED, "server-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
-			DECOMPILED_MERGED_JAR, createFromKeyWithConfig(DECOMPILED, "merged-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
+			DECOMPILED_CLIENT_JAR, createFromKeyWithConfig(DECOMPILED, "client-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
+			DECOMPILED_SERVER_JAR, createFromKeyWithConfig(DECOMPILED, "server-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
+			DECOMPILED_MERGED_JAR, createFromKeyWithConfig(DECOMPILED, "merged-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
 		),
 		Map.of(
 			PATCHED, rootPathVersioned(PipelineFilesystemRoot::getPatchedStore),
-			LVT_PATCHED_CLIENT_JAR, createFromKey(PATCHED, "client-lvt.jar"),
-			LVT_PATCHED_SERVER_JAR, createFromKey(PATCHED, "server-lvt.jar"),
-			LVT_PATCHED_MERGED_JAR, createFromKey(PATCHED, "merged-lvt.jar"),
-			EXCEPTIONS_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-exc-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
-			EXCEPTIONS_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-exc-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
-			EXCEPTIONS_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-exc-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
-			SIGNATURES_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-sig-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES),
-			SIGNATURES_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-sig-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES),
-			SIGNATURES_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-sig-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES)
+			LVT_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-lvt-%s.jar", MinecraftJar.CLIENT),
+			LVT_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-lvt-%s.jar", MinecraftJar.SERVER),
+			LVT_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-lvt-%s.jar", MinecraftJar.MERGED),
+			EXCEPTIONS_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-exc-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
+			EXCEPTIONS_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-exc-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
+			EXCEPTIONS_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-exc-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS),
+			SIGNATURES_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-sig-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES),
+			SIGNATURES_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-sig-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES),
+			SIGNATURES_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-sig-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES)
 		),
 		Map.of(
-			NESTED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-nested-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
-			NESTED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-nested-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
-			NESTED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-nested-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
-			PREENED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
-			PREENED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
-			PREENED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-preened-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS)
+			NESTED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-nested-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			NESTED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-nested-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			NESTED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-nested-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			PREENED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-preened-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			PREENED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-preened-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS),
+			PREENED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-preened-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS)
 		),
 		Map.of(
 			LAUNCH_VERSIONS, rootPathVersioned(pipelineFsRoot -> pipelineFsRoot.getRuntimeDirectory().resolve("launch_versions")),
@@ -249,7 +250,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			LAUNCH_NATIVES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "natives")
 		),
 		Map.of(
-			LAUNCHABLE_CLIENT_JAR, createFromKeyWithConfig(LAUNCH_VERSIONS, "client-%s.jar", FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
+			LAUNCHABLE_CLIENT_JAR, createFromKeyWithConfig(LAUNCH_VERSIONS, "client-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
 		)
 	)
 	);

@@ -37,7 +37,7 @@ public record AssetsFetcher(StepWorker.Config config) implements StepWorker<Orde
 		statuses.add(ArtifactsFetcher.fetchArtifact(pipeline, context, this.config, context.targetVersion().assetsIndex(), PipelineFilesystemStorage.ASSETS_INDEX_JSON, "assets index"));
 		AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(assetsIndexPath), AssetsIndexMetadata.class));
 
-		int maxRunningTasks = 16;
+		int maxRunningTasks = 32;
 		statuses.addAll(
 			MiscHelper.runTasksInParallelAndAwaitResult(
 				maxRunningTasks,

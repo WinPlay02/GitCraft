@@ -190,13 +190,13 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		if (this.fallbackUnpickFlavours() != null && this.fallbackUnpickFlavours().length != 0) {
 			for (UnpickFlavour nextBestFallbackUnpick : this.fallbackUnpickFlavours()) {
 				if (nextBestFallbackUnpick.exists(mcVersion)) {
-					MiscHelper.println("WARNING: %s unpick information does not exist for %s. Falling back to %s", this.usedMapping(), mcVersion.launcherFriendlyVersionName(), nextBestFallbackUnpick);
+					MiscHelper.println("WARNING: %s unpick information does not exist for %s. Falling back to %s", this.usedUnpickFlavour(), mcVersion.launcherFriendlyVersionName(), nextBestFallbackUnpick);
 					return Optional.of(nextBestFallbackUnpick);
 				}
 			}
-			MiscHelper.panic("ERROR: %s unpick information does not exist for %s. All fallback options (%s) have been exhausted", this.usedMapping(), mcVersion.launcherFriendlyVersionName(), Arrays.stream(this.fallbackMappings()).map(Object::toString).collect(Collectors.joining(", ")));
+			MiscHelper.panic("ERROR: %s unpick information does not exist for %s. All fallback options (%s) have been exhausted", this.usedUnpickFlavour(), mcVersion.launcherFriendlyVersionName(), Arrays.stream(this.fallbackMappings()).map(Object::toString).collect(Collectors.joining(", ")));
 		} else {
-			MiscHelper.panic("ERROR: %s unpick information does not exist for %s. No fallback options were specified", this.usedMapping(), mcVersion.launcherFriendlyVersionName());
+			MiscHelper.panic("ERROR: %s unpick information does not exist for %s. No fallback options were specified", this.usedUnpickFlavour(), mcVersion.launcherFriendlyVersionName());
 		}
 		return Optional.empty();
 	}

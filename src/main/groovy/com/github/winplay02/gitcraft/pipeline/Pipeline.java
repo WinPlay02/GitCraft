@@ -5,6 +5,7 @@ import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.unpick.UnpickFlavour;
@@ -178,8 +179,23 @@ public class Pipeline<T extends AbstractVersion<T>> {
 			return this.versionedContexts().computeIfAbsent(version, minecraftVersion -> new StepWorker.Context<T>(repository, versionGraph, minecraftVersion, executorService));
 		}
 
+		private Map<MinecraftJar, String> createIdentifierMap(OrderedVersion version) {
+			Map<MinecraftJar, String> map = new HashMap<>();
+			if (version.hasClientCode()) {
+				map.put(MinecraftJar.CLIENT, version.clientJar().sha1sum().substring(0, 8));
+			}
+			if (version.hasServerCode()) {
+				map.put(MinecraftJar.SERVER, MiscHelper.coalesce(version.serverDist().serverJar(), version.serverDist().windowsServer(), version.serverDist().serverZip()).sha1sum().substring(0, 8));
+			}
+			if (version.hasClientCode() && version.hasServerCode()) {
+				map.put(MinecraftJar.MERGED, String.format("%s-%s", map.get(MinecraftJar.CLIENT), map.get(MinecraftJar.SERVER)));
+			}
+			return map;
+		}
+
 		private StepWorker.Config getConfig(T version) {
 			return this.versionedConfigs().computeIfAbsent(version, minecraftVersion -> new StepWorker.Config(
+				createIdentifierMap((OrderedVersion) minecraftVersion),
 				GitCraft.getApplicationConfiguration().getMappingsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(MappingFlavour.IDENTITY_UNMAPPED),
 				GitCraft.getApplicationConfiguration().getUnpickForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(UnpickFlavour.NONE),
 				GitCraft.getApplicationConfiguration().getExceptionsForMinecraftVersion((OrderedVersion) minecraftVersion).orElse(ExceptionsFlavour.NONE),

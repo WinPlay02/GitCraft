@@ -99,7 +99,7 @@ public record OrderedVersion(
 				}
 			}
 		}
-		String assetsIndexId = versionInfo.id() + "_" + versionInfo.assets();
+		String assetsIndexId = versionInfo.assetIndex() != null ? versionInfo.id() + "_" + versionInfo.assets() + "_" + versionInfo.assetIndex().sha1() : null;
 		Artifact assetsIndex = versionInfo.assetIndex() != null ? new Artifact(versionInfo.assetIndex().url(), assetsIndexId, versionInfo.assetIndex().sha1()) : null;
 		return new OrderedVersion(versionInfo, semanticVersion, clientJar, clientMappings, new ServerDistribution(serverJar, serverWindows, serverZip), serverMappings, libs, assetsIndex);
 	}

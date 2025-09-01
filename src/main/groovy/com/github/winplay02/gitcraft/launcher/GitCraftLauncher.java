@@ -10,7 +10,6 @@ import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
 import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
 import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 import com.github.winplay02.gitcraft.util.SerializationTypes;
 
@@ -32,14 +31,15 @@ public class GitCraftLauncher extends GitCraftApplication {
 		Configuration.register("gitcraft_application_transient", TransientApplicationConfiguration.class, TransientApplicationConfiguration::deserialize);
 		Configuration.register("gitcraft_launcher", LauncherConfig.class, LauncherConfig::deserialize);
 		SerializationHelper.registerTypeAdapter(VersionInfo.VersionArgumentWithRules.class, SerializationTypes.VersionArgumentWithRulesAdapter::new);
+		if (!GitCraftLauncherCli.handleCliArgs(args)) {
+			return false;
+		}
 		return true;
 	}
 
 	@Override
 	public void run() throws Exception {
 		versionGraph = doVersionGraphOperations(versionGraph);
-		OrderedVersion mc_version = versionGraph.getMinecraftVersionByName("1.1");
-		versionGraph = versionGraph.filterOnlyVersion(mc_version);
 		Pipeline.run(PipelineDescription.LAUNCH_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), null, versionGraph);
 	}
 }
