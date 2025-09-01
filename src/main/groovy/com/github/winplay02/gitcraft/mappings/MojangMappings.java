@@ -36,6 +36,11 @@ public class MojangMappings extends Mapping {
 	}
 
 	@Override
+	public boolean needsPackageFixingForLaunch() {
+		return false;
+	}
+
+	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
 		return mcVersion.hasClientMojMaps() || mcVersion.hasServerMojMaps();
 	}

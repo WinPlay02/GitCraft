@@ -42,6 +42,11 @@ public class MojangPlusYarnMappings extends Mapping {
 	}
 
 	@Override
+	public boolean needsPackageFixingForLaunch() {
+		return false;
+	}
+
+	@Override
 	public String getDestinationNS() {
 		return MappingsNamespace.NAMED.toString();
 	}

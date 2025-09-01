@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-import com.github.winplay02.gitcraft.launcher.LaunchStepCopyStrippedResources;
+import com.github.winplay02.gitcraft.launcher.LaunchPrepareLaunchableFile;
 import com.github.winplay02.gitcraft.launcher.LaunchStepHardlinkAssets;
 import com.github.winplay02.gitcraft.launcher.LaunchStepLaunch;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsFetcher;
@@ -54,7 +54,7 @@ public enum Step {
 	COMMIT("Commit to repository", Committer::new),
 	REPO_GARBAGE_COLLECTOR("GC repository", RepoGarbageCollector::new),
 	LAUNCH_PREPARE_HARDLINK_ASSETS("Hardlink Assets to Launch Environment", LaunchStepHardlinkAssets::new),
-	LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR("Copy stripped resources to construct a launchable file", LaunchStepCopyStrippedResources::new),
+	LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE("Construct a launchable file", LaunchPrepareLaunchableFile::new),
 	LAUNCH_CLIENT("Launch Client", LaunchStepLaunch::new);
 
 	private final String name;

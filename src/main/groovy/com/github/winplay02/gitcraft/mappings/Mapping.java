@@ -28,6 +28,10 @@ public abstract class Mapping {
 		return false;
 	}
 
+	public boolean needsPackageFixingForLaunch() {
+		return true;
+	}
+
 	public boolean supportsConstantUnpicking() {
 		return false;
 	}

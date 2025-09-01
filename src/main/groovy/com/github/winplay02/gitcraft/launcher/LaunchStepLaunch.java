@@ -11,9 +11,11 @@ import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.unpick.Unpick;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import groovy.lang.Tuple2;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -22,18 +24,25 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<OrderedVersion, LaunchStepLaunch.Inputs> {
+
+	protected static final Artifact launchWrapper = new Artifact("https://libraries.minecraft.net/net/minecraft/launchwrapper/1.5/launchwrapper-1.5.jar", "launchwrapper-1.5.jar", "5150b9c2951f0fde987ce9c33496e26add1de224");
+
+	protected static final String LEGACY_MAIN_CLASS = "net.minecraft.launchwrapper.Launch";
 
 	protected static List<VersionInfo.VersionArgumentWithRules> DEFAULT_JVM_ARGS = List.of(
 		new VersionInfo.VersionArgumentWithRules(
@@ -148,12 +157,46 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 			Files.createDirectories(nativesPath);
 		}
 		Path gamePath = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_GAME));
+		// Options fixing; otherwise legacy versions may crash because said languages cannot be found
+		{
+			Path optionsPath = gamePath.resolve("options.txt");
+			Pattern languagePattern = Pattern.compile("^lang:[a-z]{2}_(?<country>[A-Za-z]{2})$");
+			if (Files.exists(optionsPath)) {
+				List<String> options = Files.readAllLines(optionsPath).stream()
+					.map(option -> {
+						if (option.startsWith("lang:")) {
+							Matcher matcher = languagePattern.matcher(option);
+							if (matcher.find()) {
+								return option.substring(0, matcher.start("country")) + matcher.group("country").toUpperCase(Locale.ROOT) + option.substring(matcher.end("country"));
+							}
+							return "lang:en_US";
+						} else {
+							return option;
+						}
+					}).toList();
+				Files.writeString(optionsPath, String.join("\n", options), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+			}
+		}
 		Path librariesPath = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
 		Path clientPath = pipeline.getStoragePath(input.clientJar().orElse(null), context, this.config);
 		// Classpath
 		Tuple2<List<Artifact>, Map<Artifact, LibraryMetadata.Extract>> libraries = getLibrariesNeededForLaunch(context.targetVersion().versionInfo(), Map.of("arch", LauncherUtils.getShortArch()));
 		List<Path> classpath = libraries.getV1().stream().map(artifact -> artifact.resolve(librariesPath)).collect(Collectors.toList());
 		Map<Path, LibraryMetadata.Extract> extractInfo = libraries.getV2().entrySet().stream().map(entry -> Map.entry(entry.getKey().resolve(librariesPath), entry.getValue())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		// Unpick
+		{
+			Unpick.UnpickContext unpickCtx = config.unpickFlavour().getContext(context.targetVersion(), MinecraftJar.CLIENT);
+			if (unpickCtx != null && unpickCtx.unpickConstants() != null && Files.exists(unpickCtx.unpickConstants())) {
+				classpath.add(unpickCtx.unpickConstants());
+			}
+		}
+		// LaunchWrapper
+		{
+			if (LEGACY_MAIN_CLASS.equals(context.targetVersion().mainClass()) && classpath.stream().map(Path::getFileName).map(Object::toString).filter(s -> s.endsWith("launchwrapper-1.5.jar")).findAny().isEmpty()) {
+				launchWrapper.fetchArtifact(context.executorService(), librariesPath);
+				classpath.add(launchWrapper.resolve(librariesPath));
+			}
+		}
 		classpath.add(clientPath);
 		// Args
 		Map<String, String> args = new HashMap<>();
@@ -165,7 +208,7 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 		args.put("game_directory", gamePath.toAbsolutePath().toString());
 		args.put("assets_root", assetsPath.toAbsolutePath().toString());
 		args.put("assets_index_name", context.targetVersion().assetsIndex().name());
-		args.put("auth_uuid", UUID.randomUUID().toString()); // TODO UUID?
+		args.put("auth_uuid", GitCraftLauncher.getLauncherConfig().uuid().toString()); // TODO UUID?
 		args.put("auth_access_token", "none"); // TODO access token
 		args.put("user_type", "legacy");
 		args.put("version_type", context.targetVersion().versionInfo().type());
@@ -208,6 +251,17 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 				context.targetVersion().versionInfo().arguments().jvm() : DEFAULT_JVM_ARGS,
 			args, os, arch);
 		List<String> cmdArgs = new ArrayList<>(jvmArgs);
+		// cmdArgs.addAll(List.of("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:50056"));
+		if (LEGACY_MAIN_CLASS.equals(context.targetVersion().mainClass())) {
+			String agentJar = System.getenv("GITCRAFT_LAUNCH_AGENT");
+			if (agentJar == null || agentJar.isEmpty() || !Files.exists(Path.of(agentJar)) || !Files.isRegularFile(Path.of(agentJar))) {
+				MiscHelper.panic("Cannot launch legacy version (that needs the launch wrapper) without the gitcraft agent. Please set the environment variable 'GITCRAFT_LAUNCH_AGENT' to point to the gitcraft agent.");
+			}
+			MiscHelper.println("Using gitcraft launch agent for legacy launching: %s", agentJar);
+			cmdArgs.addAll(List.of(String.format("-javaagent:%s", agentJar)));
+			cmdArgs.addAll(List.of("--add-opens", "java.base/jdk.internal.loader=ALL-UNNAMED"));
+		}
+		cmdArgs.addAll(List.of("--enable-native-access=ALL-UNNAMED"));
 		// Main Class
 		cmdArgs.add(context.targetVersion().mainClass());
 		// Program Args

@@ -50,6 +50,10 @@ public enum MappingFlavour {
 		return impl.get().supportsComments();
 	}
 
+	public boolean needsPackageFixingForLaunch() {
+		return impl.get().needsPackageFixingForLaunch();
+	}
+
 	public boolean supportsConstantUnpicking() {
 		return impl.get().supportsConstantUnpicking();
 	}

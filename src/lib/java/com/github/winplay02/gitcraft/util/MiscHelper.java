@@ -4,14 +4,13 @@ import com.github.winplay02.gitcraft.Library;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +66,31 @@ public class MiscHelper {
 					Files.createDirectories(resultPath);
 				} else if (Files.isRegularFile(path)) {
 					Files.copy(path, resultPath, StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public interface PathContentTransformer {
+		boolean shouldTransform(Path path);
+
+		byte[] transform(Path path, byte[] content) throws IOException;
+	}
+
+	public static void copyLargeDir(Path source, Path target, PathContentTransformer contentTransformer) {
+		try (Stream<Path> walk = Files.walk(source)) {
+			for (Path path : (Iterable<? extends Path>) walk::iterator) {
+				Path resultPath = target.resolve(source.relativize(path).toString());
+				if (Files.isDirectory(path) && Files.notExists(resultPath)) {
+					Files.createDirectories(resultPath);
+				} else if (Files.isRegularFile(path)) {
+					if (contentTransformer.shouldTransform(path)) {
+						Files.write(resultPath, contentTransformer.transform(path, Files.readAllBytes(path)), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+					} else {
+						Files.copy(path, resultPath, StandardCopyOption.REPLACE_EXISTING);
+					}
 				}
 			}
 		} catch (IOException e) {

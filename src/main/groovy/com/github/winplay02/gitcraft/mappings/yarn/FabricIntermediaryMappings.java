@@ -36,6 +36,11 @@ public class FabricIntermediaryMappings extends Mapping {
 	}
 
 	@Override
+	public boolean needsPackageFixingForLaunch() {
+		return false;
+	}
+
+	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
 		if (GitCraftQuirks.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
 			return false;

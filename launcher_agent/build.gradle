@@ -4,11 +4,16 @@ plugins {
 
 jar {
 	manifest {
-		attributes {
-			"Premain-Class": "com.github.winplay02.gitcraft.launchagent.GitCraftLauncherAgent"
-		}
+		attributes ("Premain-Class": "com.github.winplay02.gitcraft.launchagent.GitCraftAgent")
 	}
 	metadataCharset = "UTF-8"
 	preserveFileTimestamps = false
 	reproducibleFileOrder = true
+	from {
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
 }
+
+jar.dependsOn(configurations.runtimeClasspath)
+
+dependencies {}

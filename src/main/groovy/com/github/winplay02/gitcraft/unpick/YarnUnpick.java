@@ -82,14 +82,14 @@ public class YarnUnpick implements Unpick {
 
 	@Override
 	public UnpickContext getContext(OrderedVersion targetVersion, MinecraftJar minecraftJar) throws IOException {
-		if (minecraftJar == MinecraftJar.MERGED) {
-			Path unpickConstants = isUnpickConstantsJarUsed(targetVersion) ? getUnpickConstantsPath(targetVersion) : null;
-			Path unpickDefinitions = getUnpickDefinitionsPath(targetVersion);
-			Path unpickDescription = getUnpickDescriptionPath(targetVersion);
-			if ((!isUnpickConstantsJarUsed(targetVersion) || Files.exists(unpickConstants)) && Files.exists(unpickDefinitions) && Files.exists(unpickDescription)) {
-				return new UnpickContext(unpickConstants, unpickDefinitions, unpickDescription);
-			}
+		// if (minecraftJar == MinecraftJar.MERGED) { // ignore jar configuration, just always use merged
+		Path unpickConstants = isUnpickConstantsJarUsed(targetVersion) ? getUnpickConstantsPath(targetVersion) : null;
+		Path unpickDefinitions = getUnpickDefinitionsPath(targetVersion);
+		Path unpickDescription = getUnpickDescriptionPath(targetVersion);
+		if ((!isUnpickConstantsJarUsed(targetVersion) || Files.exists(unpickConstants)) && Files.exists(unpickDefinitions) && Files.exists(unpickDescription)) {
+			return new UnpickContext(unpickConstants, unpickDefinitions, unpickDescription);
 		}
+		// }
 		return null;
 	}
 

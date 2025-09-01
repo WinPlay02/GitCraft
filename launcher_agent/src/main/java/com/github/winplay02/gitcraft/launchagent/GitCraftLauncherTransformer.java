@@ -4,7 +4,6 @@ import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.CodeTransform;
-import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.instrument.ClassFileTransformer;
@@ -24,10 +23,8 @@ public class GitCraftLauncherTransformer implements ClassFileTransformer {
 
 	@Override
 	public byte[] transform(ClassLoader loader, String fullyQualifiedClassName, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-		String className = fullyQualifiedClassName.replaceAll(".*/", "");
-		String packageName = fullyQualifiedClassName.replaceAll("/[a-zA-Z$0-9_]*$", "");
 		if (transformations.containsKey(fullyQualifiedClassName)) {
-			System.out.println(String.format("Transforming %s (package %s)",  className, packageName));
+			System.out.printf("[GitCraft Agent]: Transforming %s%n",  fullyQualifiedClassName);
 			return transformations.get(fullyQualifiedClassName).apply(classfileBuffer);
 		}
 		return null;
@@ -59,27 +56,19 @@ public class GitCraftLauncherTransformer implements ClassFileTransformer {
 			builder.ldc(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"));
 			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/invoke/MethodHandles$Lookup"), "findVarHandle", MethodTypeDesc.ofDescriptor("(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/invoke/VarHandle;"));
 			builder.astore(2);
-			// create access array
-			builder.iconst_1();
-			builder.anewarray(ClassDesc.ofInternalName("java/lang/Object"));
-			builder.dup();
-			builder.iconst_0();
-			builder.aload(1);
-			builder.arrayStore(TypeKind.REFERENCE);
-			builder.astore(3);
 			// access field
 			builder.aload(2);
-			builder.aload(3);
-			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/invoke/VarHandle"), "get", MethodTypeDesc.ofDescriptor("([Ljava/lang/Object;)Ljava/lang/Object;"));
-			builder.checkcast(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"));
-			builder.astore(4);
+			builder.aload(1);
+			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/invoke/VarHandle"), "get", MethodTypeDesc.ofDescriptor("(Ljdk/internal/loader/BuiltinClassLoader;)Ljdk/internal/loader/URLClassPath;"));
+			// builder.checkcast(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"));
+			builder.astore(3);
 			// access URLs
-			builder.aload(4);
+			builder.aload(3);
 			builder.invokevirtual(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"), "getURLs", MethodTypeDesc.ofDescriptor("()[Ljava/net/URL;"));
-			builder.astore(5);
+			builder.astore(4);
 			builder.new_(ClassDesc.ofInternalName("net/minecraft/launchwrapper/LaunchClassLoader"));
 			builder.dup();
-			builder.aload(5);
+			builder.aload(4);
 			builder.invokespecial(ClassDesc.ofInternalName("net/minecraft/launchwrapper/LaunchClassLoader"), "<init>", MethodTypeDesc.ofDescriptor("([Ljava/net/URL;)V"));
 			builder.putstatic(ClassDesc.ofInternalName("net/minecraft/launchwrapper/Launch"), "classLoader", ClassDesc.ofInternalName("net/minecraft/launchwrapper/LaunchClassLoader"));
 			builder.return_();

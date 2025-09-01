@@ -2,7 +2,7 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
-import com.github.winplay02.gitcraft.launcher.LaunchStepCopyStrippedResources;
+import com.github.winplay02.gitcraft.launcher.LaunchPrepareLaunchableFile;
 import com.github.winplay02.gitcraft.launcher.LaunchStepLaunch;
 import com.github.winplay02.gitcraft.pipeline.workers.ArtifactsUnpacker;
 import com.github.winplay02.gitcraft.pipeline.workers.Committer;
@@ -206,25 +206,62 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			Step.FETCH_ASSETS,
 			Step.LAUNCH_PREPARE_HARDLINK_ASSETS,
 			Step.PROVIDE_MAPPINGS,
+			Step.PROVIDE_UNPICK,
+			Step.PROVIDE_EXCEPTIONS,
+			Step.PROVIDE_SIGNATURES,
+			Step.PATCH_LOCAL_VARIABLE_TABLES,
+			Step.APPLY_EXCEPTIONS,
+			Step.APPLY_SIGNATURES,
 			Step.REMAP_JARS,
-			Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR,
+			Step.UNPICK_JARS,
+			Step.PROVIDE_NESTS,
+			Step.APPLY_NESTS,
+			Step.PREEN_JARS,
+			Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE,
 			Step.LAUNCH_CLIENT
 		),
-		Map.of(
-			Step.FETCH_ARTIFACTS, EMPTY_INPUT_PROVIDER,
-			Step.FETCH_LIBRARIES, EMPTY_INPUT_PROVIDER,
-			Step.FETCH_ASSETS, EMPTY_INPUT_PROVIDER,
-			Step.LAUNCH_PREPARE_HARDLINK_ASSETS, EMPTY_INPUT_PROVIDER,
-			Step.PROVIDE_MAPPINGS, EMPTY_INPUT_PROVIDER,
-			Step.REMAP_JARS, (storage, results) -> new Remapper.Inputs(Optional.empty(), results.getKeyByPriority(ARTIFACTS_CLIENT_JAR), Optional.empty()),
-			Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR, (storage, results) -> new LaunchStepCopyStrippedResources.Inputs(results.getKeyByPriority(REMAPPED_CLIENT_JAR)),
-			Step.LAUNCH_CLIENT, (storage, results) -> new LaunchStepLaunch.Inputs(results.getKeyByPriority(LAUNCHABLE_CLIENT_JAR, ARTIFACTS_CLIENT_JAR))
+		MiscHelper.mergeMaps(
+			new HashMap<>(),
+			Map.of(
+				Step.FETCH_ARTIFACTS, EMPTY_INPUT_PROVIDER,
+				Step.FETCH_LIBRARIES, EMPTY_INPUT_PROVIDER,
+				Step.FETCH_ASSETS, EMPTY_INPUT_PROVIDER,
+				Step.LAUNCH_PREPARE_HARDLINK_ASSETS, EMPTY_INPUT_PROVIDER,
+				Step.PROVIDE_MAPPINGS, EMPTY_INPUT_PROVIDER,
+				Step.PROVIDE_UNPICK, EMPTY_INPUT_PROVIDER,
+				Step.PROVIDE_EXCEPTIONS, EMPTY_INPUT_PROVIDER,
+				Step.PROVIDE_SIGNATURES, EMPTY_INPUT_PROVIDER
+			),
+			Map.of(
+				Step.PATCH_LOCAL_VARIABLE_TABLES, (storage, results) -> new LvtPatcher.Inputs(Optional.empty(), results.getKeyIfExists(ARTIFACTS_CLIENT_JAR), Optional.empty()),
+				Step.APPLY_EXCEPTIONS, (storage, results) -> new JarsExceptor.Inputs(Optional.empty(), results.getKeyByPriority(LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), Optional.empty()),
+				Step.APPLY_SIGNATURES, (storage, results) -> new JarsSignatureChanger.Inputs(Optional.empty(), results.getKeyByPriority(EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), Optional.empty()),
+				Step.REMAP_JARS, (storage, results) -> new Remapper.Inputs(Optional.empty(), results.getKeyByPriority(SIGNATURES_PATCHED_CLIENT_JAR, EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR, ARTIFACTS_CLIENT_JAR), Optional.empty()),
+				Step.UNPICK_JARS, (storage, results) -> new Unpicker.Inputs(Optional.empty(), results.getKeyIfExists(REMAPPED_CLIENT_JAR), Optional.empty()),
+				Step.PROVIDE_NESTS, EMPTY_INPUT_PROVIDER,
+				Step.APPLY_NESTS, (storage, results) -> new JarsNester.Inputs(Optional.empty(), results.getKeyByPriority(UNPICKED_CLIENT_JAR, REMAPPED_CLIENT_JAR), Optional.empty()),
+				Step.PREEN_JARS, (storage, results) -> new Preener.Inputs(Optional.empty(), results.getKeyByPriority(NESTED_CLIENT_JAR, UNPICKED_CLIENT_JAR, REMAPPED_CLIENT_JAR), Optional.empty()),
+				Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, (storage, results) -> new LaunchPrepareLaunchableFile.Inputs(results.getKeyByPriority(PREENED_CLIENT_JAR, NESTED_CLIENT_JAR, UNPICKED_CLIENT_JAR, REMAPPED_CLIENT_JAR, SIGNATURES_PATCHED_CLIENT_JAR, EXCEPTIONS_PATCHED_CLIENT_JAR, LVT_PATCHED_CLIENT_JAR)),
+				Step.LAUNCH_CLIENT, (storage, results) -> new LaunchStepLaunch.Inputs(results.getKeyByPriority(LAUNCHABLE_CLIENT_JAR, ARTIFACTS_CLIENT_JAR))
+			)
 		),
-		Map.of(
-			Step.LAUNCH_PREPARE_HARDLINK_ASSETS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
-			Step.REMAP_JARS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS, Step.FETCH_ARTIFACTS),
-			Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR, StepDependency.ofIntraVersion(Set.of(), Set.of(Step.REMAP_JARS)),
-			Step.LAUNCH_CLIENT, StepDependency.ofIntraVersion(Set.of(Step.LAUNCH_PREPARE_COPY_STRIPPED_RESOURCES_TO_JAR, Step.LAUNCH_PREPARE_HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS), Set.of(Step.REMAP_JARS))
+		MiscHelper.mergeMaps(
+			new HashMap<>(),
+			Map.of(
+				Step.LAUNCH_PREPARE_HARDLINK_ASSETS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
+				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES),
+				Step.APPLY_EXCEPTIONS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES)),
+				Step.APPLY_SIGNATURES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS)),
+				Step.REMAP_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES))
+			),
+			Map.of(
+				Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_UNPICK, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
+				Step.PROVIDE_NESTS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
+				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.UNPICK_JARS)),
+				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.UNPICK_JARS, Step.APPLY_NESTS)),
+				Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, StepDependency.ofIntraVersion(Set.of(), Set.of(Step.PREEN_JARS, Step.APPLY_NESTS, Step.UNPICK_JARS, Step.REMAP_JARS, Step.APPLY_SIGNATURES, Step.APPLY_EXCEPTIONS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
+				Step.LAUNCH_CLIENT, StepDependency.ofIntraVersion(Set.of(Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, Step.LAUNCH_PREPARE_HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS), Set.of(Step.PREEN_JARS, Step.APPLY_NESTS, Step.UNPICK_JARS, Step.REMAP_JARS, Step.APPLY_SIGNATURES, Step.APPLY_EXCEPTIONS, Step.PATCH_LOCAL_VARIABLE_TABLES))
+			)
 		),
 		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
 	);
