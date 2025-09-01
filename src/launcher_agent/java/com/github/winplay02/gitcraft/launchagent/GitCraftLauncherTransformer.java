@@ -4,6 +4,7 @@ import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.CodeTransform;
+import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.instrument.ClassFileTransformer;
@@ -49,29 +50,36 @@ public class GitCraftLauncherTransformer implements ClassFileTransformer {
 			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/Class"), "getClassLoader", MethodTypeDesc.ofDescriptor("()Ljava/lang/ClassLoader;"));
 			builder.checkcast(ClassDesc.ofInternalName("jdk/internal/loader/BuiltinClassLoader"));
 			builder.astore(1);
-			// find field with reflection
-			builder.aload(1);
-			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/Object"), "getClass", MethodTypeDesc.ofDescriptor("()Ljava/lang/Class;"));
+			// find field using methodhandles
+			builder.ldc(ClassDesc.ofInternalName("jdk/internal/loader/BuiltinClassLoader"));
+			builder.invokestatic(ClassDesc.ofInternalName("java/lang/invoke/MethodHandles"), "lookup", MethodTypeDesc.ofDescriptor("()Ljava/lang/invoke/MethodHandles$Lookup;"));
+			builder.invokestatic(ClassDesc.ofInternalName("java/lang/invoke/MethodHandles"), "privateLookupIn", MethodTypeDesc.ofDescriptor("(Ljava/lang/Class;Ljava/lang/invoke/MethodHandles$Lookup;)Ljava/lang/invoke/MethodHandles$Lookup;"));
+			builder.ldc(ClassDesc.ofInternalName("jdk/internal/loader/BuiltinClassLoader"));
 			builder.ldc("ucp");
-			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/Class"), "getDeclaredField", MethodTypeDesc.ofDescriptor("(Ljava/lang/String;)Ljava/lang/reflect/Field;"));
+			builder.ldc(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"));
+			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/invoke/MethodHandles$Lookup"), "findVarHandle", MethodTypeDesc.ofDescriptor("(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/invoke/VarHandle;"));
 			builder.astore(2);
-			// make field accessible
-			builder.aload(2);
-			builder.loadConstant(1);
-			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/reflect/Field"), "setAccessible", MethodTypeDesc.ofDescriptor("(Z)V"));
+			// create access array
+			builder.iconst_1();
+			builder.anewarray(ClassDesc.ofInternalName("java/lang/Object"));
+			builder.dup();
+			builder.iconst_0();
+			builder.aload(1);
+			builder.arrayStore(TypeKind.REFERENCE);
+			builder.astore(3);
 			// access field
 			builder.aload(2);
-			builder.aload(1);
-			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/reflect/Field"), "get", MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"));
-			builder.checkcast(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"));
-			builder.astore(3);
-			// access URLs
 			builder.aload(3);
-			builder.invokevirtual(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"), "getURLs", MethodTypeDesc.ofDescriptor("()[Ljava/net/URL;"));
+			builder.invokevirtual(ClassDesc.ofInternalName("java/lang/invoke/VarHandle"), "get", MethodTypeDesc.ofDescriptor("([Ljava/lang/Object;)Ljava/lang/Object;"));
+			builder.checkcast(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"));
 			builder.astore(4);
+			// access URLs
+			builder.aload(4);
+			builder.invokevirtual(ClassDesc.ofInternalName("jdk/internal/loader/URLClassPath"), "getURLs", MethodTypeDesc.ofDescriptor("()[Ljava/net/URL;"));
+			builder.astore(5);
 			builder.new_(ClassDesc.ofInternalName("net/minecraft/launchwrapper/LaunchClassLoader"));
 			builder.dup();
-			builder.aload(4);
+			builder.aload(5);
 			builder.invokespecial(ClassDesc.ofInternalName("net/minecraft/launchwrapper/LaunchClassLoader"), "<init>", MethodTypeDesc.ofDescriptor("([Ljava/net/URL;)V"));
 			builder.putstatic(ClassDesc.ofInternalName("net/minecraft/launchwrapper/Launch"), "classLoader", ClassDesc.ofInternalName("net/minecraft/launchwrapper/LaunchClassLoader"));
 			builder.return_();
