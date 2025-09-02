@@ -72,6 +72,7 @@ class GitCraftCli {
 		cli_args._(longOpt: 'create-stable-version-branches', 'Creates a separate branch for each stable linear version. This may be useful for quickly switching between multiple versions.')
 		cli_args._(longOpt: 'sort-json', 'Sorts JSON objects contained in JSON files (e.g. models, language files, ...) in natural order. This is disabled by default as it modifies original data.')
 		cli_args._(longOpt: 'manifest-source', "Specifies the manifest source used to fetch the available versions, the mapping to semantic versions and the dependencies between versions. The Minecraft Launcher Meta (from Mojang) is selected by default. Possible values are: ${Arrays.stream(ManifestSource.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: ManifestSource, argName: "manifestsrc", defaultValue: "mojang");
+		cli_args._(longOpt: 'repo-gc', 'Perform a garbage collection pass on the repository after the run. This will probably speed up any subsequent operation on the repo (e.g. viewing diffs).')
 		cli_args.h(longOpt: 'help', 'Displays this help screen');
 		return cli_args;
 	}
@@ -116,13 +117,14 @@ class GitCraftCli {
 		// Repository
 		boolean createVersionBranches = cli_args_parsed.hasOption("create-version-branches");
 		boolean createStableVersionBranches = cli_args_parsed.hasOption("create-stable-version-branches");
+		boolean repoGc = cli_args_parsed.hasOption("repo-gc");
 		Configuration.editConfiguration(RepositoryConfiguration.class, (original) -> new RepositoryConfiguration(
 			original.gitUser(),
 			original.gitMail(),
 			original.gitMainlineLinearBranch(),
 			original.createVersionBranches() || createVersionBranches,
 			original.createStableVersionBranches() || createStableVersionBranches,
-			original.gcAfterRun()
+			original.gcAfterRun() || repoGc
 		));
 
 		// Application

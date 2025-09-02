@@ -14,6 +14,11 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 - [A11v1r15](https://github.com/A11v1r15)
 - [SpaceWalkerRS](https://github.com/SpaceWalkerRS)
 
+## Discussion
+
+- [Discord](https://discord.gg/bK7MFZAbXj)
+- [Changelog](changelog.md)
+
 ## General
 
 Generates a Git repository of decompiled Minecraft. For personal use only. Do not share or upload the resulting repository.
@@ -186,6 +191,10 @@ Options:
                              Restricts the refreshed versions to the ones
                                provided. This options will cause the git
                                repository to refresh.
+      --repo-gc              Perform a garbage collection pass on the
+                               repository after the run. This will probably
+                               speed up any subsequent operation on the repo (e.
+                               g. viewing diffs).
       --signatures=<signatures>
                              Specifies the signatures patches used to patch
                                generics into class, field, and method
