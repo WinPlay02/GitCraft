@@ -49,7 +49,7 @@ public class GitCraftTest {
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
 			RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryGitHub(executor, "WinPlay02/GitCraft", "master", "settings.gradle", new FileSystemNetworkManager.LocalFileInfo(LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve("settings.gradle"), null, null, "testing file", "settings"));
 		}
-		assertTrue(Library.IA_SHA1.fileMatchesChecksum(LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve("settings.gradle"), "7c24c3faf018f76b636e9b7263added23beae48a"));
+		assertTrue(Library.IA_SHA1.fileMatchesChecksum(LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve("settings.gradle"), "b07625411efd4329f9f639bfca2068f92997d1b3"));
 	}
 
 	@Test
