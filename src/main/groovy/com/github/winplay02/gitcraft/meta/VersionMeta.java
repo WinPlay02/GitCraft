@@ -1,18 +1,23 @@
 package com.github.winplay02.gitcraft.meta;
 
-import java.util.List;
+public interface VersionMeta<M extends VersionMeta<M>> extends Comparable<M> {
 
-public record VersionMeta(ArtifactMeta assetIndex, String assets, VersionDownloadsMeta downloads, String id,
-						  JavaVersionMeta javaVersion, List<LibraryMeta> libraries, String mainClass,
-						  String releaseTime, String time, String type) {
-
-	public record VersionDownloadsMeta(ArtifactMeta client, ArtifactMeta client_mappings, ArtifactMeta server,
-									   ArtifactMeta server_mappings) {
-
+	default String makeJarMavenUrl(String mavenUrl) {
+		return makeMavenUrl(mavenUrl, ".jar");
 	}
 
-	public record JavaVersionMeta(int majorVersion) {
-
+	default String makeV2JarMavenUrl(String mavenUrl) {
+		return makeMavenUrl(mavenUrl, "-v2.jar");
 	}
+
+	default String makeMergedV2JarMavenUrl(String mavenUrl) {
+		return makeMavenUrl(mavenUrl, "-mergedv2.jar");
+	}
+
+	default String makeConstantsJarMavenUrl(String mavenUrl) {
+		return makeMavenUrl(mavenUrl, "-constants.jar");
+	}
+
+	String makeMavenUrl(String baseUrl, String ext);
+
 }
-

@@ -3,6 +3,7 @@ artifact-store/
 minecraft\-repo*/
 minecraft\-repo*/**
 remote-cache/
+config.json
 
 # Gradle
 .gradle/

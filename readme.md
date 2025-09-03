@@ -14,6 +14,11 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 - [A11v1r15](https://github.com/A11v1r15)
 - [SpaceWalkerRS](https://github.com/SpaceWalkerRS)
 
+## Discussion
+
+- [Discord](https://discord.gg/bK7MFZAbXj)
+- [Changelog](changelog.md)
+
 ## General
 
 Generates a Git repository of decompiled Minecraft. For personal use only. Do not share or upload the resulting repository.
@@ -38,6 +43,9 @@ To disable special versions (e.g. april fools or combat snapshots), specify `--s
 To disable either snapshots or stable releases, use either `--only-stable` or `--only-snapshot`.
 
 To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `mojmap_parchment`, `fabric_intermediary` and `yarn`.
+The combination of mojmaps and yarn mappings `mojmap_yarn` (like used in Paper) is also available, which uses mojmaps as a base and includes comments and additionally function parameter names from yarn.
+For legacy versions, there are {`calamus_intermediary`, `feather`} mappings from OrnitheMC.
+For just comparing changes without using mappings, `identity_unmapped` can be used.
 
 Fallback mappings can be used with `--fallback-mappings`. For example `mojmap` could be used as a fallback to a `mojmap_parchment` mapping, as not every version of minecraft is available.
 
@@ -54,20 +62,27 @@ Powered by:
 - [Yarn](https://github.com/FabricMC/yarn)
 - [Fabric Intermediary Mappings](https://github.com/FabricMC/intermediary)
 - [Parchment](https://github.com/ParchmentMC/Parchment)
+- [Skyrising Minecraft Version Manifest Collection](https://skyrising.github.io/mc-versions)
+- {Libraries, Tools, Mappings} of [OrnitheMC](https://github.com/OrnitheMC)
 
 ## Help / Usage
 
 ```
 Usage: gradlew run --args="[Options]"
 Options:
+      --create-stable-version-branches
+                             Creates a separate branch for each stable linear
+                               version. This may be useful for quickly
+                               switching between multiple versions.
       --create-version-branches
                              Creates a separate branch for each version,
                                including linear versions. This may be useful
                                for quickly switching between multiple versions.
-      --create-stable-version-branches
-                             Creates a separate branch for each stable linear 
-                               versions. This may be useful for quickly switching
-                               between multiple versions.
+      --exceptions=<exceptions>
+                             Specifies the exceptions patches used to patch
+                               throws clauses into method declarations. None is
+                               selected by default. Possible values are: raven,
+                               none
       --exclude-version[=<version>[,<version>]...]
                              Specify version(s) to exclude from decompilation.
                                The exclusion info will be added to the
@@ -77,12 +92,28 @@ Options:
                              If the primary mapping fails, these mappings are
                                tried (in given order). By default none is tried
                                as a fallback. Possible values are: mojmap,
-                               fabric_intermediary, yarn, mojmap_parchment
+                               fabric_intermediary, yarn, mojmap_parchment,
+                               calamus_intermediary, feather,
+                               identity_unmapped, mojmap_yarn
+      --fallback-unpick[=<mapping>[,<mapping>]...]
+                             If the primary unpick information fails, these are
+                               tried (in given order). By default none is tried
+                               as a fallback. Possible values are: none, yarn,
+                               feather
   -h, --help                 Displays this help screen
+      --manifest-source=<manifestsrc>
+                             Specifies the manifest source used to fetch the
+                               available versions, the mapping to semantic
+                               versions and the dependencies between versions.
+                               The Minecraft Launcher Meta (from Mojang) is
+                               selected by default. Possible values are:
+                               mojang, skyrising, ornithemc, mojang_historic
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
-                               fabric_intermediary, yarn, mojmap_parchment
+                               fabric_intermediary, yarn, mojmap_parchment,
+                               calamus_intermediary, feather,
+                               identity_unmapped, mojmap_yarn
       --max-version=<version>
                              Specify the max. version to decompile. Every
                                version before (and including) the specified
@@ -98,6 +129,9 @@ Options:
                                separate branches. The repository will be stored
                                in minecraft-repo-min-<version>. The normal
                                repository will not be touched.
+      --nests=<nests>        Specifies the nests used to patch inner classes.
+                               None is selected by default. Possible values
+                               are: ornithe_nests, none
       --no-assets            Disables assets versioning (includes external
                                assets)
       --no-datagen-report    Disables datagen for versioning reports (like
@@ -123,6 +157,9 @@ Options:
                                normal repository will not be touched.
                                --only-version will take precedence over
                                --min-version.
+      --ornithe-intermediary-generation=<generation>
+                             Specifies which generation of Ornithe intermediary
+                               to use for Ornithe's mapping flavours
       --override-repo-target=<path>
                              Changes the location of the target repository, as
                                repo names may get quite long and unintuitive.
@@ -130,6 +167,10 @@ Options:
                                repositories with unwanted mixed mappings or
                                straight up refuse to work as some versions in
                                the target repository may be missing.
+      --patch-lvt            Generates local variable tables of the Minecraft
+                               jars for versions where they were stripped
+                               during obfuscation.
+      --preening-enabled     Undo merging of specialized and bridge methods.
       --refresh              Refreshes the decompilation by deleting old
                                decompiled artifacts and restarting. This may be
                                useful, if the decompiler has been updated or
@@ -150,12 +191,25 @@ Options:
                              Restricts the refreshed versions to the ones
                                provided. This options will cause the git
                                repository to refresh.
+      --repo-gc              Perform a garbage collection pass on the
+                               repository after the run. This will probably
+                               speed up any subsequent operation on the repo (e.
+                               g. viewing diffs).
+      --signatures=<signatures>
+                             Specifies the signatures patches used to patch
+                               generics into class, field, and method
+                               declarations. None is selected by default.
+                               Possible values are: sparrow, none
       --skip-nonlinear       Skips non-linear (e.g. April Fools, Combat
                                Snapshots, ...) versions completely
       --sort-json            Sorts JSON objects contained in JSON files (e.g.
                                models, language files, ...) in natural order.
                                This is disabled by default as it modifies
                                original data.
+      --unpick=<unpick>      Specifies the unpick information used to unpick
+                               constants in the source tree. None is selected
+                               by default. Possible values are: none, yarn,
+                               feather
 If you want to decompile versions which are not part of the default minecraft
 meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 "extra-versions" directory
@@ -167,8 +221,10 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
 
 ## Version Manifest Source
 - The manifest provider source is changeable, `ManifestProvider` needs to be extended.
-- By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
+- By default, the version manifest information is fetched from [Mojang](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json) (`mojang`)
 - Known extra versions are fetched from mojang or other sources (like archive.org).
+- For more accurate asset versioning and a more complete set of versions, the [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) (`skyrising` or `ornithemc` for the [OrnitheMC flavored variant](https://ornithemc.net/mc-versions)) can be used
+- There is also the `mojang_historic` manifest provider, which aims to use most accurate asset indexes to the ones that were present at the time of release of these versions. The [Skyrising Version Manifest Collection](https://skyrising.github.io/mc-versions) is used to obtain older manifest versions and improve on the data from mojang.
 
 ## Fork / Changes
 - This repository was originally forked from [dexman545/GitCraft](https://github.com/dexman545/GitCraft)
@@ -191,6 +247,11 @@ meta, put the JSON files of these versions (e.g. 1_16_combat-0.json) into the
   - Some combat snapshots are located in a non-standard-path (on maven.fabricmc.net and on meta.fabricmc.net). Affected versions: `1.15_combat-6`, `1.16_combat-0`
 - Version `1.16_combat-1`, `1.16_combat-2`, `1.16_combat-4`, `1.16_combat-5`, `1.16_combat-6` do not exist at all
 - Javadoc comments and constant unpicking is supported
+
+## Unpick
+- all versions of the (fabric) unpick format are supported
+- all versions of yarn unpick can be used on any mapping
+  - e.g. mojmaps can be used as a primary mapping, and yarn unpick can be applied on top; both settings are independent of each other
 
 ## Notes about Parchment
 - Parchment supports only release versions of minecraft
