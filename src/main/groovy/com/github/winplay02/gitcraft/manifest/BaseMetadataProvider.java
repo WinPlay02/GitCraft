@@ -20,7 +20,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -205,7 +204,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass, fileName);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				MiscHelper.panicBecause(e, "Error while fetching version metadata");
 			}
 			return null;
@@ -224,7 +223,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass, filePath.getFileName().toString());
-			} catch (IOException e) {
+			} catch (Exception e) {
 				MiscHelper.panicBecause(e, "Error while fetching version metadata");
 			}
 			return null;
