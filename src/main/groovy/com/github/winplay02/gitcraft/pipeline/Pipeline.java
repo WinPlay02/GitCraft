@@ -296,7 +296,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 		if (!executionPlan.failedTasks().isEmpty()) {
 			executionPlan.failedTasks().forEach((key, value) -> {
-				MiscHelper.println("Step %s for version %s failed: %s", key.step(), key.version(), value);
+				MiscHelper.println("Step %s for version %s failed: %s", key.step().getName(), key.version().friendlyVersion(), value);
 				value.printStackTrace();
 			});
 			MiscHelper.panic("Execution failed, for more information see trace(s) above");
