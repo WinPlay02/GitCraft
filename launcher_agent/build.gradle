@@ -1,5 +1,13 @@
-plugins {
-	id 'java'
+apply plugin: 'java'
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_24
+	targetCompatibility = JavaVersion.VERSION_24
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+	it.options.release = 24
 }
 
 jar {
@@ -15,5 +23,10 @@ jar {
 }
 
 jar.dependsOn(configurations.runtimeClasspath)
+
+project(':').runLauncher {
+	dependsOn jar
+	environment("GITCRAFT_LAUNCH_AGENT", jar.archiveFile.get().getAsFile().getAbsolutePath())
+}
 
 dependencies {}
