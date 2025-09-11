@@ -140,16 +140,14 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					stepVersionSubsetEdges.computeIfAbsent(node, __ -> new HashSet<>());
 					// Inter-Version dependency: depend on previous version only; logically should depend on all previous versions
 					// but this is not necessary as this dependency applies transitively in a valid pipeline description (step depending on itself)
-					for (Step interVersionDependencyStep : description.getInterVersionDependencies(step)) {
+					if (step.getScope() == ExecutionScope.GRAPH || step.getScope() == ExecutionScope.BRANCH) {
 						for (T previousVersion : versionGraph.getPreviousVertices(version)) {
-							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(interVersionDependencyStep, previousVersion));
+							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(step, previousVersion));
 						}
 					}
-					// Intra-Version dependency
-					for (Step intraVersionDependencyStep : description.getIntraVersionDependencies(step)) {
-						DependencyType depType = description.getDependencyType(step, intraVersionDependencyStep);
-						if (depType != null && depType.isDependency()) {
-							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(intraVersionDependencyStep, version));
+					for (StepDependency dependency : description.getStepDependencies(step)) {
+						if (dependency.relation() != null && dependency.relation().isDependency()) {
+							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(dependency.step(), version));
 						}
 					}
 				}
@@ -164,15 +162,16 @@ public class Pipeline<T extends AbstractVersion<T>> {
 	}
 
 	protected record InFlightExecutionPlan<T extends AbstractVersion<T>>(PipelineExecutionGraph<T> executionGraph,
-										   Set<TupleVersionStep<T>> completedSubset,
-										   Set<TupleVersionStep<T>> executingSubset,
+										   Set<TupleVersionStep<T>> completedTasks,
+										   Set<TupleVersionStep<T>> executingTasks,
+										   Set<Step> executingSteps,
 										   Map<TupleVersionStep<T>, Exception> failedTasks,
 										   Map<T, StepWorker.Context<T>> versionedContexts,
 										   Map<T, StepWorker.Config> versionedConfigs,
 										   Object conditionalVar) {
 
 		public static <T extends AbstractVersion<T>> InFlightExecutionPlan<T> create(PipelineDescription<T> description, AbstractVersionGraph<T> versionGraph) {
-			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
+			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
 		}
 
 		private StepWorker.Context<T> getContext(T version, RepoWrapper repository, AbstractVersionGraph<T> versionGraph, ExecutorService executorService) {
@@ -208,10 +207,14 @@ public class Pipeline<T extends AbstractVersion<T>> {
 
 		private void runSingleTask(ExecutorService executor, TupleVersionStep<T> task, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 			executor.execute(() -> {
-				if (executingSubset.contains(task) || completedSubset.contains(task)) {
+				if (executingTasks.contains(task) || completedTasks.contains(task)) {
 					return;
 				}
-				executingSubset.add(task);
+				if (task.step().getScope() == ExecutionScope.GRAPH && executingSteps.contains(task.step())) {
+					return;
+				}
+				executingTasks.add(task);
+				executingSteps.add(task.step());
 				if (pipeline.threadLimiter != null) {
 					pipeline.threadLimiter.acquireUninterruptibly();
 				}
@@ -224,8 +227,9 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					} else {
 						MiscHelper.println("Skipping step '%s' for %s (%s)...", task.step().getName(), context, config);
 					}
-					executingSubset.remove(task);
-					completedSubset.add(task);
+					executingTasks.remove(task);
+					executingSteps.remove(task.step());
+					completedTasks.add(task);
 				} catch (Exception e) {
 					failedTasks.put(task, e);
 					failed = true;
@@ -245,8 +249,11 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 
 		private synchronized void scanForTasks(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
-			Set<TupleVersionStep<T>> nextTasks = executionGraph.nextTuples(this.completedSubset());
-			nextTasks.stream().filter(Predicate.not(this.executingSubset()::contains)).forEach(task -> this.runSingleTask(executor, task, pipeline, repository, versionGraph));
+			Set<TupleVersionStep<T>> nextTasks = executionGraph.nextTuples(this.completedTasks());
+			nextTasks.stream()
+				.filter(Predicate.not(this.executingTasks()::contains))
+				.filter(task -> task.step().getScope() != ExecutionScope.GRAPH || !this.executingSteps().contains(task.step()))
+				.forEach(task -> this.runSingleTask(executor, task, pipeline, repository, versionGraph));
 		}
 
 		public void run(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
@@ -255,7 +262,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 
 		public int runningTasks() {
-			return this.executingSubset.size();
+			return this.executingTasks.size();
 		}
 
 		private void signalUpdate() {
@@ -272,7 +279,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					} catch (InterruptedException ignored) {}
 				}
 				// Once everything is completed
-				if (this.completedSubset().size() == this.executionGraph().stepVersionSubsetVertices().size()) {
+				if (this.completedTasks().size() == this.executionGraph().stepVersionSubsetVertices().size()) {
 					return;
 				}
 				// If anything failed, report
