@@ -30,7 +30,7 @@ import java.util.function.Function;
 
 public enum Step {
 
-	RESET("Reset", Resetter::new),
+	RESET("Reset", ExecutionScope.GRAPH, Resetter::new),
 	FETCH_ARTIFACTS("Fetch Artifacts", ArtifactsFetcher::new),
 	FETCH_LIBRARIES("Fetch Libraries", LibrariesFetcher::new),
 	FETCH_ASSETS("Fetch Assets", AssetsFetcher::new),
@@ -50,23 +50,33 @@ public enum Step {
 	PROVIDE_NESTS("Provide Nests", NestsProvider::new),
 	APPLY_NESTS("Apply Nests", JarsNester::new),
 	PREEN_JARS("Preen Jars", Preener::new),
-	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
-	COMMIT("Commit to repository", Committer::new),
-	REPO_GARBAGE_COLLECTOR("GC repository", RepoGarbageCollector::new),
+	DECOMPILE_JARS("Decompile Jars", ExecutionScope.GRAPH, Decompiler::new),
+	COMMIT("Commit to repository", ExecutionScope.GRAPH, Committer::new),
+	REPO_GARBAGE_COLLECTOR("GC repository", ExecutionScope.GRAPH, RepoGarbageCollector::new),
 	LAUNCH_PREPARE_HARDLINK_ASSETS("Hardlink Assets to Launch Environment", LaunchStepHardlinkAssets::new),
 	LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE("Construct a launchable file", LaunchPrepareLaunchableFile::new),
 	LAUNCH_CLIENT("Launch Client", LaunchStepLaunch::new);
 
 	private final String name;
+	private final ExecutionScope scope;
 	private final Function<StepWorker.Config, StepWorker<?, ?>> workerFactory;
 
 	Step(String name, Function<StepWorker.Config, StepWorker<?, ?>> workerFactory) {
+		this(name, ExecutionScope.VERSION, workerFactory);
+	}
+
+	Step(String name, ExecutionScope scope, Function<StepWorker.Config, StepWorker<?, ?>> workerFactory) {
 		this.name = name;
+		this.scope = scope;
 		this.workerFactory = workerFactory;
 	}
 
 	public String getName() {
 		return name;
+	}
+
+	public ExecutionScope getScope() {
+		return scope;
 	}
 
 	public StepWorker<?, ?> createWorker(StepWorker.Config config) {

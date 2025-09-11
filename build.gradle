@@ -18,6 +18,11 @@ repositories {
 	mavenCentral()
 }
 
+java {
+	sourceCompatibility = JavaVersion.VERSION_24
+	targetCompatibility = JavaVersion.VERSION_24
+}
+
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
 	it.options.release = 24
@@ -43,10 +48,7 @@ tasks.register("runLauncher", JavaExec) {
 	group = ApplicationPlugin.APPLICATION_GROUP
 	classpath = sourceSets.main.runtimeClasspath
 	mainClass = 'com.github.winplay02.gitcraft.launcher.GitCraftLauncher'
-	environment("GITCRAFT_LAUNCH_AGENT", tasks.getByPath(":launcher_agent:jar").archiveFile.get().getAsFile().getAbsolutePath())
 }
-
-runLauncher.dependsOn(":launcher_agent:jar")
 
 dependencies {
 	implementation sourceSets.lib.output

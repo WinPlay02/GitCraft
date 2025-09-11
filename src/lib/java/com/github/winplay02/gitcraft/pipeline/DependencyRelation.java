@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-public enum DependencyType {
+public enum DependencyRelation {
 
 	/**
 	 * does not depend on the step at all
