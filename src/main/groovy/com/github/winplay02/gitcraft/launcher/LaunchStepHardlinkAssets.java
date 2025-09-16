@@ -68,6 +68,17 @@ public record LaunchStepHardlinkAssets(StepWorker.Config config) implements Step
 					Files.createLink(assetFileIcon, icon.getValue().resolve(assetsObjectsDir));
 				}
 			}
+			// Symlink to resources
+			Path symlinkedResourcesDir = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_GAME).resolve("resources");
+			if (Files.isDirectory(symlinkedResourcesDir)) {
+				MiscHelper.deleteDirectory(symlinkedResourcesDir);
+			} else {
+				Files.delete(symlinkedResourcesDir);
+			}
+			Files.createSymbolicLink(
+				symlinkedResourcesDir,
+				assetsPathVfs
+			);
 		} else {
 			// Create Link to assets index
 			Path targetAssetsIndexNoExt = context.targetVersion().assetsIndex().resolve(assetsPathIndexes);
