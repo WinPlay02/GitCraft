@@ -35,10 +35,6 @@ public record StepDependencies(Set<StepDependency> dependencies) implements Iter
 		return new StepDependencies(dst);
 	}
 
-	public void validate() {
-		// TODO
-	}
-
 	public List<Step> steps() {
 		return dependencies.stream().map(StepDependency::step).toList();
 	}
