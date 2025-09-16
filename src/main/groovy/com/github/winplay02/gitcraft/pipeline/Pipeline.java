@@ -170,10 +170,11 @@ public class Pipeline<T extends AbstractVersion<T>> {
 										   Map<TupleVersionStep<T>, Exception> failedTasks,
 										   Map<T, StepWorker.Context<T>> versionedContexts,
 										   Map<T, StepWorker.Config> versionedConfigs,
+										   Object executionLock,
 										   Object conditionalVar) {
 
 		public static <T extends AbstractVersion<T>> InFlightExecutionPlan<T> create(PipelineDescription<T> description, AbstractVersionGraph<T> versionGraph) {
-			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
+			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object(), new Object());
 		}
 
 		private StepWorker.Context<T> getContext(T version, RepoWrapper repository, AbstractVersionGraph<T> versionGraph, ExecutorService executorService) {
@@ -209,62 +210,75 @@ public class Pipeline<T extends AbstractVersion<T>> {
 
 		private void runSingleTask(ExecutorService executor, TupleVersionStep<T> task, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 			executor.execute(() -> {
-				if (executingTasks.contains(task) || completedTasks.contains(task)) {
-					return;
+				synchronized (executionLock) {
+					if (executingTasks.contains(task) || completedTasks.contains(task)) {
+						return;
+					}
+					if (task.step().getScope() == ExecutionScope.GRAPH && executingSteps.contains(task.step())) {
+						return;
+					}
+
+					executingTasks.add(task);
+					executingSteps.add(task.step());
 				}
-				if (task.step().getScope() == ExecutionScope.GRAPH && executingSteps.contains(task.step())) {
-					return;
-				}
-				executingTasks.add(task);
-				executingSteps.add(task.step());
+
 				if (pipeline.threadLimiter != null) {
 					pipeline.threadLimiter.acquireUninterruptibly();
 				}
+
 				StepWorker.Context<T> context = this.getContext(task.version(), repository, versionGraph, executor);
 				StepWorker.Config config = this.getConfig(task.version());
-				boolean failed = false;
+
+				Exception exception = null;
+
 				try {
 					if (!pipeline.pipelineDescription.skipVersion().apply(versionGraph, context)) {
 						pipeline.runSingleVersionSingleStep(task, context, config);
 					} else {
 						MiscHelper.println("Skipping step '%s' for %s (%s)...", task.step().getName(), context, config);
 					}
-					executingTasks.remove(task);
-					executingSteps.remove(task.step());
-					completedTasks.add(task);
 				} catch (Exception e) {
-					failedTasks.put(task, e);
-					failed = true;
+					exception = e;
+
 					MiscHelper.println("Step '%s' for %s (%s) failed: %s", task.step().getName(), context, config, e);
-					e.printStackTrace();
+					exception.printStackTrace();
 				}
-				signalUpdate();
+
 				if (pipeline.threadLimiter != null) {
 					pipeline.threadLimiter.release();
 				}
-				if (!failed) {
-					scanForTasks(executor, pipeline, repository, versionGraph);
-				} else {
-					executor.shutdown();
+
+				synchronized (executionLock) {
+					if (exception == null) {
+						// success :)
+						executingTasks.remove(task);
+						executingSteps.remove(task.step());
+						completedTasks.add(task);
+					} else {
+						// failure :(
+						failedTasks.put(task, exception);
+					}
+
+					signalUpdate();
+
+					if (exception == null) {
+						scanForTasks(executor, pipeline, repository, versionGraph);
+					} else {
+						executor.shutdown();
+					}
 				}
 			});
 		}
 
-		private synchronized void scanForTasks(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
-			Set<TupleVersionStep<T>> nextTasks = executionGraph.nextTuples(this.completedTasks());
-			nextTasks.stream()
-				.filter(Predicate.not(this.executingTasks()::contains))
-				.filter(task -> task.step().getScope() != ExecutionScope.GRAPH || !this.executingSteps().contains(task.step()))
-				.forEach(task -> this.runSingleTask(executor, task, pipeline, repository, versionGraph));
+		private void scanForTasks(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+			for (TupleVersionStep<T> task : executionGraph.nextTuples(completedTasks)) {
+				runSingleTask(executor, task, pipeline, repository, versionGraph);
+			}
 		}
 
 		public void run(ExecutorService executor, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 			scanForTasks(executor, pipeline, repository, versionGraph);
 			await();
-		}
-
-		public int runningTasks() {
-			return this.executingTasks.size();
 		}
 
 		private void signalUpdate() {
@@ -280,14 +294,16 @@ public class Pipeline<T extends AbstractVersion<T>> {
 						conditionalVar.wait();
 					} catch (InterruptedException ignored) {}
 				}
-				// Once everything is completed
-				if (this.completedTasks().size() == this.executionGraph().stepVersionSubsetVertices().size()) {
-					return;
-				}
-				// If anything failed, report
-				if (!this.failedTasks().isEmpty()) {
-					MiscHelper.println("Execution failed, waiting for existing tasks to complete...");
-					return;
+				synchronized (executionLock) {
+					// Once everything is completed
+					if (this.completedTasks().size() == this.executionGraph().stepVersionSubsetVertices().size()) {
+						return;
+					}
+					// If anything failed, report
+					if (!this.failedTasks().isEmpty()) {
+						MiscHelper.println("Execution failed, waiting for existing tasks to complete...");
+						return;
+					}
 				}
 			}
 		}
