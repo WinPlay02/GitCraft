@@ -15,6 +15,9 @@ public enum ExecutionScope {
 	/**
 	 * Execution is limited to one instance per version graph.
 	 */
-	GRAPH
+	GRAPH;
 
+	public boolean coversMultipleVersions() {
+		return this.ordinal() > VERSION.ordinal();
+	}
 }

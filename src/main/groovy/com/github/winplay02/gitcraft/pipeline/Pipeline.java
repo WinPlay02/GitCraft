@@ -138,15 +138,17 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					TupleVersionStep<T> node = new TupleVersionStep<T>(step, version);
 					stepVersionSubsetVertices.add(node);
 					stepVersionSubsetEdges.computeIfAbsent(node, __ -> new HashSet<>());
-					// Inter-Version dependency: depend on previous version only; logically should depend on all previous versions
-					// but this is not necessary as this dependency applies transitively in a valid pipeline description (step depending on itself)
-					if (step.getScope() == ExecutionScope.GRAPH || step.getScope() == ExecutionScope.BRANCH) {
+					// If the execution scope covers multiple versions, the step must go through them one at a time
+					// Ergo, a step for some version depends on execution on all previous versions, but this dependency
+					// applies transitively so declaring it only for the directly previous version suffices
+					if (step.getScope().coversMultipleVersions()) {
 						for (T previousVersion : versionGraph.getPreviousVertices(version)) {
 							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(step, previousVersion));
 						}
 					}
+					// Steps depending on other steps always stay within one version
 					for (StepDependency dependency : description.getStepDependencies(step)) {
-						if (dependency.relation() != null && dependency.relation().isDependency()) {
+						if (dependency.relation().isDependency()) {
 							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(dependency.step(), version));
 						}
 					}
