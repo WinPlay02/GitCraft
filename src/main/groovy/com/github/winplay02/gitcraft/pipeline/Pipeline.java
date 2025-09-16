@@ -147,7 +147,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					}
 					// Intra-Version dependency
 					for (Step intraVersionDependencyStep : description.getIntraVersionDependencies(step)) {
-						DependencyType depType = description.getDependencyType(step, intraVersionDependencyStep);
+						DependencyRelation depType = description.getDependencyType(step, intraVersionDependencyStep);
 						if (depType != null && depType.isDependency()) {
 							stepVersionSubsetEdges.get(node).add(new TupleVersionStep<T>(intraVersionDependencyStep, version));
 						}
@@ -166,13 +166,14 @@ public class Pipeline<T extends AbstractVersion<T>> {
 	protected record InFlightExecutionPlan<T extends AbstractVersion<T>>(PipelineExecutionGraph<T> executionGraph,
 										   Set<TupleVersionStep<T>> completedSubset,
 										   Set<TupleVersionStep<T>> executingSubset,
+										   Set<Step> activeSteps,
 										   Map<TupleVersionStep<T>, Exception> failedTasks,
 										   Map<T, StepWorker.Context<T>> versionedContexts,
 										   Map<T, StepWorker.Config> versionedConfigs,
 										   Object conditionalVar) {
 
 		public static <T extends AbstractVersion<T>> InFlightExecutionPlan<T> create(PipelineDescription<T> description, AbstractVersionGraph<T> versionGraph) {
-			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
+			return new InFlightExecutionPlan<T>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object());
 		}
 
 		private StepWorker.Context<T> getContext(T version, RepoWrapper repository, AbstractVersionGraph<T> versionGraph, ExecutorService executorService) {
@@ -211,6 +212,10 @@ public class Pipeline<T extends AbstractVersion<T>> {
 				if (executingSubset.contains(task) || completedSubset.contains(task)) {
 					return;
 				}
+				if (task.step().getParallelismPolicy().isRestrictedToSequential() && activeSteps.contains(task.step())) {
+					return;
+				}
+				activeSteps.add(task.step());
 				executingSubset.add(task);
 				if (pipeline.threadLimiter != null) {
 					pipeline.threadLimiter.acquireUninterruptibly();
@@ -226,6 +231,7 @@ public class Pipeline<T extends AbstractVersion<T>> {
 					}
 					executingSubset.remove(task);
 					completedSubset.add(task);
+					activeSteps.remove(task.step());
 				} catch (Exception e) {
 					failedTasks.put(task, e);
 					failed = true;

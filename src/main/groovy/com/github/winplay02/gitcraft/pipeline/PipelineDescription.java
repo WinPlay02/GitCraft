@@ -33,30 +33,30 @@ import static com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage.*
 public record PipelineDescription<T extends AbstractVersion<T>>(String descriptionName,
 																List<Step> steps,
 																Map<Step, BiFunction<PipelineFilesystemStorage<T>, StepResults<T>, StepInput>> stepInputMap,
-																Map<Step, StepDependency> stepDependencies,
+																Map<Step, StepDependencies> stepDependencies,
 																BiFunction<AbstractVersionGraph<T>, StepWorker.Context<T>, Boolean> skipVersion) {
 
 	public PipelineDescription(String descriptionName,
 							   List<Step> steps,
 							   Map<Step, BiFunction<PipelineFilesystemStorage<T>, StepResults<T>, StepInput>> stepInputMap,
-							   Map<Step, StepDependency> stepDependencies) {
+							   Map<Step, StepDependencies> stepDependencies) {
 		this(descriptionName, steps, stepInputMap, stepDependencies, ($, $$) -> false);
 	}
 
 	public Set<Step> getIntraVersionDependencies(Step step) {
-		return this.stepDependencies.getOrDefault(step, StepDependency.EMPTY).dependencyTypes().keySet();
+		return this.stepDependencies.getOrDefault(step, StepDependencies.EMPTY).dependencyTypes().keySet();
 	}
 
 	public Set<Step> getInterVersionDependencies(Step step) {
-		return this.stepDependencies.getOrDefault(step, StepDependency.EMPTY).interVersionDependency();
+		return this.stepDependencies.getOrDefault(step, StepDependencies.EMPTY).interVersionDependency();
 	}
 
-	public Set<Step> getDependenciesOfRequirement(Step step, DependencyType type) {
-		return this.stepDependencies.getOrDefault(step, StepDependency.EMPTY).dependencyTypes().entrySet().stream().filter(entry -> entry.getValue() == type).map(Map.Entry::getKey).collect(Collectors.toSet());
+	public Set<Step> getDependenciesOfRequirement(Step step, DependencyRelation type) {
+		return this.stepDependencies.getOrDefault(step, StepDependencies.EMPTY).dependencyTypes().entrySet().stream().filter(entry -> entry.getValue() == type).map(Map.Entry::getKey).collect(Collectors.toSet());
 	}
 
-	public DependencyType getDependencyType(Step step, Step dependentStep) {
-		return this.stepDependencies.getOrDefault(step, StepDependency.EMPTY).dependencyTypes().getOrDefault(dependentStep, DependencyType.NONE);
+	public DependencyRelation getDependencyType(Step step, Step dependentStep) {
+		return this.stepDependencies.getOrDefault(step, StepDependencies.EMPTY).dependencyTypes().getOrDefault(dependentStep, DependencyRelation.NONE);
 	}
 
 	public void validate() {
@@ -79,8 +79,8 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 
 	private void validateStepDependencies(Step step) {
 		int stepIndex = this.steps.indexOf(step);
-		StepDependency dependencies = this.stepDependencies.getOrDefault(step, StepDependency.EMPTY);
-		for (Map.Entry<Step, DependencyType> entry : dependencies.dependencyTypes().entrySet()) {
+		StepDependencies dependencies = this.stepDependencies.getOrDefault(step, StepDependencies.EMPTY);
+		for (Map.Entry<Step, DependencyRelation> entry : dependencies.dependencyTypes().entrySet()) {
 			// Validate non-cyclic on itself
 			if (entry.getKey() == step) {
 				MiscHelper.panic("PipelineDescription %s is invalid, step %s depends on itself. This should be declared as an inter-version dependency", this.descriptionName(), entry.getKey());
@@ -88,10 +88,10 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 			int dependencyIndex = this.steps.indexOf(entry.getKey());
 			// Validate dependencies exist, if required
 			if (dependencyIndex == -1) {
-				if (entry.getValue() == DependencyType.REQUIRED) {
+				if (entry.getValue() == DependencyRelation.REQUIRED) {
 					MiscHelper.panic("PipelineDescription %s is invalid, step %s depends on required step %s, which is not part of this pipeline description", this.descriptionName(), step, entry.getKey());
 				}
-				if (entry.getValue() == DependencyType.NOT_REQUIRED) {
+				if (entry.getValue() == DependencyRelation.NOT_REQUIRED) {
 					MiscHelper.println("WARNING: (In PipelineDescription %s) Step %s depends on optional step %s, which is not part of this pipeline description", this.descriptionName(), step, entry.getKey());
 				}
 			}
@@ -105,7 +105,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 	public static final BiFunction<PipelineFilesystemStorage<OrderedVersion>, StepResults<OrderedVersion>, StepInput> EMPTY_INPUT_PROVIDER = (_storage, _results) -> StepInput.EMPTY;
 
 	// Reset is not in the default pipeline, as parallelization would be even trickier, since every step (more or less) depends on it
-	public static final PipelineDescription<OrderedVersion> RESET_PIPELINE = new PipelineDescription<>("Reset", List.of(Step.RESET), Map.of(Step.RESET, EMPTY_INPUT_PROVIDER), Map.of(Step.RESET, StepDependency.ofInterVersion(Step.RESET)));
+	public static final PipelineDescription<OrderedVersion> RESET_PIPELINE = new PipelineDescription<>("Reset", List.of(Step.RESET), Map.of(Step.RESET, EMPTY_INPUT_PROVIDER), Map.of(Step.RESET, StepDependencies.ofInterVersion(Step.RESET)));
 
 	public static final PipelineDescription<OrderedVersion> DEFAULT_PIPELINE = new PipelineDescription<>("Default",
 		List.of(
@@ -169,22 +169,22 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		MiscHelper.mergeMaps(
 			new HashMap<>(),
 			Map.of(
-				Step.UNPACK_ARTIFACTS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS),
-				Step.MERGE_OBFUSCATED_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS),
-				Step.DATAGEN, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS)),
-				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_LIBRARIES), Set.of(Step.MERGE_OBFUSCATED_JARS)),
-				Step.APPLY_EXCEPTIONS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
-				Step.APPLY_SIGNATURES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS))
+				Step.UNPACK_ARTIFACTS, StepDependencies.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS),
+				Step.MERGE_OBFUSCATED_JARS, StepDependencies.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS),
+				Step.DATAGEN, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS)),
+				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_LIBRARIES), Set.of(Step.MERGE_OBFUSCATED_JARS)),
+				Step.APPLY_EXCEPTIONS, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
+				Step.APPLY_SIGNATURES, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS))
 			),
 			Map.of(
-				Step.REMAP_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES)),
-				Step.MERGE_REMAPPED_JARS, StepDependency.ofHardIntraVersionOnly(Step.REMAP_JARS),
-				Step.UNPICK_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_LIBRARIES, Step.PROVIDE_UNPICK, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS)),
-				Step.PROVIDE_NESTS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
-				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS)),
-				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS)),
-				Step.DECOMPILE_JARS, StepDependency.mergeDependencies(StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES, Step.REMAP_JARS, Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS, Step.PREEN_JARS)), StepDependency.ofInterVersion(Step.DECOMPILE_JARS)), // only allow one decompile job concurrently
-				Step.COMMIT, StepDependency.mergeDependencies(StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_ASSETS, Step.DECOMPILE_JARS, Step.DATAGEN), StepDependency.ofInterVersion(Step.COMMIT))
+				Step.REMAP_JARS, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES)),
+				Step.MERGE_REMAPPED_JARS, StepDependencies.ofHardIntraVersionOnly(Step.REMAP_JARS),
+				Step.UNPICK_JARS, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_LIBRARIES, Step.PROVIDE_UNPICK, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS)),
+				Step.PROVIDE_NESTS, StepDependencies.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
+				Step.APPLY_NESTS, StepDependencies.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS)),
+				Step.PREEN_JARS, StepDependencies.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS)),
+				Step.DECOMPILE_JARS, StepDependencies.merge(StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES, Step.UNPACK_ARTIFACTS), Set.of(Step.MERGE_OBFUSCATED_JARS, Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES, Step.REMAP_JARS, Step.MERGE_REMAPPED_JARS, Step.UNPICK_JARS, Step.APPLY_NESTS, Step.PREEN_JARS)), StepDependencies.ofInterVersion(Step.DECOMPILE_JARS)), // only allow one decompile job concurrently
+				Step.COMMIT, StepDependencies.merge(StepDependencies.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.UNPACK_ARTIFACTS, Step.FETCH_ASSETS, Step.DECOMPILE_JARS, Step.DATAGEN), StepDependencies.ofInterVersion(Step.COMMIT))
 			)
 		),
 		(graph, versionCtx) -> versionCtx.repository() != null && versionCtx.repository().existsRevWithCommitMessageNoExcept(versionCtx.targetVersion().toCommitMessage()));
@@ -194,7 +194,7 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		"GC",
 		List.of(Step.REPO_GARBAGE_COLLECTOR),
 		Map.of(Step.REPO_GARBAGE_COLLECTOR, EMPTY_INPUT_PROVIDER),
-		Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependency.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)),
+		Map.of(Step.REPO_GARBAGE_COLLECTOR, StepDependencies.ofInterVersion(Step.REPO_GARBAGE_COLLECTOR)),
 		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
 	);
 
@@ -248,19 +248,19 @@ public record PipelineDescription<T extends AbstractVersion<T>>(String descripti
 		MiscHelper.mergeMaps(
 			new HashMap<>(),
 			Map.of(
-				Step.LAUNCH_PREPARE_HARDLINK_ASSETS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
-				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependency.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES),
-				Step.APPLY_EXCEPTIONS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES)),
-				Step.APPLY_SIGNATURES, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS)),
-				Step.REMAP_JARS, StepDependency.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES))
+				Step.LAUNCH_PREPARE_HARDLINK_ASSETS, StepDependencies.ofHardIntraVersionOnly(Step.FETCH_ASSETS),
+				Step.PATCH_LOCAL_VARIABLE_TABLES, StepDependencies.ofHardIntraVersionOnly(Step.FETCH_ARTIFACTS, Step.FETCH_LIBRARIES),
+				Step.APPLY_EXCEPTIONS, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_EXCEPTIONS), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES)),
+				Step.APPLY_SIGNATURES, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_SIGNATURES), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS)),
+				Step.REMAP_JARS, StepDependencies.ofIntraVersion(Set.of(Step.FETCH_ARTIFACTS, Step.PROVIDE_MAPPINGS), Set.of(Step.PATCH_LOCAL_VARIABLE_TABLES, Step.APPLY_EXCEPTIONS, Step.APPLY_SIGNATURES))
 			),
 			Map.of(
-				Step.UNPICK_JARS, StepDependency.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_UNPICK, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
-				Step.PROVIDE_NESTS, StepDependency.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
-				Step.APPLY_NESTS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.UNPICK_JARS)),
-				Step.PREEN_JARS, StepDependency.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.UNPICK_JARS, Step.APPLY_NESTS)),
-				Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, StepDependency.ofIntraVersion(Set.of(), Set.of(Step.PREEN_JARS, Step.APPLY_NESTS, Step.UNPICK_JARS, Step.REMAP_JARS, Step.APPLY_SIGNATURES, Step.APPLY_EXCEPTIONS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
-				Step.LAUNCH_CLIENT, StepDependency.ofIntraVersion(Set.of(Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, Step.LAUNCH_PREPARE_HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS), Set.of(Step.PREEN_JARS, Step.APPLY_NESTS, Step.UNPICK_JARS, Step.REMAP_JARS, Step.APPLY_SIGNATURES, Step.APPLY_EXCEPTIONS, Step.PATCH_LOCAL_VARIABLE_TABLES))
+				Step.UNPICK_JARS, StepDependencies.ofHardIntraVersionOnly(Step.FETCH_LIBRARIES, Step.PROVIDE_UNPICK, Step.PROVIDE_MAPPINGS, Step.REMAP_JARS),
+				Step.PROVIDE_NESTS, StepDependencies.ofHardIntraVersionOnly(Step.PROVIDE_MAPPINGS),
+				Step.APPLY_NESTS, StepDependencies.ofIntraVersion(Set.of(Step.REMAP_JARS, Step.PROVIDE_NESTS), Set.of(Step.UNPICK_JARS)),
+				Step.PREEN_JARS, StepDependencies.ofIntraVersion(Set.of(Step.REMAP_JARS), Set.of(Step.UNPICK_JARS, Step.APPLY_NESTS)),
+				Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, StepDependencies.ofIntraVersion(Set.of(), Set.of(Step.PREEN_JARS, Step.APPLY_NESTS, Step.UNPICK_JARS, Step.REMAP_JARS, Step.APPLY_SIGNATURES, Step.APPLY_EXCEPTIONS, Step.PATCH_LOCAL_VARIABLE_TABLES)),
+				Step.LAUNCH_CLIENT, StepDependencies.ofIntraVersion(Set.of(Step.LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE, Step.LAUNCH_PREPARE_HARDLINK_ASSETS, Step.FETCH_LIBRARIES, Step.FETCH_ARTIFACTS, Step.FETCH_ASSETS), Set.of(Step.PREEN_JARS, Step.APPLY_NESTS, Step.UNPICK_JARS, Step.REMAP_JARS, Step.APPLY_SIGNATURES, Step.APPLY_EXCEPTIONS, Step.PATCH_LOCAL_VARIABLE_TABLES))
 			)
 		),
 		(graph, versionCtx) -> !graph.getRootVersions().stream().findFirst().map(versionCtx.targetVersion()::equals).orElse(false) // only run once (for 'first' root)
