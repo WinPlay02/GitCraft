@@ -209,6 +209,10 @@ public class Pipeline<T extends AbstractVersion<T>> {
 		}
 
 		private void runSingleTask(ExecutorService executor, TupleVersionStep<T> task, Pipeline<T> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+			if (executor.isShutdown()) {
+				return;
+			}
+
 			executor.execute(() -> {
 				synchronized (executionLock) {
 					if (executingTasks.contains(task) || completedTasks.contains(task)) {
