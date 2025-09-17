@@ -93,8 +93,9 @@ public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends ISte
 
 	private void scanForTasks(ExecutorService executor, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 		// These are approximations of the set of tasks to execute; they should be equal or greater than the actual set; duplicate tasks get discarded later
-		Set<IPipeline.TupleVersionStep<T, C, D>> nextTasks = executionGraph.nextTuples(this.completedSubset());
-		nextTasks.stream().filter(Predicate.not(this.executingSubset()::contains)).forEach(task -> this.runSingleTask(executor, task, pipeline, repository, versionGraph));
+		for (IPipeline.TupleVersionStep<T, C, D> task : this.executionGraph.nextTuples(this.completedSubset)) {
+			this.runSingleTask(executor, task, pipeline, repository, versionGraph);
+		}
 	}
 
 	public void run(ExecutorService executor, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
