@@ -19,7 +19,7 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 
 	@Override
 	public String getName() {
-		return "Omniarchive Version Metadata (https://omniarchive.uk//)";
+		return "Omniarchive Version Metadata (https://omniarchive.uk/)";
 	}
 
 	@Override
