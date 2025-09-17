@@ -141,21 +141,21 @@ public final class GitCraftPipelineDescription {
 			new HashMap<>(),
 			Map.of(
 				GitCraftStep.UNPACK_ARTIFACTS, StepDependencies.ofHardIntraVersionOnly(GitCraftStep.FETCH_ARTIFACTS),
-				GitCraftStep.MERGE_OBFUSCATED_JARS, StepDependencies.ofHardIntraVersionOnly(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS),
-				GitCraftStep.DATAGEN, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS), Set.of(GitCraftStep.MERGE_OBFUSCATED_JARS)),
-				GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.FETCH_LIBRARIES), Set.of(GitCraftStep.MERGE_OBFUSCATED_JARS)),
-				GitCraftStep.APPLY_EXCEPTIONS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.PROVIDE_EXCEPTIONS), Set.of(GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES)),
-				GitCraftStep.APPLY_SIGNATURES, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.PROVIDE_SIGNATURES), Set.of(GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, GitCraftStep.APPLY_EXCEPTIONS))
+				GitCraftStep.MERGE_OBFUSCATED_JARS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS), Set.of(GitCraftStep.UNPACK_ARTIFACTS)),
+				GitCraftStep.DATAGEN, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.MERGE_OBFUSCATED_JARS)),
+				GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.FETCH_LIBRARIES), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.MERGE_OBFUSCATED_JARS)),
+				GitCraftStep.APPLY_EXCEPTIONS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.PROVIDE_EXCEPTIONS), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES)),
+				GitCraftStep.APPLY_SIGNATURES, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.PROVIDE_SIGNATURES), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, GitCraftStep.APPLY_EXCEPTIONS))
 			),
 			Map.of(
-				GitCraftStep.REMAP_JARS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.PROVIDE_MAPPINGS), Set.of(GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, GitCraftStep.APPLY_EXCEPTIONS, GitCraftStep.APPLY_SIGNATURES)),
+				GitCraftStep.REMAP_JARS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.PROVIDE_MAPPINGS), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, GitCraftStep.APPLY_EXCEPTIONS, GitCraftStep.APPLY_SIGNATURES)),
 				GitCraftStep.MERGE_REMAPPED_JARS, StepDependencies.ofHardIntraVersionOnly(GitCraftStep.REMAP_JARS),
 				GitCraftStep.UNPICK_JARS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_LIBRARIES, GitCraftStep.PROVIDE_UNPICK, GitCraftStep.PROVIDE_MAPPINGS, GitCraftStep.REMAP_JARS), Set.of(GitCraftStep.MERGE_REMAPPED_JARS)),
 				GitCraftStep.PROVIDE_NESTS, StepDependencies.ofHardIntraVersionOnly(GitCraftStep.PROVIDE_MAPPINGS),
 				GitCraftStep.APPLY_NESTS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.REMAP_JARS, GitCraftStep.PROVIDE_NESTS), Set.of(GitCraftStep.MERGE_REMAPPED_JARS, GitCraftStep.UNPICK_JARS)),
 				GitCraftStep.PREEN_JARS, StepDependencies.ofIntraVersion(Set.of(GitCraftStep.REMAP_JARS), Set.of(GitCraftStep.MERGE_REMAPPED_JARS, GitCraftStep.UNPICK_JARS, GitCraftStep.APPLY_NESTS)),
-				GitCraftStep.DECOMPILE_JARS, StepDependencies.merge(StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.FETCH_LIBRARIES, GitCraftStep.UNPACK_ARTIFACTS), Set.of(GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, GitCraftStep.APPLY_EXCEPTIONS, GitCraftStep.APPLY_SIGNATURES, GitCraftStep.REMAP_JARS, GitCraftStep.MERGE_REMAPPED_JARS, GitCraftStep.UNPICK_JARS, GitCraftStep.APPLY_NESTS, GitCraftStep.PREEN_JARS)), StepDependencies.ofInterVersion(GitCraftStep.DECOMPILE_JARS)), // only allow one decompile job concurrently
-				GitCraftStep.COMMIT, StepDependencies.merge(StepDependencies.ofHardIntraVersionOnly(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.FETCH_ASSETS, GitCraftStep.DECOMPILE_JARS, GitCraftStep.DATAGEN), StepDependencies.ofInterVersion(GitCraftStep.COMMIT))
+				GitCraftStep.DECOMPILE_JARS, StepDependencies.merge(StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.FETCH_LIBRARIES), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.MERGE_OBFUSCATED_JARS, GitCraftStep.PATCH_LOCAL_VARIABLE_TABLES, GitCraftStep.APPLY_EXCEPTIONS, GitCraftStep.APPLY_SIGNATURES, GitCraftStep.REMAP_JARS, GitCraftStep.MERGE_REMAPPED_JARS, GitCraftStep.UNPICK_JARS, GitCraftStep.APPLY_NESTS, GitCraftStep.PREEN_JARS)), StepDependencies.ofInterVersion(GitCraftStep.DECOMPILE_JARS)), // only allow one decompile job concurrently
+				GitCraftStep.COMMIT, StepDependencies.merge(StepDependencies.ofIntraVersion(Set.of(GitCraftStep.FETCH_ARTIFACTS, GitCraftStep.DECOMPILE_JARS), Set.of(GitCraftStep.UNPACK_ARTIFACTS, GitCraftStep.FETCH_ASSETS, GitCraftStep.DATAGEN)), StepDependencies.ofInterVersion(GitCraftStep.COMMIT))
 			)
 		),
 		(graph, versionCtx) -> versionCtx.repository() != null && versionCtx.repository().existsRevWithCommitMessageNoExcept(versionCtx.targetVersion().toCommitMessage()),
