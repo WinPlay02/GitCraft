@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -22,14 +21,15 @@ import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.mappings.MappingUtils;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.unpick.Unpick;
@@ -57,28 +57,31 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
-public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVersion, Unpicker.Inputs> {
+public record Unpicker(GitCraftStepConfig config) implements GitCraftStepWorker<GitCraftStepWorker.JarTupleInput> {
 
 	@Override
-	public boolean shouldExecute(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context) {
+	public boolean shouldExecute(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline, IStepContext.SimpleStepContext<OrderedVersion> context) {
 		return this.config().unpickFlavour() != UnpickFlavour.NONE; // optimization
 	}
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Unpicker.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		StepOutput<OrderedVersion> mergedStatus = unpickJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), PipelineFilesystemStorage.UNPICKED_MERGED_JAR);
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		GitCraftStepWorker.JarTupleInput input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> mergedStatus = unpickJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), GitCraftPipelineFilesystemStorage.UNPICKED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput<OrderedVersion> clientStatus = unpickJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), PipelineFilesystemStorage.UNPICKED_CLIENT_JAR);
-		StepOutput<OrderedVersion> serverStatus = unpickJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), PipelineFilesystemStorage.UNPICKED_SERVER_JAR);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> clientStatus = unpickJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), GitCraftPipelineFilesystemStorage.UNPICKED_CLIENT_JAR);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> serverStatus = unpickJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), GitCraftPipelineFilesystemStorage.UNPICKED_SERVER_JAR);
 		return StepOutput.merge(clientStatus, serverStatus);
 	}
 
-	public record Inputs(Optional<StorageKey> mergedJar, Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {
-	}
-
-	private StepOutput<OrderedVersion> unpickJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException, URISyntaxException, InterruptedException {
+	private StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> unpickJar(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+																													 IStepContext.SimpleStepContext<OrderedVersion> context, MinecraftJar type, StorageKey inputFile, StorageKey outputFile) throws IOException, URISyntaxException, InterruptedException {
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -95,7 +98,7 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 			return StepOutput.ofSingle(StepStatus.UP_TO_DATE, outputFile);
 		}
 		Files.deleteIfExists(jarOut);
-		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
+		Path librariesDir = pipeline.getStoragePath(GitCraftPipelineFilesystemStorage.LIBRARIES, context, this.config);
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}
@@ -175,7 +178,7 @@ public record Unpicker(StepWorker.Config config) implements StepWorker<OrderedVe
 		};
 	}
 
-	private static void unpickSingleJar(Context<OrderedVersion> context, MappingFlavour mappingFlavour, UnpickFlavour unpickFlavour, MinecraftJar type, Path inputJar, Path outputJar, Path unpickDefinition, Path unpickConstants, Collection<Path> libraries, UnpickDescriptionFile unpickDescription) throws IOException, URISyntaxException, InterruptedException {
+	private static void unpickSingleJar(IStepContext.SimpleStepContext<OrderedVersion> context, MappingFlavour mappingFlavour, UnpickFlavour unpickFlavour, MinecraftJar type, Path inputJar, Path outputJar, Path unpickDefinition, Path unpickConstants, Collection<Path> libraries, UnpickDescriptionFile unpickDescription) throws IOException, URISyntaxException, InterruptedException {
 		List<FileSystemUtil.Delegate> openedLibraries = libraries.stream().map(Unpicker::openReadNoExcept).toList();
 		List<Path> jarsClasspath = new ArrayList<>(libraries);
 		final FileSystemUtil.Delegate unpickConstantsPath;

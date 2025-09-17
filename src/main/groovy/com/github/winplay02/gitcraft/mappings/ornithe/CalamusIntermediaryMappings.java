@@ -6,9 +6,10 @@ import com.github.winplay02.gitcraft.meta.MetaUrls;
 import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
 import com.github.winplay02.gitcraft.meta.SimpleVersionMeta;
 import com.github.winplay02.gitcraft.meta.VersionMetaSource;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
@@ -95,7 +96,7 @@ public class CalamusIntermediaryMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
+	public StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
 		SimpleVersionMeta calamusVersion = getLatestCalamusVersion(versionContext.targetVersion(), minecraftJar);
 		if (calamusVersion == null) {
 			return StepStatus.NOT_RUN;
@@ -116,11 +117,11 @@ public class CalamusIntermediaryMappings extends Mapping {
 
 	@Override
 	protected Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(mcVersion.launcherFriendlyVersionName() + "-calamus-intermediary-gen" + generation + ".tiny");
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(mcVersion.launcherFriendlyVersionName() + "-calamus-intermediary-gen" + generation + ".tiny");
 	}
 
 	private Path getMappingsJarPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(mcVersion.launcherFriendlyVersionName() + "-calamus-intermediary-gen" + generation + ".jar");
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(mcVersion.launcherFriendlyVersionName() + "-calamus-intermediary-gen" + generation + ".jar");
 	}
 
 	@Override

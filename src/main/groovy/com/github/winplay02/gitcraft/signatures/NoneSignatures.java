@@ -3,8 +3,8 @@ package com.github.winplay02.gitcraft.signatures;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
@@ -33,7 +33,7 @@ public class NoneSignatures extends SignaturesPatch {
 	}
 
 	@Override
-	public StepStatus provideSignatures(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideSignatures(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		return StepStatus.SUCCESS;
 	}
 

@@ -4,12 +4,14 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
 import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -39,10 +41,15 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
 
-public record Committer(StepWorker.Config config) implements StepWorker<OrderedVersion, Committer.Inputs> {
+public record Committer(GitCraftStepConfig config) implements GitCraftStepWorker<Committer.Inputs> {
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input, StepResults<OrderedVersion> results) throws Exception {
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		Committer.Inputs input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
 		if (GitCraft.getTransientApplicationConfiguration().noRepo()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -184,7 +191,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		return resultRevs;
 	}
 
-	private void copyCode(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
+	private void copyCode(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline, IStepContext.SimpleStepContext<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		RepoWrapper repo = context.repository();
 		if (input.decompiledMerged().isPresent()) {
 			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(pipeline.getStoragePath(input.decompiledMerged().orElseThrow(), context, this.config))) {
@@ -207,7 +214,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		}
 	}
 
-	private void copyAssets(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
+	private void copyAssets(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline, IStepContext.SimpleStepContext<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		RepoWrapper repo = context.repository();
 		if (GitCraft.getDataConfiguration().loadAssets() || GitCraft.getDataConfiguration().loadIntegratedDatapack()) {
 			if (input.serverZip().isPresent()) {
@@ -274,7 +281,7 @@ public record Committer(StepWorker.Config config) implements StepWorker<OrderedV
 		}
 	}
 
-	private void copyExternalAssets(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Committer.Inputs input) throws IOException {
+	private void copyExternalAssets(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline, IStepContext.SimpleStepContext<OrderedVersion> context, Committer.Inputs input) throws IOException {
 		if (GitCraft.getDataConfiguration().loadAssets() && GitCraft.getDataConfiguration().loadAssetsExtern()) {
 			if (input.assetsIndexPath().isEmpty() || input.assetsObjectStore().isEmpty()) {
 				MiscHelper.panic("Assets for version %s do not exist", context.targetVersion().launcherFriendlyVersionName());

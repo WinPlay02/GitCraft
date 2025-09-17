@@ -14,9 +14,10 @@ import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.meta.MetaUrls;
 import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
 import com.github.winplay02.gitcraft.meta.VersionMetaSource;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
@@ -75,7 +76,7 @@ public class RavenExceptions extends ExceptionsPatch {
 	}
 
 	@Override
-	public StepStatus provideExceptions(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
+	public StepStatus provideExceptions(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
 		GameVersionBuildMeta ravenVersion = getLatestRavenVersion(versionContext.targetVersion(), minecraftJar);
 		if (ravenVersion == null) {
 			return StepStatus.NOT_RUN;
@@ -101,7 +102,7 @@ public class RavenExceptions extends ExceptionsPatch {
 			if (ravenVersion == null) {
 				return null;
 			}
-			return ravenVersion == null ? null : PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getPatchesStore().resolve(String.format("%s-ornithe-raven-build.%d.excs", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
+			return ravenVersion == null ? null : GitCraftPipelineFilesystemRoot.getPatchesStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-ornithe-raven-build.%d.excs", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
 		} catch (IOException | URISyntaxException | InterruptedException e) {
 			return null;
 		}
@@ -113,7 +114,7 @@ public class RavenExceptions extends ExceptionsPatch {
 			if (ravenVersion == null) {
 				return null;
 			}
-			return ravenVersion == null ? null : PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getPatchesStore().resolve(String.format("%s-ornithe-raven-build.%d.jar", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
+			return ravenVersion == null ? null : GitCraftPipelineFilesystemRoot.getPatchesStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-ornithe-raven-build.%d.jar", versionKey(mcVersion, minecraftJar), ravenVersion.build()));
 		} catch (IOException | URISyntaxException | InterruptedException e) {
 			return null;
 		}

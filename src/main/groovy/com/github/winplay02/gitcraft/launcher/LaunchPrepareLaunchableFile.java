@@ -1,12 +1,14 @@
 package com.github.winplay02.gitcraft.launcher;
 
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -40,7 +42,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public record LaunchPrepareLaunchableFile(Config config) implements StepWorker<OrderedVersion, LaunchPrepareLaunchableFile.Inputs> {
+public record LaunchPrepareLaunchableFile(GitCraftStepConfig config) implements GitCraftStepWorker<LaunchPrepareLaunchableFile.Inputs> {
 
 	private class ClassAccessWidenFileTransformer implements MiscHelper.PathContentTransformer {
 
@@ -56,10 +58,15 @@ public record LaunchPrepareLaunchableFile(Config config) implements StepWorker<O
 	}
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Path clientOriginalPath = pipeline.getStoragePath(PipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, context, this.config);
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		LaunchPrepareLaunchableFile.Inputs input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
+		Path clientOriginalPath = pipeline.getStoragePath(GitCraftPipelineFilesystemStorage.ARTIFACTS_CLIENT_JAR, context, this.config);
 		Path clientModifiedPath = pipeline.getStoragePath(input.clientJar().orElse(null), context, this.config);
-		Path clientOutputPath = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCHABLE_CLIENT_JAR);
+		Path clientOutputPath = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCHABLE_CLIENT_JAR);
 		Files.createDirectories(clientOutputPath.getParent());
 		if (Files.exists(clientOutputPath) && !MiscHelper.isJarEmpty(clientOutputPath)) {
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);

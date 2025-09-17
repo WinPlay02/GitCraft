@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.unpick;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
@@ -10,7 +10,7 @@ import java.io.IOException;
 
 public class NoneUnpick implements Unpick {
 	@Override
-	public StepStatus provideUnpick(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideUnpick(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		return StepStatus.NOT_RUN;
 	}
 

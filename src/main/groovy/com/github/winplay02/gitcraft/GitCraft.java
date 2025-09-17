@@ -6,9 +6,9 @@ import com.github.winplay02.gitcraft.config.DataConfiguration;
 import com.github.winplay02.gitcraft.config.RepositoryConfiguration;
 import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration;
 import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineDescription;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
@@ -45,11 +45,11 @@ public class GitCraft extends GitCraftApplication {
 		resetVersionGraph = doVersionGraphOperationsForReset(versionGraph);
 		try (RepoWrapper repo = getRepository()) {
 			if (getTransientApplicationConfiguration().refreshDecompilation()) {
-				Pipeline.run(PipelineDescription.RESET_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
+				IPipeline.run(GitCraftPipelineDescription.RESET_PIPELINE, GitCraftPipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
 			}
-			Pipeline.run(PipelineDescription.DEFAULT_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
+			IPipeline.run(GitCraftPipelineDescription.DEFAULT_PIPELINE, GitCraftPipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
 			if (getRepositoryConfiguration().gcAfterRun()) {
-				Pipeline.run(PipelineDescription.GC_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
+				IPipeline.run(GitCraftPipelineDescription.GC_PIPELINE, GitCraftPipelineFilesystemStorage.DEFAULT.get(), repo, versionGraph);
 			}
 			if (repo != null) {
 				MiscHelper.println("Repo can be found at: %s", repo.getRootPath().toString());

@@ -8,8 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.signatures.SignaturesPatch;
 import com.github.winplay02.gitcraft.GitCraft;
@@ -25,7 +26,6 @@ import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.SerializationTypes;
 import io.github.gaming32.signaturechanger.tree.SigsFile;
 import io.github.gaming32.signaturechanger.visitor.SigsReader;
-
 
 public class SparrowSignatures extends SignaturesPatch {
 
@@ -76,7 +76,7 @@ public class SparrowSignatures extends SignaturesPatch {
 	}
 
 	@Override
-	public StepStatus provideSignatures(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
+	public StepStatus provideSignatures(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
 		GameVersionBuildMeta sparrowVersion = getLatestSparrowVersion(versionContext.targetVersion(), minecraftJar);
 		if (sparrowVersion == null) {
 			return StepStatus.NOT_RUN;
@@ -102,7 +102,7 @@ public class SparrowSignatures extends SignaturesPatch {
 			if (sparrowVersion == null) {
 				return null;
 			}
-			return sparrowVersion == null ? null : PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getPatchesStore().resolve(String.format("%s-ornithe-sparrow-build.%d.sigs", versionKey(mcVersion, minecraftJar), sparrowVersion.build()));
+			return sparrowVersion == null ? null : GitCraftPipelineFilesystemRoot.getPatchesStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-ornithe-sparrow-build.%d.sigs", versionKey(mcVersion, minecraftJar), sparrowVersion.build()));
 		} catch (IOException | URISyntaxException | InterruptedException e) {
 			return null;
 		}
@@ -114,7 +114,7 @@ public class SparrowSignatures extends SignaturesPatch {
 			if (sparrowVersion == null) {
 				return null;
 			}
-			return sparrowVersion == null ? null : PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getPatchesStore().resolve(String.format("%s-ornithe-sparrow-build.%d.jar", versionKey(mcVersion, minecraftJar), sparrowVersion.build()));
+			return sparrowVersion == null ? null : GitCraftPipelineFilesystemRoot.getPatchesStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-ornithe-sparrow-build.%d.jar", versionKey(mcVersion, minecraftJar), sparrowVersion.build()));
 		} catch (IOException | URISyntaxException | InterruptedException e) {
 			return null;
 		}

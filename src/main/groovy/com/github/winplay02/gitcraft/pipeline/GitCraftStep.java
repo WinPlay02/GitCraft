@@ -25,10 +25,11 @@ import com.github.winplay02.gitcraft.pipeline.workers.Resetter;
 import com.github.winplay02.gitcraft.pipeline.workers.SignaturesProvider;
 import com.github.winplay02.gitcraft.pipeline.workers.UnpickProvider;
 import com.github.winplay02.gitcraft.pipeline.workers.Unpicker;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 import java.util.function.Function;
 
-public enum Step {
+public enum GitCraftStep implements IStep<OrderedVersion, StepInput, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> {
 
 	RESET("Reset", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, Resetter::new),
 	FETCH_ARTIFACTS("Fetch Artifacts", ArtifactsFetcher::new),
@@ -59,16 +60,16 @@ public enum Step {
 
 	private final String name;
 	private final ParallelismPolicy parallelismPolicy;
-	private final Function<StepWorker.Config, StepWorker<?, ?>> workerFactory;
+	private final Function<GitCraftStepConfig, GitCraftStepWorker<StepInput>> workerFactory;
 
-	Step(String name, Function<StepWorker.Config, StepWorker<?, ?>> workerFactory) {
+	GitCraftStep(String name, Function<GitCraftStepConfig, GitCraftStepWorker<?>> workerFactory) {
 		this(name, ParallelismPolicy.SAFELY_FULLY_PARALLEL, workerFactory);
 	}
 
-	Step(String name, ParallelismPolicy parallelismPolicy, Function<StepWorker.Config, StepWorker<?, ?>> workerFactory) {
+	GitCraftStep(String name, ParallelismPolicy parallelismPolicy, Function<GitCraftStepConfig, GitCraftStepWorker<?>> workerFactory) {
 		this.name = name;
 		this.parallelismPolicy = parallelismPolicy;
-		this.workerFactory = workerFactory;
+		this.workerFactory = (Function<GitCraftStepConfig, GitCraftStepWorker<StepInput>>) (Object) workerFactory;
 	}
 
 	public String getName() {
@@ -79,7 +80,7 @@ public enum Step {
 		return this.parallelismPolicy;
 	}
 
-	public StepWorker<?, ?> createWorker(StepWorker.Config config) {
+	public IStepWorker<OrderedVersion, StepInput, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> createWorker(GitCraftStepConfig config) {
 		return workerFactory.apply(config);
 	}
 }

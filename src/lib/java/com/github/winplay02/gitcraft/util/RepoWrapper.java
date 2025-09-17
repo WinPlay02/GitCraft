@@ -1,6 +1,5 @@
 package com.github.winplay02.gitcraft.util;
 
-import com.github.winplay02.gitcraft.GitCraft;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -34,9 +33,9 @@ public class RepoWrapper implements Closeable {
 		return this.git;
 	}
 
-	public RepoWrapper(Path root_path) throws Exception {
-		this.root_path = Objects.requireNonNullElse(root_path, GitCraftPaths.FILESYSTEM_ROOT.getDefaultRepository());
-		this.git = Git.init().setInitialBranch(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()).setDirectory(this.root_path.toFile()).call();
+	public RepoWrapper(Path root_path, String initial_branch) throws Exception {
+		this.root_path = Objects.requireNonNull(root_path);
+		this.git = Git.init().setInitialBranch(initial_branch).setDirectory(this.root_path.toFile()).call();
 	}
 
 	@Override

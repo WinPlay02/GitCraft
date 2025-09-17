@@ -5,8 +5,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -41,10 +41,10 @@ public abstract class ExceptionsPatch {
 	 * @param minecraftJar Minecraft jar
 	 * @return A result
 	 */
-	public abstract StepStatus provideExceptions(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException;
+	public abstract StepStatus provideExceptions(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException;
 
 	/**
-	 * Should return a path to a exceptions file, created by {@link #provideExceptions(StepWorker.Context, MinecraftJar)}
+	 * Should return a path to a exceptions file, created by {@link #provideExceptions(IStepContext, MinecraftJar)}
 	 *
 	 * @param mcVersion Version
 	 * @param minecraftJar Minecraft jar

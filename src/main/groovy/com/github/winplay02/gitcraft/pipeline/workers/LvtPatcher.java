@@ -4,46 +4,52 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.ornithemc.condor.Condor;
 import net.ornithemc.condor.Options;
 
-public record LvtPatcher(StepWorker.Config config) implements StepWorker<OrderedVersion, LvtPatcher.Inputs> {
+public record LvtPatcher(GitCraftStepConfig config) implements GitCraftStepWorker<GitCraftStepWorker.JarTupleInput> {
 
 	@Override
-	public boolean shouldExecute(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context) {
+	public boolean shouldExecute(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline, IStepContext.SimpleStepContext<OrderedVersion> context) {
 		return config.lvtPatch();
 	}
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, LvtPatcher.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.PATCHED));
-		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, config);
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		GitCraftStepWorker.JarTupleInput input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
+		Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.PATCHED));
+		Path librariesDir = pipeline.getStoragePath(GitCraftPipelineFilesystemStorage.LIBRARIES, context, config);
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}
 		List<Path> libraries = context.targetVersion().libraries().stream().map(artifact -> artifact.resolve(librariesDir)).toList();
-		StepOutput<OrderedVersion> mergedStatus = patchLocalVariableTables(pipeline, context, input.mergedJar().orElse(null), PipelineFilesystemStorage.LVT_PATCHED_MERGED_JAR, libraries);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> mergedStatus = patchLocalVariableTables(pipeline, context, input.mergedJar().orElse(null), GitCraftPipelineFilesystemStorage.LVT_PATCHED_MERGED_JAR, libraries);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput<OrderedVersion> clientStatus = patchLocalVariableTables(pipeline, context, input.clientJar().orElse(null), PipelineFilesystemStorage.LVT_PATCHED_CLIENT_JAR, libraries);
-		StepOutput<OrderedVersion> serverStatus = patchLocalVariableTables(pipeline, context, input.serverJar().orElse(null), PipelineFilesystemStorage.LVT_PATCHED_SERVER_JAR, libraries);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> clientStatus = patchLocalVariableTables(pipeline, context, input.clientJar().orElse(null), GitCraftPipelineFilesystemStorage.LVT_PATCHED_CLIENT_JAR, libraries);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> serverStatus = patchLocalVariableTables(pipeline, context, input.serverJar().orElse(null), GitCraftPipelineFilesystemStorage.LVT_PATCHED_SERVER_JAR, libraries);
 		return StepOutput.merge(clientStatus, serverStatus);
 	}
 
-	private StepOutput<OrderedVersion> patchLocalVariableTables(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StorageKey inputFile, StorageKey outputFile, List<Path> libraries) throws IOException {
+	private StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> patchLocalVariableTables(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+																																	IStepContext.SimpleStepContext<OrderedVersion> context, StorageKey inputFile, StorageKey outputFile, List<Path> libraries) throws IOException {
 		Path jarIn = pipeline.getStoragePath(inputFile, context, this.config);
 		if (jarIn == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
@@ -58,8 +64,5 @@ public record LvtPatcher(StepWorker.Config config) implements StepWorker<Ordered
 		// that way Tiny Remapper will take care of fixing them
 		Condor.run(jarOut, libraries, Options.builder().removeInvalidEntries().obfuscateNames().build());
 		return StepOutput.ofSingle(StepStatus.SUCCESS, outputFile);
-	}
-
-	public record Inputs(Optional<StorageKey> mergedJar, Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {
 	}
 }

@@ -5,7 +5,8 @@ import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.migration.MetadataStoreUpgrade;
 import com.github.winplay02.gitcraft.migration.Transition0_1_0To0_2_0;
 import com.github.winplay02.gitcraft.migration.Transition0_2_0_To0_3_0;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.IPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public class GitCraftPaths {
-	public static PipelineFilesystemRoot FILESYSTEM_ROOT = null;
+	public static IPipelineFilesystemRoot FILESYSTEM_ROOT = null;
 	public static Path LEGACY_METADATA_STORE = null;
 	protected static Path GITCRAFT_VERSION_INFO = null;
 	public static Path LOST_AND_FOUND = null;
@@ -37,13 +38,13 @@ public class GitCraftPaths {
 		if (FILESYSTEM_ROOT != null) {
 			return;
 		}
-		FILESYSTEM_ROOT = new PipelineFilesystemRoot(() -> LibraryPaths.MAIN_ARTIFACT_STORE);
+		FILESYSTEM_ROOT = new IPipelineFilesystemRoot.SimpleSuppliedPipelineFilesystemRoot(() -> LibraryPaths.MAIN_ARTIFACT_STORE);
 		LEGACY_METADATA_STORE = LibraryPaths.MAIN_ARTIFACT_STORE.resolve("metadata.json");
 		GITCRAFT_VERSION_INFO = LibraryPaths.MAIN_ARTIFACT_STORE.resolve("gitcraft-version.txt");
 		LOST_AND_FOUND = LibraryPaths.MAIN_ARTIFACT_STORE.resolve("lost-and-found"); // only create, if really needed
 		// Warning for breaking changes (the only breaking changes for now)
 		upgradeExisting();
-		FILESYSTEM_ROOT.initialize();
+		GitCraftPipelineFilesystemRoot.initialize(FILESYSTEM_ROOT);
 		MiscHelper.tryJavaExecution();
 	}
 

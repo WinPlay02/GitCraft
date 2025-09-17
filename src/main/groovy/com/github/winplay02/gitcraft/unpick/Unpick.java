@@ -1,14 +1,12 @@
 package com.github.winplay02.gitcraft.unpick;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import daomephsta.unpick.api.ValidatingUnpickV3Visitor;
 import daomephsta.unpick.constantmappers.datadriven.parser.v2.UnpickV2Reader;
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Reader;
-import daomephsta.unpick.impl.constantmappers.datadriven.data.Data;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +17,7 @@ public interface Unpick {
 	record UnpickContext(Path unpickConstants, Path unpickDefinitions, Path unpickDescription) {
 	}
 
-	StepStatus provideUnpick(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException;
+	StepStatus provideUnpick(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException;
 
 	UnpickContext getContext(OrderedVersion targetVersion, MinecraftJar minecraftJar) throws IOException;
 

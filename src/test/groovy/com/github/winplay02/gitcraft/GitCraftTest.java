@@ -6,7 +6,7 @@ import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvide
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
@@ -101,7 +101,7 @@ public class GitCraftTest {
 			assertFalse(Files.exists(mappingsPath));
 			assertTrue(MappingFlavour.MOJMAP.exists(versionGraph.getMinecraftVersionByName("1.14.4")));
 			assertFalse(MappingFlavour.MOJMAP.exists(versionGraph.getMinecraftVersionByName("1.12")));
-			StepWorker.Context<OrderedVersion> context = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
+			IStepContext.SimpleStepContext<OrderedVersion> context = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.MOJMAP.provide(context, MinecraftJar.CLIENT));
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.MOJMAP.provide(context, MinecraftJar.SERVER));
 			assertEquals(StepStatus.NOT_RUN, MappingFlavour.MOJMAP.provide(context, MinecraftJar.MERGED));
@@ -130,7 +130,7 @@ public class GitCraftTest {
 			assertFalse(Files.exists(mappingsPath));
 			assertTrue(MappingFlavour.MOJMAP_PARCHMENT.exists(versionGraph.getMinecraftVersionByName("1.16.5")));
 			assertFalse(MappingFlavour.MOJMAP_PARCHMENT.exists(versionGraph.getMinecraftVersionByName("1.14.4")));
-			StepWorker.Context<OrderedVersion> context = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20.1"), executor);
+			IStepContext.SimpleStepContext<OrderedVersion> context = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20.1"), executor);
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.MOJMAP_PARCHMENT.provide(context, MinecraftJar.MERGED));
 			assertTrue(Files.exists(mappingsPath));
 			assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.MOJMAP_PARCHMENT.provide(context, MinecraftJar.MERGED));
@@ -156,7 +156,7 @@ public class GitCraftTest {
 			assertFalse(Files.exists(mappingsPath));
 			assertTrue(MappingFlavour.FABRIC_INTERMEDIARY.exists(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.43.b")));
 			assertFalse(MappingFlavour.FABRIC_INTERMEDIARY.exists(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.43.a")));
-			StepWorker.Context<OrderedVersion> context = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
+			IStepContext.SimpleStepContext<OrderedVersion> context = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.FABRIC_INTERMEDIARY.provide(context, MinecraftJar.MERGED));
 			assertTrue(Files.exists(mappingsPath));
 			assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.FABRIC_INTERMEDIARY.provide(context, MinecraftJar.MERGED));
@@ -182,7 +182,7 @@ public class GitCraftTest {
 			assertFalse(Files.exists(mappingsPath));
 			assertTrue(MappingFlavour.YARN.exists(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.49.a")));
 			assertFalse(MappingFlavour.YARN.exists(versionGraph.getMinecraftVersionBySemanticVersion("1.14-alpha.18.48.b")));
-			StepWorker.Context<OrderedVersion> context = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
+			IStepContext.SimpleStepContext<OrderedVersion> context = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context, MinecraftJar.MERGED));
 			assertTrue(Files.exists(mappingsPath));
 			assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context, MinecraftJar.MERGED));
@@ -196,7 +196,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("1.14.2"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.14.2"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.14.2"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -204,7 +204,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("1.14.3"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.14.3"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.14.3"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -212,7 +212,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("1.14.4"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.14.4"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.14.4"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -220,7 +220,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("1.19"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.19"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.19"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -228,7 +228,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.14.2-rc.1"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -236,7 +236,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("19w04b"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("19w04b"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("19w04b"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -244,7 +244,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("19w08a"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("19w08a"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("19w08a"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -252,7 +252,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("19w12b"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionByName("19w12b"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("19w12b"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -260,7 +260,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.15.2-rc.2.combat.5"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -268,7 +268,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.16.2-beta.3.combat.6"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -276,7 +276,7 @@ public class GitCraftTest {
 			{
 				Path mappingsPathTest = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2"), MinecraftJar.MERGED).orElse(null);
 				assertNotNull(mappingsPathTest);
-				StepWorker.Context<OrderedVersion> context1 = new StepWorker.Context<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2"), executor);
+				IStepContext.SimpleStepContext<OrderedVersion> context1 = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionBySemanticVersion("1.14.5-combat.2"), executor);
 				assertEquals(StepStatus.SUCCESS, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
 				assertTrue(Files.exists(mappingsPathTest));
 				assertEquals(StepStatus.UP_TO_DATE, MappingFlavour.YARN.provide(context1, MinecraftJar.MERGED));
@@ -810,5 +810,25 @@ public class GitCraftTest {
 		//
 		assertEquals(UnpickFlavour.NONE, GitCraft.getApplicationConfiguration().usedUnpickFlavour());
 		assertEquals(MappingFlavour.MOJMAP_YARN, GitCraft.getApplicationConfiguration().usedMapping());
+	}
+
+	@Test
+	public void pipelineRaceconditionRepoAccess() throws Exception {
+		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MinecraftVersionGraph _versionGraph;
+		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
+			_versionGraph = MinecraftVersionGraph.createFromMetadata(executor, metadataBootstrap);
+		}
+		Configuration.reset();
+		//
+		GitCraft.main(new String[]{"--only-version=20w13b,20w14infinite,20w14a", "--no-repo", "--no-assets", "--no-datagen-report", "--no-datagen-snbt", "--no-datapack", "--no-external-assets", "--mappings=identity_unmapped"});
+		// Execution Barrier
+		Configuration.reset();
+		//
+		GitCraft.main(new String[]{"--only-version=20w13b,20w14infinite,20w14a", "--no-assets", "--no-datagen-report", "--no-datagen-snbt", "--no-datapack", "--no-external-assets", "--mappings=identity_unmapped"});
+		//
+ 		// If this doesn't crash, then it has succeeded
 	}
 }

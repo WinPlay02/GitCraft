@@ -5,9 +5,10 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.mappings.ornithe.FeatherMappings;
 import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.meta.VersionMetaSource;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
@@ -37,7 +38,7 @@ public class FeatherUnpick implements Unpick {
 	}
 
 	@Override
-	public StepStatus provideUnpick(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideUnpick(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		GameVersionBuildMeta featherVersion = FeatherMappings.getLatestFeatherVersion(this.generation, versionContext.targetVersion(), minecraftJar);
 		if (featherVersion == null) {
 			return StepStatus.NOT_RUN;
@@ -72,7 +73,7 @@ public class FeatherUnpick implements Unpick {
 			if (featherVersion == null) {
 				return null;
 			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(FeatherMappings.versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-definitions.unpick");
+			return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(FeatherMappings.versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-definitions.unpick");
 		} catch (IOException e) {
 			return null;
 		}
@@ -84,7 +85,7 @@ public class FeatherUnpick implements Unpick {
 			if (featherVersion == null) {
 				return null;
 			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(FeatherMappings.versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-constants.jar");
+			return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(FeatherMappings.versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + "-unpick-constants.jar");
 		} catch (IOException e) {
 			return null;
 		}

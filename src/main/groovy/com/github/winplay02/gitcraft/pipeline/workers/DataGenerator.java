@@ -1,13 +1,15 @@
 package com.github.winplay02.gitcraft.pipeline.workers;
 
 import com.github.winplay02.gitcraft.GitCraft;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -24,7 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Executor;
 
-public record DataGenerator(StepWorker.Config config) implements StepWorker<OrderedVersion, DataGenerator.Inputs> {
+public record DataGenerator(GitCraftStepConfig config) implements GitCraftStepWorker<DataGenerator.Inputs> {
 
 	public static final ExternalWorldgenPacks EXTERNAL_WORLDGEN_PACKS = new ExternalWorldgenPacks();
 	private static final String DATAGEN_AVAILABLE_START_VERSION = "18w01a";
@@ -33,12 +35,17 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 	private static final String EXT_VANILLA_WORLDGEN_PACK_END = "21w44a";
 
 	@Override
-	public boolean shouldExecute(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context) {
+	public boolean shouldExecute(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline, IStepContext.SimpleStepContext<OrderedVersion> context) {
 		return context.targetVersion().compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(DATAGEN_AVAILABLE_START_VERSION)) >= 0;
 	}
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, DataGenerator.Inputs input, StepResults<OrderedVersion> results) throws Exception {
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		DataGenerator.Inputs input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
 		if (!GitCraft.getDataConfiguration().loadDatagenRegistry() && (!GitCraft.getDataConfiguration().readableNbt() || !GitCraft.getDataConfiguration().loadIntegratedDatapack())) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -54,12 +61,12 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 		Path artifactReportsArchive = null;
 
 		if (GitCraft.getDataConfiguration().readableNbt()) {
-			artifactSnbtArchive = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.DATAGEN_SNBT_ARCHIVE);
+			artifactSnbtArchive = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.DATAGEN_SNBT_ARCHIVE);
 			MiscHelper.deleteJarIfEmpty(artifactSnbtArchive);
 		}
 
 		if (GitCraft.getDataConfiguration().loadDatagenRegistry()) {
-			artifactReportsArchive = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.DATAGEN_REPORTS_ARCHIVE);
+			artifactReportsArchive = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.DATAGEN_REPORTS_ARCHIVE);
 			MiscHelper.deleteJarIfEmpty(artifactReportsArchive);
 		}
 
@@ -69,21 +76,21 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 		}
 
 		Path executablePath = pipeline.getStoragePath(input.serverJar(), context, this.config);
-		Path datagenDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ARTIFACTS_DATAGEN);
+		Path datagenDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.ARTIFACTS_DATAGEN);
 		Files.createDirectories(datagenDirectory);
 
 		if (GitCraft.getDataConfiguration().readableNbt()) {
 			// Structures (& more)
 			{
 				Path dataJarPath = pipeline.getStoragePath(input.dataJar(), context, this.config);
-				Path nbtSourceDataDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DATA_DIRECTORY);
+				Path nbtSourceDataDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DATA_DIRECTORY);
 				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(dataJarPath)) {
 					MiscHelper.copyLargeDir(fs.get().getPath("data"), nbtSourceDataDirectory);
 				}
 			}
-			Path nbtSourceDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DIRECTORY);
+			Path nbtSourceDirectory = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.TEMP_DATAGEN_NBT_SOURCE_DIRECTORY);
 			// Delete Output files, as some versions do not work, when files already exist
-			Path datagenSnbtOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY);
+			Path datagenSnbtOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenSnbtOutput);
 			runDatagen(context.executorService(), mcVersion, datagenDirectory, executablePath, "--dev",
 				"--input", nbtSourceDirectory.toAbsolutePath().toString(),
@@ -94,7 +101,7 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			if (!Files.exists(datagenSnbtOutput) || !Files.isDirectory(datagenSnbtOutput)) {
 				MiscHelper.panic("Datagen step was required, but SNBT files were not generated");
 			}
-			Path datagenSnbtOutputData = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY);
+			Path datagenSnbtOutputData = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.TEMP_DATAGEN_SNBT_DESTINATION_DATA_DIRECTORY);
 			// Copy to artifact jar
 			try (FileSystemUtil.Delegate snbtArchive = FileSystemUtil.getJarFileSystem(artifactSnbtArchive, true)) {
 				MiscHelper.copyLargeDir(datagenSnbtOutputData, snbtArchive.getPath("data"));
@@ -105,11 +112,11 @@ public record DataGenerator(StepWorker.Config config) implements StepWorker<Orde
 			StepStatus status = null;
 			Tuple2<OrderedVersion, Artifact> worldgenPack = EXTERNAL_WORLDGEN_PACKS.get(mcVersion);
 			if (worldgenPack != null) {
-				Path vanillaWorldgenDatapack = results.getPathForDifferentVersionKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, worldgenPack.getV1());
+				Path vanillaWorldgenDatapack = results.getPathForDifferentVersionKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, worldgenPack.getV1());
 				status = worldgenPack.getV2().fetchArtifactToFile(context.executorService(), vanillaWorldgenDatapack, "vanilla worldgen datapack");
 			}
 			// Datagen
-			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
+			Path datagenReportsOutput = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.TEMP_DATAGEN_REPORTS_DIRECTORY);
 			MiscHelper.deleteDirectory(datagenReportsOutput);
 			runDatagen(context.executorService(), mcVersion, datagenDirectory, executablePath, "--reports");
 			if (!Files.exists(datagenReportsOutput) || !Files.isDirectory(datagenReportsOutput)) {
