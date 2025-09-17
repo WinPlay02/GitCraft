@@ -153,7 +153,7 @@ class GitCraftCli {
 		}
 		UnpickFlavour[] fallbackUnpicks = null;
 		if (cli_args_parsed.hasOption("fallback-unpick")) {
-			fallbackMappings = cli_args_parsed.'fallback-unpicks';
+			fallbackUnpicks = cli_args_parsed.'fallback-unpicks';
 		}
 
 		boolean onlyStableReleases = cli_args_parsed.hasOption("only-stable");
