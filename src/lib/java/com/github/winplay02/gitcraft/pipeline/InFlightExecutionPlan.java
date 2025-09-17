@@ -26,6 +26,10 @@ public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends ISte
 	}
 
 	private void runSingleTask(ExecutorService executor, IPipeline.TupleVersionStep<T, C, D> task, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+		if (executor.isShutdown()) {
+			return;
+		}
+
 		executor.execute(() -> {
 			synchronized (executionLock) {
 				if (executingSubset.contains(task) || completedSubset.contains(task)) {
