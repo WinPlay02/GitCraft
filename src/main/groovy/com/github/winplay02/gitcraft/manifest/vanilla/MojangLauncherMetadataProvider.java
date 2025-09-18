@@ -28,7 +28,8 @@ import net.fabricmc.loader.impl.game.minecraft.McVersionLookup;
 public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangLauncherManifest, MojangLauncherManifest.VersionEntry> {
 
 	public MojangLauncherMetadataProvider() {
-		this.addManifestSource("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", MojangLauncherManifest.class);
+		this("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
+
 		// 1.14.3 - Combat Test
 		this.addMetadataSource(
 			"1.14_combat-212796",
@@ -139,6 +140,10 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"24w14potato_original",
 			"https://maven.fabricmc.net/net/minecraft/24w14potato_original.json",
 			"4e54c25e6eafdf0a2f1f6e86fb1b8c1d239dd8d5");
+	}
+
+	protected MojangLauncherMetadataProvider(String manifestUrl) {
+		this.addManifestSource(manifestUrl, MojangLauncherManifest.class);
 	}
 
 	private void addMetadataSource(String id, String url, String sha1) {
