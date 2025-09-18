@@ -157,7 +157,7 @@ public class Graph<T extends Vertex<T>> implements Iterable<T> {
 			temporarySet.clear();
 		}
 		if (emittedVertices.size() < this.edgesBack.size()) {
-			MiscHelper.panic("Topological order is incomplete, this graph contains a cycle");
+			MiscHelper.panic("Topological order is incomplete, this graph contains a cycle. Only %s out of %s vertices ordered", emittedVertices.size(), this.edgesBack.size());
 		}
 		return builder.build();
 	}

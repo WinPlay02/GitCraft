@@ -7,9 +7,9 @@ import com.github.winplay02.gitcraft.config.DataConfiguration;
 import com.github.winplay02.gitcraft.config.RepositoryConfiguration;
 import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration;
 import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineDescription;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
 import com.github.winplay02.gitcraft.util.SerializationTypes;
 
@@ -40,6 +40,6 @@ public class GitCraftLauncher extends GitCraftApplication {
 	@Override
 	public void run() throws Exception {
 		versionGraph = doVersionGraphOperations(versionGraph);
-		Pipeline.run(PipelineDescription.LAUNCH_PIPELINE, PipelineFilesystemStorage.DEFAULT.get(), null, versionGraph);
+		IPipeline.run(GitCraftPipelineDescription.LAUNCH_PIPELINE, GitCraftPipelineFilesystemStorage.DEFAULT.get(), null, versionGraph);
 	}
 }

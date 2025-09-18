@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.exceptions;
 
 import com.github.winplay02.gitcraft.exceptions.ornithe.RavenExceptions;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.LazyValue;
@@ -47,7 +47,7 @@ public enum ExceptionsFlavour {
 		return impl.get().canExceptionsBeUsedOn(mcVersion, minecraftJar);
 	}
 
-	public StepStatus provide(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
+	public StepStatus provide(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
 		return impl.get().provideExceptions(versionContext, minecraftJar);
 	}
 

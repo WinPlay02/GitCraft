@@ -24,7 +24,7 @@ public class GitCraftLauncherTransformer implements ClassFileTransformer {
 	@Override
 	public byte[] transform(ClassLoader loader, String fullyQualifiedClassName, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
 		if (transformations.containsKey(fullyQualifiedClassName)) {
-			System.out.printf("[GitCraft Agent]: Transforming %s%n",  fullyQualifiedClassName);
+			System.out.printf("[GitCraft Agent]: Transforming %s (by LauncherTransformer)%n", fullyQualifiedClassName);
 			return transformations.get(fullyQualifiedClassName).apply(classfileBuffer);
 		}
 		return null;

@@ -5,9 +5,10 @@ import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
 import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
@@ -24,7 +25,7 @@ import java.nio.file.StandardCopyOption;
 
 public class YarnUnpick implements Unpick {
 	@Override
-	public StepStatus provideUnpick(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideUnpick(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		if (!doesUnpickInformationExist(versionContext.targetVersion())) {
 			return StepStatus.NOT_RUN;
 		}
@@ -119,7 +120,7 @@ public class YarnUnpick implements Unpick {
 		return unpickDescription.version() >= 2;
 	}
 
-	private StepStatus fetchUnpickArtifacts(StepWorker.Context<OrderedVersion> versionContext) throws IOException {
+	private StepStatus fetchUnpickArtifacts(IStepContext<?, OrderedVersion> versionContext) throws IOException {
 		// Try constants JAR for unpicking
 		Path unpickingConstantsJar = getUnpickConstantsPath(versionContext.targetVersion());
 		GameVersionBuildMeta yarnVersion = YarnMappings.getTargetYarnBuild(versionContext.targetVersion());
@@ -140,7 +141,7 @@ public class YarnUnpick implements Unpick {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s-unpick-definitions.unpick", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-build.%s-unpick-definitions.unpick", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	protected Path getUnpickDescriptionPath(OrderedVersion mcVersion) {
@@ -148,7 +149,7 @@ public class YarnUnpick implements Unpick {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s-unpick-description.json", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-build.%s-unpick-description.json", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	protected Path getUnpickConstantsPath(OrderedVersion mcVersion) {
@@ -156,7 +157,7 @@ public class YarnUnpick implements Unpick {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s-constants.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-build.%s-constants.jar", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	private boolean isUnpickConstantsJarUsed(OrderedVersion targetVersion) {

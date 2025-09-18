@@ -1,6 +1,7 @@
 package com.github.winplay02.gitcraft.migration;
 
 import com.github.winplay02.gitcraft.LibraryPaths;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
@@ -28,13 +29,13 @@ public class Transition0_2_0_To0_3_0 implements MetadataStoreUpgrade {
 	public void upgrade() throws IOException {
 		upgradeExtraVersions();
 		upgradeMergedObfuscated();
-		upgradeRemappedLikeTree(GitCraftPaths.FILESYSTEM_ROOT.getRemapped(), false, false, unpicked -> unpicked ? "unpicked" : "remapped");
-		upgradeRemappedLikeTree(GitCraftPaths.FILESYSTEM_ROOT.getDecompiled(), true, true, $ -> null);
+		upgradeRemappedLikeTree(GitCraftPipelineFilesystemRoot.getRemapped().apply(GitCraftPaths.FILESYSTEM_ROOT), false, false, unpicked -> unpicked ? "unpicked" : "remapped");
+		upgradeRemappedLikeTree(GitCraftPipelineFilesystemRoot.getDecompiled().apply(GitCraftPaths.FILESYSTEM_ROOT), true, true, $ -> null);
 	}
 
 	private void upgradeExtraVersions() throws IOException {
 		Path extraVersionsDir = LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve("extra-versions");
-		Path targetExtraVersionsDir = GitCraftPaths.FILESYSTEM_ROOT.getMcExtraVersionStore().resolve("mojang-launcher");
+		Path targetExtraVersionsDir = GitCraftPipelineFilesystemRoot.getMcExtraVersionStore().apply(GitCraftPaths.FILESYSTEM_ROOT).resolve("mojang-launcher");
 		// Move from artifact-store to lost-and-found
 		if (Files.exists(targetExtraVersionsDir) && !MiscHelper.isDirectoryEmpty(targetExtraVersionsDir)) {
 			Path lostAndFoundDirectory = this.getLostAndFoundDirectory();
@@ -49,7 +50,7 @@ public class Transition0_2_0_To0_3_0 implements MetadataStoreUpgrade {
 	}
 
 	private void upgradeMergedObfuscated() throws IOException {
-		try (Stream<Path> versionStore = Files.list(GitCraftPaths.FILESYSTEM_ROOT.getMcVersionStore())) {
+		try (Stream<Path> versionStore = Files.list(GitCraftPipelineFilesystemRoot.getMcVersionStore().apply(GitCraftPaths.FILESYSTEM_ROOT))) {
 			for (Path versionPath : versionStore.toList()) {
 				Path obfuscatedMergedPath = versionPath.resolve("merged-obfuscated.jar");
 				Path newMergedPath = versionPath.resolve("merged.jar");

@@ -1,12 +1,14 @@
 package com.github.winplay02.gitcraft.pipeline.workers;
 
 import com.github.winplay02.gitcraft.GitCraft;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -17,10 +19,15 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import java.nio.file.Path;
 import java.util.NavigableSet;
 
-public record Resetter(StepWorker.Config config) implements StepWorker<OrderedVersion, StepInput.Empty> {
+public record Resetter(GitCraftStepConfig config) implements GitCraftStepWorker<StepInput.Empty> {
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		StepInput.Empty input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
 		if (GitCraft.resetVersionGraph.containsVersion(context.targetVersion())) { // only reset version artifacts of versions which are specified
 			// delete all mc jars other than the initial artifacts
 			// resettable artifacts are described by the storage layer

@@ -2,8 +2,8 @@ package com.github.winplay02.gitcraft.nests;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.ornithe.OrnitheNests;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.LazyValue;
@@ -48,7 +48,7 @@ public enum NestsFlavour {
 		return impl.get().canNestsBeUsedOn(mcVersion, minecraftJar, mappingFlavour);
 	}
 
-	public StepStatus provide(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException, URISyntaxException, InterruptedException {
+	public StepStatus provide(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException, URISyntaxException, InterruptedException {
 		return impl.get().provideNests(versionContext, minecraftJar, mappingFlavour);
 	}
 

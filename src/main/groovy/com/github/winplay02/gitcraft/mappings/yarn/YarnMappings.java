@@ -9,8 +9,9 @@ import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.meta.MetaUrls;
 import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
 import com.github.winplay02.gitcraft.meta.VersionMetaSource;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -109,16 +110,16 @@ public class YarnMappings extends Mapping {
 	}
 
 	public static Path getYarnMergedV2JarPath(OrderedVersion targetVersion, GameVersionBuildMeta yarnVersion) {
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.jar", targetVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-build.%s.jar", targetVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
-	public static StepStatus fetchYarnMergedV2Jar(StepWorker.Context<OrderedVersion> versionContext, GameVersionBuildMeta yarnVersion) {
+	public static StepStatus fetchYarnMergedV2Jar(IStepContext<?, OrderedVersion> versionContext, GameVersionBuildMeta yarnVersion) {
 		Path mappingsFileJar = getYarnMergedV2JarPath(versionContext.targetVersion(), yarnVersion);
 		return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeMergedV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileJar, null, null, "yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 	}
 
 	@Override
-	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// fabric yarn is provided for the merged jar
 		if (minecraftJar != MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
@@ -198,7 +199,7 @@ public class YarnMappings extends Mapping {
 		if (yarnVersion == null) {
 			return null;
 		}
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-build.%s.tiny", mcVersion.launcherFriendlyVersionName(), yarnVersion.build()));
 	}
 
 	@Override
@@ -225,13 +226,13 @@ public class YarnMappings extends Mapping {
 			|| GitCraftQuirks.yarnMissingReuploadedVersions.contains(mcVersion.launcherFriendlyVersionName());
 	}
 
-	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(StepWorker.Context<OrderedVersion> versionContext, GameVersionBuildMeta yarnVersion) {
+	private static Tuple2<Path, StepStatus> mappingsPathYarnUnmerged(IStepContext<?, OrderedVersion> versionContext, GameVersionBuildMeta yarnVersion) {
 		try {
-			Path mappingsFileUnmerged = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileUnmerged = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-unmerged-build.%s.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 			if (Files.exists(mappingsFileUnmerged) && validateMappings(mappingsFileUnmerged)) {
 				return Tuple2.tuple(mappingsFileUnmerged, StepStatus.UP_TO_DATE);
 			}
-			Path mappingsFileUnmergedJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
+			Path mappingsFileUnmergedJar = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-unmerged-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJar, null, null, "unmerged yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJar)) {
 				Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
@@ -241,11 +242,11 @@ public class YarnMappings extends Mapping {
 		} catch (IOException | RuntimeException e) {
 			MiscHelper.println("Yarn mappings in tiny-v2 format do not exist for %s, falling back to tiny-v1 mappings...", versionContext.targetVersion().launcherFriendlyVersionName());
 			try {
-				Path mappingsFileUnmergedv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
+				Path mappingsFileUnmergedv1 = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-unmerged-build.%s-v1.tiny", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 				if (Files.exists(mappingsFileUnmergedv1) && validateMappings(mappingsFileUnmergedv1)) {
 					return Tuple2.tuple(mappingsFileUnmergedv1, StepStatus.UP_TO_DATE);
 				}
-				Path mappingsFileUnmergedJarv1 = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
+				Path mappingsFileUnmergedJarv1 = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
 				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJarv1, null, null, "unmerged yarn mapping (v1 fallback)", versionContext.targetVersion().launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJarv1)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");

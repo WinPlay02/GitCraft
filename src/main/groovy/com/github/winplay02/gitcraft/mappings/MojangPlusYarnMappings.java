@@ -1,9 +1,10 @@
 package com.github.winplay02.gitcraft.mappings;
 
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -67,7 +68,7 @@ public class MojangPlusYarnMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// fabric yarn is provided for the merged jar; so only allow merged
 		if (minecraftJar != MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
@@ -95,7 +96,7 @@ public class MojangPlusYarnMappings extends Mapping {
 
 	@Override
 	protected Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve("%s-moj-yarn.tiny".formatted(mcVersion.launcherFriendlyVersionName()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve("%s-moj-yarn.tiny".formatted(mcVersion.launcherFriendlyVersionName()));
 	}
 
 	@Override

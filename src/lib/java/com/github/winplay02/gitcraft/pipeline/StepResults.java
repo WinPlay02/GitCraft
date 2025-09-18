@@ -8,21 +8,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public record StepResults<T extends AbstractVersion<T>>(Set<StorageKey> result) {
-	public static <T extends AbstractVersion<T>> StepResults<T> ofEmpty() {
-		return new StepResults<T>(ConcurrentHashMap.newKeySet());
+public record StepResults<T extends AbstractVersion<T>, C extends IStepContext<C, T>, D extends IStepConfig>(Set<StorageKey> result) {
+	public static <T extends AbstractVersion<T>, C extends IStepContext<C, T>, D extends IStepConfig> StepResults<T, C, D> ofEmpty() {
+		return new StepResults<>(ConcurrentHashMap.newKeySet());
 	}
 
 	public void addKey(StorageKey storageKey) {
 		this.result.add(storageKey);
 	}
 
-	public Path getPathForKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StepWorker.Config config, StorageKey storageKey) {
+	public Path getPathForKeyAndAdd(IPipeline<T, C, D> pipeline, C context, D config, StorageKey storageKey) {
 		this.result.add(storageKey);
 		return pipeline.getStoragePath(storageKey, context, config);
 	}
 
-	public Path getPathForDifferentVersionKeyAndAdd(Pipeline<T> pipeline, StepWorker.Context<T> context, StepWorker.Config config, StorageKey storageKey, T version) {
+	public Path getPathForDifferentVersionKeyAndAdd(IPipeline<T, C, D> pipeline, C context, D config, StorageKey storageKey, T version) {
 		this.result.add(storageKey);
 		if (!version.equals(context.targetVersion())) {
 			pipeline.relinkStoragePathToDifferentVersion(storageKey, context, config, version);
@@ -43,7 +43,7 @@ public record StepResults<T extends AbstractVersion<T>>(Set<StorageKey> result) 
 		return Optional.empty();
 	}
 
-	public void addAll(StepResults<T> results) {
+	public void addAll(StepResults<T, C, D> results) {
 		this.result.addAll(results.result);
 	}
 }

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
@@ -34,7 +34,7 @@ public class NoneNests extends Nest {
 	}
 
 	@Override
-	public StepStatus provideNests(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException {
+	public StepStatus provideNests(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException {
 		return StepStatus.SUCCESS;
 	}
 

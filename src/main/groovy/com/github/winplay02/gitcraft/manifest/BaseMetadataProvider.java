@@ -3,7 +3,8 @@ package com.github.winplay02.gitcraft.manifest;
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
@@ -44,9 +45,9 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	protected boolean versionsLoaded;
 
 	protected BaseMetadataProvider() {
-		this.manifestMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcMetaStore().resolve(this.getInternalName());
-		this.remoteMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcMetaDownloads().resolve(this.getInternalName());
-		this.localMetadata = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcExtraVersionStore().resolve(this.getInternalName());
+		this.manifestMetadata = GitCraftPipelineFilesystemRoot.getMcMetaStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(this.getInternalName());
+		this.remoteMetadata = GitCraftPipelineFilesystemRoot.getMcMetaDownloads().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(this.getInternalName());
+		this.localMetadata = GitCraftPipelineFilesystemRoot.getMcExtraVersionStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(this.getInternalName());
 		this.manifestSources = new ArrayList<>();
 		this.metadataSources = new ArrayList<>();
 		this.repositorySources = new ArrayList<>();

@@ -8,8 +8,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -46,7 +46,7 @@ public abstract class Nest {
 	 * @param mappingFlavour Mapping flavour
 	 * @return A result
 	 */
-	public abstract StepStatus provideNests(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException, URISyntaxException, InterruptedException;
+	public abstract StepStatus provideNests(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar, MappingFlavour mappingFlavour) throws IOException, URISyntaxException, InterruptedException;
 
 	protected final StepStatus mapNests(OrderedVersion mcVersion, MinecraftJar minecraftJar, MappingFlavour mappingFlavour, Path srcPath, Path dstPath) {
 		try {
@@ -65,7 +65,7 @@ public abstract class Nest {
 	}
 
 	/**
-	 * Should return a path to a nests file, created by {@link #provideNests(StepWorker.Context, MinecraftJar, MappingFlavour)}
+	 * Should return a path to a nests file, created by {@link #provideNests(IStepContext, MinecraftJar, MappingFlavour)}
 	 *
 	 * @param mcVersion Version
 	 * @param minecraftJar Minecraft jar

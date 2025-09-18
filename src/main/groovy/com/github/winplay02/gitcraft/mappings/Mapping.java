@@ -1,6 +1,6 @@
 package com.github.winplay02.gitcraft.mappings;
 
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -88,10 +88,10 @@ public abstract class Mapping {
 	 * @param minecraftJar Minecraft jar
 	 * @return A result
 	 */
-	public abstract StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException;
+	public abstract StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException;
 
 	/**
-	 * Should return a path to a tinyv2 mappings file, created by {@link #provideMappings(StepWorker.Context, MinecraftJar)}
+	 * Should return a path to a tinyv2 mappings file, created by {@link #provideMappings(IStepContext, MinecraftJar)}
 	 *
 	 * @param mcVersion Version
 	 * @param minecraftJar Minecraft jar
@@ -103,7 +103,7 @@ public abstract class Mapping {
 
 	/**
 	 * Should return a path to further information that may be additionally contained in a mappings-distribution.
-	 * These values will be populated by calling {@link #provideMappings(StepWorker.Context, MinecraftJar)} first.
+	 * These values will be populated by calling {@link #provideMappings(IStepContext, MinecraftJar)} first.
 	 * Examples for additional files are unpick definitions for yarn.
 	 *
 	 * @param mcVersion Version

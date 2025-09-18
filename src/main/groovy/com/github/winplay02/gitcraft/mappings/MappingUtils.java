@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.mappings;
 
 import com.github.winplay02.gitcraft.Library;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -62,7 +62,7 @@ public class MappingUtils {
 		return remapper;
 	}
 
-	public static VisitableMappingTree prepareAndCreateTreeFromMappingFlavour(MappingFlavour mapping, StepWorker.Context<OrderedVersion> versionContext, MinecraftJar mcJar) throws IOException, URISyntaxException, InterruptedException {
+	public static VisitableMappingTree prepareAndCreateTreeFromMappingFlavour(MappingFlavour mapping, IStepContext<?, OrderedVersion> versionContext, MinecraftJar mcJar) throws IOException, URISyntaxException, InterruptedException {
 		StepStatus stepStatus = mapping.provide(versionContext, mcJar);
 		if (!stepStatus.hasRun()) {
 			if (mcJar == MinecraftJar.MERGED) {

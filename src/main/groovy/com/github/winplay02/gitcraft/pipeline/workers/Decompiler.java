@@ -11,19 +11,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.github.winplay02.gitcraft.Library;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepInput;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
@@ -39,26 +39,29 @@ import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
 import net.fabricmc.loom.util.FileSystemUtil;
 
-public record Decompiler(StepWorker.Config config) implements StepWorker<OrderedVersion, Decompiler.Inputs> {
+public record Decompiler(GitCraftStepConfig config) implements GitCraftStepWorker<GitCraftStepWorker.JarTupleInput> {
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, Decompiler.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Files.createDirectories(pipeline.getStoragePath(PipelineFilesystemStorage.DECOMPILED, context, this.config));
-		StepOutput<OrderedVersion> mergedStatus = decompileJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), "merged", PipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		GitCraftStepWorker.JarTupleInput input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
+		Files.createDirectories(pipeline.getStoragePath(GitCraftPipelineFilesystemStorage.DECOMPILED, context, this.config));
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> mergedStatus = decompileJar(pipeline, context, MinecraftJar.MERGED, input.mergedJar().orElse(null), "merged", GitCraftPipelineFilesystemStorage.DECOMPILED_MERGED_JAR);
 		if (mergedStatus.status().isSuccessful()) {
 			return mergedStatus;
 		}
-		StepOutput<OrderedVersion> clientStatus = decompileJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), "client", PipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
-		StepOutput<OrderedVersion> serverStatus = decompileJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), "server", PipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> clientStatus = decompileJar(pipeline, context, MinecraftJar.CLIENT, input.clientJar().orElse(null), "client", GitCraftPipelineFilesystemStorage.DECOMPILED_CLIENT_JAR);
+		StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> serverStatus = decompileJar(pipeline, context, MinecraftJar.SERVER, input.serverJar().orElse(null), "server", GitCraftPipelineFilesystemStorage.DECOMPILED_SERVER_JAR);
 		return StepOutput.merge(clientStatus, serverStatus);
-	}
-
-	public record Inputs(Optional<StorageKey> mergedJar, Optional<StorageKey> clientJar, Optional<StorageKey> serverJar) implements StepInput {
 	}
 
 	private static final PrintStream NULL_IS = new PrintStream(OutputStream.nullOutputStream());
 
-	private StepOutput<OrderedVersion> decompileJar(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, MinecraftJar inFile, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
+	private StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> decompileJar(IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+													IStepContext.SimpleStepContext<OrderedVersion> context, MinecraftJar inFile, StorageKey inputFile, String artifactKind, StorageKey outputFile) throws IOException {
 		if (inputFile == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
@@ -74,7 +77,7 @@ public record Decompiler(StepWorker.Config config) implements StepWorker<Ordered
 		if (Files.exists(jarOut)) {
 			Files.delete(jarOut);
 		}
-		Path librariesDir = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
+		Path librariesDir = pipeline.getStoragePath(GitCraftPipelineFilesystemStorage.LIBRARIES, context, this.config);
 		if (librariesDir == null) {
 			return StepOutput.ofEmptyResultSet(StepStatus.FAILED);
 		}

@@ -7,8 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Executor;
 
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.Artifact;
@@ -60,12 +61,12 @@ public class MojangMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// client and server mappings are provided separately
 		if (minecraftJar == MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
 		}
-		Path artifactTargetPath = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMcVersionStore().resolve(versionContext.targetVersion().launcherFriendlyVersionName());
+		Path artifactTargetPath = GitCraftPipelineFilesystemRoot.getMcVersionStore().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(versionContext.targetVersion().launcherFriendlyVersionName());
 		Path mappingsPath = getMappingsPathInternal(versionContext.targetVersion(), minecraftJar);
 		Artifact artifact = null;
 		if (minecraftJar == MinecraftJar.CLIENT)
@@ -104,7 +105,7 @@ public class MojangMappings extends Mapping {
 
 	@Override
 	public Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve("%s-%s-moj.tiny".formatted(mcVersion.launcherFriendlyVersionName(), minecraftJar.name().toLowerCase()));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve("%s-%s-moj.tiny".formatted(mcVersion.launcherFriendlyVersionName(), minecraftJar.name().toLowerCase()));
 	}
 
 	@Override

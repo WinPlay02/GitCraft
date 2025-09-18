@@ -7,13 +7,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
@@ -22,10 +24,15 @@ import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.stitch.merge.JarMerger;
 
-public record JarsMerger(boolean obfuscated, StepWorker.Config config) implements StepWorker<OrderedVersion, JarsMerger.Inputs> {
+public record JarsMerger(boolean obfuscated, GitCraftStepConfig config) implements GitCraftStepWorker<JarsMerger.Inputs> {
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, JarsMerger.Inputs input, StepResults<OrderedVersion> results) throws Exception {
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		JarsMerger.Inputs input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
 		OrderedVersion mcVersion = context.targetVersion();
 		if (input.clientJar().isEmpty() || input.serverJar().isEmpty()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
@@ -38,7 +45,7 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 		if (!this.obfuscated && !config.mappingFlavour().supportsMergingPre1_3Versions()) {
 			return StepOutput.ofEmptyResultSet(StepStatus.NOT_RUN);
 		}
-		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.config, this.obfuscated ? PipelineFilesystemStorage.ARTIFACTS_MERGED_JAR : PipelineFilesystemStorage.REMAPPED_MERGED_JAR);
+		Path mergedJarPath = results.getPathForKeyAndAdd(pipeline, context, this.config, this.obfuscated ? GitCraftPipelineFilesystemStorage.ARTIFACTS_MERGED_JAR : GitCraftPipelineFilesystemStorage.REMAPPED_MERGED_JAR);
 		if (Files.exists(mergedJarPath) && !MiscHelper.isJarEmpty(mergedJarPath)) {
 			return new StepOutput<>(StepStatus.UP_TO_DATE, results);
 		}
@@ -50,7 +57,7 @@ public record JarsMerger(boolean obfuscated, StepWorker.Config config) implement
 		if (this.obfuscated) {
 			BundleMetadata sbm = BundleMetadata.fromJar(serverJar);
 			if (sbm != null) {
-				Path unbundledServerJar = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.UNBUNDLED_SERVER_JAR);
+				Path unbundledServerJar = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.UNBUNDLED_SERVER_JAR);
 
 				if (sbm.versions().size() != 1) {
 					throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(sbm.versions().size()));

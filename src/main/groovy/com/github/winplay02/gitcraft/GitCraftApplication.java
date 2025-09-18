@@ -5,9 +5,7 @@ import com.github.winplay02.gitcraft.config.Configuration;
 import com.github.winplay02.gitcraft.config.DataConfiguration;
 import com.github.winplay02.gitcraft.config.RepositoryConfiguration;
 import com.github.winplay02.gitcraft.config.TransientApplicationConfiguration;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineDescription;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FabricHelper;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
@@ -16,6 +14,7 @@ import com.github.winplay02.gitcraft.util.RemoteHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -167,7 +166,14 @@ public abstract class GitCraftApplication {
 				getApplicationConfiguration().usedExceptions(),
 				getApplicationConfiguration().enablePreening()
 			);
-			return new RepoWrapper(getTransientApplicationConfiguration().overrideRepositoryPath() != null ? getTransientApplicationConfiguration().overrideRepositoryPath() : (identifier.isEmpty() ? null : LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("minecraft-repo-%s", identifier))));
+			return new RepoWrapper(
+				Objects.requireNonNullElse(
+					getTransientApplicationConfiguration().overrideRepositoryPath() != null ?
+						getTransientApplicationConfiguration().overrideRepositoryPath() :
+						(identifier.isEmpty() ? null : LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("minecraft-repo-%s", identifier))),
+					GitCraftPipelineFilesystemRoot.getDefaultRepository().apply(GitCraftPaths.FILESYSTEM_ROOT)),
+				GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()
+			);
 		}
 		return null;
 	}

@@ -25,12 +25,13 @@ import com.github.winplay02.gitcraft.pipeline.workers.Resetter;
 import com.github.winplay02.gitcraft.pipeline.workers.SignaturesProvider;
 import com.github.winplay02.gitcraft.pipeline.workers.UnpickProvider;
 import com.github.winplay02.gitcraft.pipeline.workers.Unpicker;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 import java.util.function.Function;
 
-public enum Step {
+public enum GitCraftStep implements IStep<OrderedVersion, StepInput, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> {
 
-	RESET("Reset", Resetter::new),
+	RESET("Reset", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, Resetter::new),
 	FETCH_ARTIFACTS("Fetch Artifacts", ArtifactsFetcher::new),
 	FETCH_LIBRARIES("Fetch Libraries", LibrariesFetcher::new),
 	FETCH_ASSETS("Fetch Assets", AssetsFetcher::new),
@@ -50,26 +51,36 @@ public enum Step {
 	PROVIDE_NESTS("Provide Nests", NestsProvider::new),
 	APPLY_NESTS("Apply Nests", JarsNester::new),
 	PREEN_JARS("Preen Jars", Preener::new),
-	DECOMPILE_JARS("Decompile Jars", Decompiler::new),
-	COMMIT("Commit to repository", Committer::new),
-	REPO_GARBAGE_COLLECTOR("GC repository", RepoGarbageCollector::new),
-	LAUNCH_PREPARE_HARDLINK_ASSETS("Hardlink Assets to Launch Environment", LaunchStepHardlinkAssets::new),
+	DECOMPILE_JARS("Decompile Jars", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, Decompiler::new),
+	COMMIT("Commit to repository", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, Committer::new),
+	REPO_GARBAGE_COLLECTOR("GC repository", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, RepoGarbageCollector::new),
+	LAUNCH_PREPARE_HARDLINK_ASSETS("Hardlink Assets to Launch Environment", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, LaunchStepHardlinkAssets::new),
 	LAUNCH_PREPARE_CONSTRUCT_LAUNCHABLE_FILE("Construct a launchable file", LaunchPrepareLaunchableFile::new),
-	LAUNCH_CLIENT("Launch Client", LaunchStepLaunch::new);
+	LAUNCH_CLIENT("Launch Client", ParallelismPolicy.UNSAFE_RESTRICTED_TO_SEQUENTIAL, LaunchStepLaunch::new);
 
 	private final String name;
-	private final Function<StepWorker.Config, StepWorker<?, ?>> workerFactory;
+	private final ParallelismPolicy parallelismPolicy;
+	private final Function<GitCraftStepConfig, GitCraftStepWorker<StepInput>> workerFactory;
 
-	Step(String name, Function<StepWorker.Config, StepWorker<?, ?>> workerFactory) {
+	GitCraftStep(String name, Function<GitCraftStepConfig, GitCraftStepWorker<?>> workerFactory) {
+		this(name, ParallelismPolicy.SAFELY_FULLY_PARALLEL, workerFactory);
+	}
+
+	GitCraftStep(String name, ParallelismPolicy parallelismPolicy, Function<GitCraftStepConfig, GitCraftStepWorker<?>> workerFactory) {
 		this.name = name;
-		this.workerFactory = workerFactory;
+		this.parallelismPolicy = parallelismPolicy;
+		this.workerFactory = (Function<GitCraftStepConfig, GitCraftStepWorker<StepInput>>) (Object) workerFactory;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public StepWorker<?, ?> createWorker(StepWorker.Config config) {
+	public ParallelismPolicy getParallelismPolicy() {
+		return this.parallelismPolicy;
+	}
+
+	public IStepWorker<OrderedVersion, StepInput, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> createWorker(GitCraftStepConfig config) {
 		return workerFactory.apply(config);
 	}
 }

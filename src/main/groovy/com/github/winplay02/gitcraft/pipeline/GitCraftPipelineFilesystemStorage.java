@@ -1,74 +1,21 @@
 package com.github.winplay02.gitcraft.pipeline;
 
-import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.pipeline.key.ArtifactKey;
 import com.github.winplay02.gitcraft.pipeline.key.DirectoryKey;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
-import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.GitCraftPaths;
 import com.github.winplay02.gitcraft.util.LazyValue;
-import com.github.winplay02.gitcraft.util.MiscHelper;
-import com.github.winplay02.gitcraft.pipeline.StepWorker.Config.FlavourMatcher;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig.FlavourMatcher;
 
-import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
-public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFilesystemRoot rootFilesystem,
-																   Set<StorageKey> resettableKeys,
-																   Map<StorageKey, PathDeriver<T>> paths) {
-	@FunctionalInterface
-	public interface PathDeriver<T extends AbstractVersion<T>>  {
-		Path derive(PipelineFilesystemStorage<T> storage, StepWorker.Context<T> context, StepWorker.Config config);
-	}
+import static com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage.*;
 
-	@SafeVarargs
-	public PipelineFilesystemStorage(PipelineFilesystemRoot rootFilesystem, Set<StorageKey> resettableKeys, Map<StorageKey, PathDeriver<T>>... paths) {
-		this(rootFilesystem, resettableKeys, MiscHelper.mergeMaps(new HashMap<>(), paths));
-	}
+public final class GitCraftPipelineFilesystemStorage {
 
-	public Path getPath(StorageKey key, StepWorker.Context<T> context, StepWorker.Config config) {
-		if (key == null || !this.paths.containsKey(key)) {
-			return null;
-		}
-		return this.paths.get(key).derive(this, context, config);
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathConst(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
-		return (root, _context, _config) -> rootPathConstFunction.apply(root.rootFilesystem());
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathConstSubDir(Function<PipelineFilesystemRoot, Path> rootPathConstFunction, String subDir1, String... subDirs) {
-		return (root, _context, _config) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(subDir1, subDirs);
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> rootPathVersioned(Function<PipelineFilesystemRoot, Path> rootPathConstFunction) {
-		return (root, context, _config) -> rootPathConstFunction.apply(root.rootFilesystem()).resolve(context.targetVersion().pathName());
-	}
-
-	private Path resolvePath(StorageKey key, StepWorker.Context<T> context, StepWorker.Config config, String toResolveFirst, String... toResolve) {
-		return this.paths.get(key).derive(this, context, config).resolve(toResolveFirst, toResolve);
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKey(StorageKey key, String toResolveFirst, String... toResolve) {
-		return (root, context, config) -> root.resolvePath(key, context, config, toResolveFirst, toResolve);
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKey(StorageKey key, Function<StepWorker.Context<T>, String> toResolve) {
-		return (root, context, config) -> root.resolvePath(key, context, config, toResolve.apply(context));
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKey(StorageKey key, BiFunction<StepWorker.Context<T>, StepWorker.Config, String> toResolve) {
-		return (root, context, config) -> root.resolvePath(key, context, config, toResolve.apply(context, config));
-	}
-
-	private static <T extends AbstractVersion<T>> PathDeriver<T> createFromKeyWithConfig(StorageKey key, String pattern, MinecraftJar dist, FlavourMatcher... flavours) {
-		return (root, context, config) -> root.resolvePath(key, context, config, String.format(pattern, config.createArtifactComponentString(dist, flavours)));
-	}
+	private GitCraftPipelineFilesystemStorage() {}
 
 	private static final String SIDE_CLIENT = "client";
 	private static final String SIDE_SERVER = "server";
@@ -171,7 +118,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 
 	public static final ArtifactKey LAUNCHABLE_CLIENT_JAR = new ArtifactKey(LAUNCH_VERSIONS, SIDE_CLIENT, DIST_JAR);
 
-	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion>(
+	public static final LazyValue<PipelineFilesystemStorage<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig>> DEFAULT = LazyValue.of(() -> new PipelineFilesystemStorage<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig>(
 		GitCraftPaths.FILESYSTEM_ROOT,
 		Set.of(
 			REMAPPED_CLIENT_JAR, REMAPPED_SERVER_JAR, REMAPPED_MERGED_JAR,
@@ -179,7 +126,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			DECOMPILED_CLIENT_JAR, DECOMPILED_SERVER_JAR, DECOMPILED_MERGED_JAR
 		),
 		Map.of(
-			ARTIFACTS, rootPathVersioned(PipelineFilesystemRoot::getMcVersionStore),
+			ARTIFACTS, rootPathVersioned(GitCraftPipelineFilesystemRoot.getMcVersionStore()),
 			ARTIFACTS_CLIENT_JAR, createFromKeyWithConfig(ARTIFACTS, "client-%s.jar", MinecraftJar.CLIENT),
 			ARTIFACTS_SERVER_JAR, createFromKeyWithConfig(ARTIFACTS, "server-%s.jar", MinecraftJar.SERVER),
 			ARTIFACTS_SERVER_EXE, createFromKeyWithConfig(ARTIFACTS, "server-%s.exe", MinecraftJar.SERVER),
@@ -188,9 +135,9 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			ARTIFACTS_VANILLA_WORLDGEN_DATAPACK_ZIP, createFromKey(ARTIFACTS, "vanilla_worldgen.zip")
 		),
 		Map.of(
-			LIBRARIES, rootPathConst(PipelineFilesystemRoot::getLibraryStore),
-			ASSETS_INDEX, rootPathConst(PipelineFilesystemRoot::getAssetsIndex),
-			ASSETS_OBJECTS, rootPathConst(PipelineFilesystemRoot::getAssetsObjects),
+			LIBRARIES, rootPathConst(GitCraftPipelineFilesystemRoot.getLibraryStore()),
+			ASSETS_INDEX, rootPathConst(GitCraftPipelineFilesystemRoot.getAssetsIndex()),
+			ASSETS_OBJECTS, rootPathConst(GitCraftPipelineFilesystemRoot.getAssetsObjects()),
 			ASSETS_INDEX_JSON, createFromKey(ASSETS_INDEX, (context, config) -> context.targetVersion().assetsIndex().name()),
 			UNPACKED_SERVER_JAR, createFromKeyWithConfig(ARTIFACTS, "server-unpacked-%s.jar", MinecraftJar.SERVER),
 			UNBUNDLED_SERVER_JAR, createFromKeyWithConfig(ARTIFACTS, "server-unbundled-%s.jar", MinecraftJar.SERVER)
@@ -206,7 +153,7 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			DATAGEN_REPORTS_ARCHIVE, createFromKeyWithConfig(ARTIFACTS, "datagen-reports-%s.jar", MinecraftJar.SERVER)
 		),
 		Map.of(
-			REMAPPED, rootPathVersioned(PipelineFilesystemRoot::getRemapped),
+			REMAPPED, rootPathVersioned(GitCraftPipelineFilesystemRoot.getRemapped()),
 			REMAPPED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-remapped-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
 			REMAPPED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-remapped-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING),
 			REMAPPED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-remapped-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING)
@@ -215,13 +162,13 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			UNPICKED_CLIENT_JAR, createFromKeyWithConfig(REMAPPED, "client-unpicked-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
 			UNPICKED_SERVER_JAR, createFromKeyWithConfig(REMAPPED, "server-unpicked-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
 			UNPICKED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-unpicked-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK),
-			DECOMPILED, rootPathVersioned(PipelineFilesystemRoot::getDecompiled),
+			DECOMPILED, rootPathVersioned(GitCraftPipelineFilesystemRoot.getDecompiled()),
 			DECOMPILED_CLIENT_JAR, createFromKeyWithConfig(DECOMPILED, "client-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
 			DECOMPILED_SERVER_JAR, createFromKeyWithConfig(DECOMPILED, "server-%s.jar", MinecraftJar.SERVER, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN),
 			DECOMPILED_MERGED_JAR, createFromKeyWithConfig(DECOMPILED, "merged-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)
 		),
 		Map.of(
-			PATCHED, rootPathVersioned(PipelineFilesystemRoot::getPatchedStore),
+			PATCHED, rootPathVersioned(GitCraftPipelineFilesystemRoot.getPatchedStore()),
 			LVT_PATCHED_CLIENT_JAR, createFromKeyWithConfig(PATCHED, "client-lvt-%s.jar", MinecraftJar.CLIENT),
 			LVT_PATCHED_SERVER_JAR, createFromKeyWithConfig(PATCHED, "server-lvt-%s.jar", MinecraftJar.SERVER),
 			LVT_PATCHED_MERGED_JAR, createFromKeyWithConfig(PATCHED, "merged-lvt-%s.jar", MinecraftJar.MERGED),
@@ -241,13 +188,13 @@ public record PipelineFilesystemStorage<T extends AbstractVersion<T>>(PipelineFi
 			PREENED_MERGED_JAR, createFromKeyWithConfig(REMAPPED, "merged-preened-%s.jar", MinecraftJar.MERGED, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS)
 		),
 		Map.of(
-			LAUNCH_VERSIONS, rootPathVersioned(pipelineFsRoot -> pipelineFsRoot.getRuntimeDirectory().resolve("launch_versions")),
-			LAUNCH_GAME, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "game"),
-			LAUNCH_ASSETS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets"),
-			LAUNCH_ASSETS_OBJECTS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "objects"),
-			LAUNCH_ASSETS_INDEXES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "indexes"),
-			LAUNCH_ASSETS_VIRTUALFS, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "assets", "virtual"),
-			LAUNCH_NATIVES, rootPathConstSubDir(PipelineFilesystemRoot::getRuntimeDirectory, "natives")
+			LAUNCH_VERSIONS, rootPathVersioned(pipelineFsRoot -> GitCraftPipelineFilesystemRoot.getRuntimeDirectory().apply(pipelineFsRoot).resolve("launch_versions")),
+			LAUNCH_GAME, rootPathConstSubDir(GitCraftPipelineFilesystemRoot.getRuntimeDirectory(), "game"),
+			LAUNCH_ASSETS, rootPathConstSubDir(GitCraftPipelineFilesystemRoot.getRuntimeDirectory(), "assets"),
+			LAUNCH_ASSETS_OBJECTS, rootPathConstSubDir(GitCraftPipelineFilesystemRoot.getRuntimeDirectory(), "assets", "objects"),
+			LAUNCH_ASSETS_INDEXES, rootPathConstSubDir(GitCraftPipelineFilesystemRoot.getRuntimeDirectory(), "assets", "indexes"),
+			LAUNCH_ASSETS_VIRTUALFS, rootPathConstSubDir(GitCraftPipelineFilesystemRoot.getRuntimeDirectory(), "assets", "virtual"),
+			LAUNCH_NATIVES, rootPathConstSubDir(GitCraftPipelineFilesystemRoot.getRuntimeDirectory(), "natives")
 		),
 		Map.of(
 			LAUNCHABLE_CLIENT_JAR, createFromKeyWithConfig(LAUNCH_VERSIONS, "client-%s.jar", MinecraftJar.CLIENT, FlavourMatcher.LVT, FlavourMatcher.EXCEPTIONS, FlavourMatcher.SIGNATURES, FlavourMatcher.MAPPING, FlavourMatcher.UNPICK, FlavourMatcher.NESTS, FlavourMatcher.PREEN)

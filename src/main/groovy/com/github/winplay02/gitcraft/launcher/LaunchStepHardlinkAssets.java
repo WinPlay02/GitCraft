@@ -1,13 +1,15 @@
 package com.github.winplay02.gitcraft.launcher;
 
 import com.github.winplay02.gitcraft.manifest.metadata.AssetsIndexMetadata;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.types.Artifact;
 import com.github.winplay02.gitcraft.types.AssetsIndex;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -18,7 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-public record LaunchStepHardlinkAssets(StepWorker.Config config) implements StepWorker<OrderedVersion, StepInput.Empty> {
+public record LaunchStepHardlinkAssets(GitCraftStepConfig config) implements GitCraftStepWorker<StepInput.Empty> {
 
 	private static Artifact createArtifactForHash(String hash) {
 		return new Artifact(AssetsIndex.makeMinecraftAssetUrl(hash), hash, hash);
@@ -31,26 +33,31 @@ public record LaunchStepHardlinkAssets(StepWorker.Config config) implements Step
 	);
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, StepInput.Empty input, StepResults<OrderedVersion> results) throws Exception {
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		StepInput.Empty input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
 
-		Path assetsObjectsDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ASSETS_OBJECTS));
-		Path assetsIndexDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.ASSETS_INDEX));
+		Path assetsObjectsDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.ASSETS_OBJECTS));
+		Path assetsIndexDir = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.ASSETS_INDEX));
 
-		Path assetsPathObjects = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS_OBJECTS));
-		Path assetsPathIndexes = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS_INDEXES));
+		Path assetsPathObjects = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS_OBJECTS));
+		Path assetsPathIndexes = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS_INDEXES));
 
 		AssetsIndex assetsIndex = AssetsIndex.from(SerializationHelper.deserialize(SerializationHelper.fetchAllFromPath(context.targetVersion().assetsIndex().resolve(assetsIndexDir)), AssetsIndexMetadata.class));
 
-		Path symlinkedAssetsDir = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_GAME).resolve("assets");
+		Path symlinkedAssetsDir = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_GAME).resolve("assets");
 
 		Files.deleteIfExists(symlinkedAssetsDir);
 		Files.createSymbolicLink(
 			symlinkedAssetsDir,
-			results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS)
+			results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS)
 		);
 		if (assetsIndex.assetsIndex().map_to_resources()) {
 			// Legacy VFS
-			Path assetsPathVfs = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS_VIRTUALFS);
+			Path assetsPathVfs = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS_VIRTUALFS);
 			MiscHelper.deleteDirectory(assetsPathVfs);
 			Files.createDirectories(assetsPathVfs);
 			for (Map.Entry<String, AssetsIndexMetadata.Asset> object : assetsIndex.assetsIndex().objects().entrySet()) {
@@ -68,6 +75,17 @@ public record LaunchStepHardlinkAssets(StepWorker.Config config) implements Step
 					Files.createLink(assetFileIcon, icon.getValue().resolve(assetsObjectsDir));
 				}
 			}
+			// Symlink to resources
+			Path symlinkedResourcesDir = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_GAME).resolve("resources");
+			if (Files.isDirectory(symlinkedResourcesDir)) {
+				MiscHelper.deleteDirectory(symlinkedResourcesDir);
+			} else {
+				Files.delete(symlinkedResourcesDir);
+			}
+			Files.createSymbolicLink(
+				symlinkedResourcesDir,
+				assetsPathVfs
+			);
 		} else {
 			// Create Link to assets index
 			Path targetAssetsIndexNoExt = context.targetVersion().assetsIndex().resolve(assetsPathIndexes);

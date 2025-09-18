@@ -12,8 +12,8 @@ import com.github.winplay02.gitcraft.mappings.ornithe.CalamusIntermediaryMapping
 import com.github.winplay02.gitcraft.mappings.ornithe.FeatherMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.FabricIntermediaryMappings;
 import com.github.winplay02.gitcraft.mappings.yarn.YarnMappings;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.LazyValue;
@@ -86,8 +86,8 @@ public enum MappingFlavour {
 		return impl.get().canMappingsBeUsedOn(mcVersion, minecraftJar);
 	}
 
-	public StepStatus provide(StepWorker.Context<OrderedVersion> mcVersion, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
-		return impl.get().provideMappings(mcVersion, minecraftJar);
+	public StepStatus provide(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
+		return impl.get().provideMappings(versionContext, minecraftJar);
 	}
 
 	public Optional<Path> getPath(OrderedVersion mcVersion, MinecraftJar minecraftJar) {

@@ -2,8 +2,9 @@ package com.github.winplay02.gitcraft.mappings;
 
 import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.GitCraftQuirks;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
@@ -81,7 +82,7 @@ public class ParchmentMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		// parchment is provided for the merged jar
 		if (minecraftJar != MinecraftJar.MERGED) {
 			return StepStatus.NOT_RUN;
@@ -92,10 +93,10 @@ public class ParchmentMappings extends Mapping {
 		}
 		Files.deleteIfExists(mappingsPath);
 		String lastestParchmentBuild = getLatestReleaseVersionParchmentBuild(versionContext.targetVersion());
-		Path parchmentJson = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.json", versionContext.targetVersion().launcherFriendlyVersionName(), versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild));
+		Path parchmentJson = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-parchment-%s-%s.json", versionContext.targetVersion().launcherFriendlyVersionName(), versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild));
 		StepStatus downloadStatus = null;
 		if (!Files.exists(parchmentJson)) {
-			Path parchmentJar = PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild));
+			Path parchmentJar = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-parchment-%s-%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild));
 			downloadStatus = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(
 					versionContext.executorService(),
 					String.format("https://maven.parchmentmc.org/org/parchmentmc/data/parchment-%s/%s/parchment-%s-%s.zip", versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild, versionContext.targetVersion().launcherFriendlyVersionName(), lastestParchmentBuild),
@@ -128,7 +129,7 @@ public class ParchmentMappings extends Mapping {
 
 	@Override
 	public Path getMappingsPathInternal(OrderedVersion mcVersion, MinecraftJar minecraftJar) {
-		return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(String.format("%s-parchment-%s-%s.tiny", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), getLatestReleaseVersionParchmentBuild(mcVersion)));
+		return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-parchment-%s-%s.tiny", mcVersion.launcherFriendlyVersionName(), mcVersion.launcherFriendlyVersionName(), getLatestReleaseVersionParchmentBuild(mcVersion)));
 	}
 
 	@Override

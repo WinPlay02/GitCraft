@@ -6,8 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.MiscHelper;
@@ -42,10 +42,10 @@ public abstract class SignaturesPatch {
 	 * @param minecraftJar Minecraft jar
 	 * @return A result
 	 */
-	public abstract StepStatus provideSignatures(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException;
+	public abstract StepStatus provideSignatures(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException;
 
 	/**
-	 * Should return a path to a signatures file, created by {@link #provideSignatures(StepWorker.Context, MinecraftJar)}
+	 * Should return a path to a signatures file, created by {@link #provideSignatures(IStepContext, MinecraftJar)}
 	 *
 	 * @param mcVersion Version
 	 * @param minecraftJar Minecraft jar

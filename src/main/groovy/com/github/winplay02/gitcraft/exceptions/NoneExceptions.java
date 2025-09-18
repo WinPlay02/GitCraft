@@ -3,8 +3,8 @@ package com.github.winplay02.gitcraft.exceptions;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 
@@ -33,7 +33,7 @@ public class NoneExceptions extends ExceptionsPatch {
 	}
 
 	@Override
-	public StepStatus provideExceptions(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provideExceptions(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		return StepStatus.SUCCESS;
 	}
 

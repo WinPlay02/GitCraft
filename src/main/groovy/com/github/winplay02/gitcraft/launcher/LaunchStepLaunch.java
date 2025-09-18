@@ -4,13 +4,16 @@ import com.github.winplay02.gitcraft.GitCraft;
 import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
 import com.github.winplay02.gitcraft.manifest.metadata.LibraryMetadata;
 import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
-import com.github.winplay02.gitcraft.pipeline.Pipeline;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IPipeline;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepConfig;
 import com.github.winplay02.gitcraft.pipeline.StepInput;
 import com.github.winplay02.gitcraft.pipeline.StepOutput;
 import com.github.winplay02.gitcraft.pipeline.StepResults;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
+import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.Artifact;
@@ -38,7 +41,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<OrderedVersion, LaunchStepLaunch.Inputs> {
+public record LaunchStepLaunch(GitCraftStepConfig config) implements GitCraftStepWorker<LaunchStepLaunch.Inputs> {
 
 	protected static final Artifact launchWrapper = new Artifact("https://libraries.minecraft.net/net/minecraft/launchwrapper/1.5/launchwrapper-1.5.jar", "launchwrapper-1.5.jar", "5150b9c2951f0fde987ce9c33496e26add1de224");
 
@@ -147,16 +150,21 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 	}
 
 	@Override
-	public StepOutput<OrderedVersion> run(Pipeline<OrderedVersion> pipeline, Context<OrderedVersion> context, LaunchStepLaunch.Inputs input, StepResults<OrderedVersion> results) throws Exception {
-		Path assetsPath = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS);
-		Path assetsPathVirtualFs = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_ASSETS_VIRTUALFS);
-		Path nativesPath = results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_NATIVES);
+	public StepOutput<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> run(
+		IPipeline<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> pipeline,
+		IStepContext.SimpleStepContext<OrderedVersion> context,
+		LaunchStepLaunch.Inputs input,
+		StepResults<OrderedVersion, IStepContext.SimpleStepContext<OrderedVersion>, GitCraftStepConfig> results
+	) throws Exception {
+		Path assetsPath = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS);
+		Path assetsPathVirtualFs = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS_VIRTUALFS);
+		Path nativesPath = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_NATIVES);
 		{
 			// Clean natives path
 			MiscHelper.deleteDirectory(nativesPath);
 			Files.createDirectories(nativesPath);
 		}
-		Path gamePath = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, PipelineFilesystemStorage.LAUNCH_GAME));
+		Path gamePath = Files.createDirectories(results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_GAME));
 		// Options fixing; otherwise legacy versions may crash because said languages cannot be found
 		{
 			Path optionsPath = gamePath.resolve("options.txt");
@@ -177,7 +185,7 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 				Files.writeString(optionsPath, String.join("\n", options), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 			}
 		}
-		Path librariesPath = pipeline.getStoragePath(PipelineFilesystemStorage.LIBRARIES, context, this.config);
+		Path librariesPath = pipeline.getStoragePath(GitCraftPipelineFilesystemStorage.LIBRARIES, context, this.config);
 		Path clientPath = pipeline.getStoragePath(input.clientJar().orElse(null), context, this.config);
 		// Classpath
 		Tuple2<List<Artifact>, Map<Artifact, LibraryMetadata.Extract>> libraries = getLibrariesNeededForLaunch(context.targetVersion().versionInfo(), Map.of("arch", LauncherUtils.getShortArch()));
@@ -270,7 +278,7 @@ public record LaunchStepLaunch(StepWorker.Config config) implements StepWorker<O
 				context.targetVersion().versionInfo().arguments().game() : List.of(new VersionInfo.VersionArgumentWithRules(Arrays.stream(context.targetVersion().versionInfo().minecraftArguments().split("\\s")).toList(), List.of())), args, os, arch);
 		cmdArgs.addAll(programArgs);
 		MiscHelper.println(String.join(" ", cmdArgs));
-		MiscHelper.createJavaSubprocess(context.executorService(), String.format("Client/%s", context.targetVersion().launcherFriendlyVersionName()), pipeline.getFilesystemStorage().rootFilesystem().getRuntimeDirectory(), cmdArgs);
+		MiscHelper.createJavaSubprocess(context.executorService(), String.format("Client/%s", context.targetVersion().launcherFriendlyVersionName()), GitCraftPipelineFilesystemRoot.getRuntimeDirectory().apply(pipeline.getFilesystemStorage().rootFilesystem()), cmdArgs);
 		return StepOutput.ofEmptyResultSet(StepStatus.SUCCESS);
 	}
 

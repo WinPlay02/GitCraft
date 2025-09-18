@@ -89,6 +89,7 @@ dependencies {
 
 	// https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
 	implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
+	libImplementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
 
 	// Decompiler
 	implementation "org.vineflower:vineflower:${vineflower_version}"

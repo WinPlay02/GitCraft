@@ -6,9 +6,10 @@ import com.github.winplay02.gitcraft.meta.GameVersionBuildMeta;
 import com.github.winplay02.gitcraft.meta.MetaUrls;
 import com.github.winplay02.gitcraft.meta.RemoteVersionMetaSource;
 import com.github.winplay02.gitcraft.meta.VersionMetaSource;
-import com.github.winplay02.gitcraft.pipeline.PipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemRoot;
+import com.github.winplay02.gitcraft.pipeline.GitCraftPipelineFilesystemStorage;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.FileSystemNetworkManager;
@@ -118,7 +119,7 @@ public class FeatherMappings extends Mapping {
 	}
 
 	@Override
-	public StepStatus provideMappings(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
+	public StepStatus provideMappings(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException, URISyntaxException, InterruptedException {
 		GameVersionBuildMeta featherVersion = getLatestFeatherVersion(this.generation, versionContext.targetVersion(), minecraftJar);
 		if (featherVersion == null) {
 			return StepStatus.NOT_RUN;
@@ -146,7 +147,7 @@ public class FeatherMappings extends Mapping {
 			if (featherVersion == null) {
 				return null;
 			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".tiny");
+			return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(versionKey(this.generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".tiny");
 		} catch (IOException e) {
 			return null;
 		}
@@ -158,7 +159,7 @@ public class FeatherMappings extends Mapping {
 			if (featherVersion == null) {
 				return null;
 			}
-			return PipelineFilesystemStorage.DEFAULT.get().rootFilesystem().getMappings().resolve(versionKey(generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".jar");
+			return GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(versionKey(generation, mcVersion, minecraftJar) + "-feather-gen" + generation + "-build." + featherVersion.build() + ".jar");
 		} catch (IOException e) {
 			return null;
 		}

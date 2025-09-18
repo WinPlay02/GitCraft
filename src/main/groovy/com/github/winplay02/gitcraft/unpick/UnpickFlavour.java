@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.unpick;
 
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
+import com.github.winplay02.gitcraft.pipeline.IStepContext;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
-import com.github.winplay02.gitcraft.pipeline.StepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.MinecraftJar;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.LazyValue;
@@ -27,7 +27,7 @@ public enum UnpickFlavour {
 		return super.toString().toLowerCase(Locale.ROOT);
 	}
 
-	public StepStatus provide(StepWorker.Context<OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
+	public StepStatus provide(IStepContext<?, OrderedVersion> versionContext, MinecraftJar minecraftJar) throws IOException {
 		return this.impl.get().provideUnpick(versionContext, minecraftJar);
 	}
 
