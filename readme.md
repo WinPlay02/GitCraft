@@ -13,6 +13,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 - [Kas-tle](https://github.com/Kas-tle)
 - [A11v1r15](https://github.com/A11v1r15)
 - [SpaceWalkerRS](https://github.com/SpaceWalkerRS)
+- [Shnupbups](https://github.com/Shnupbups)
 
 ## Discussion
 
@@ -64,6 +65,7 @@ Powered by:
 - [Parchment](https://github.com/ParchmentMC/Parchment)
 - [Skyrising Minecraft Version Manifest Collection](https://skyrising.github.io/mc-versions)
 - {Libraries, Tools, Mappings} of [OrnitheMC](https://github.com/OrnitheMC)
+- [Omniarchive](https://omniarchive.uk/)
 
 ## Help / Usage
 
@@ -97,9 +99,8 @@ Options:
                                identity_unmapped, mojmap_yarn
       --fallback-unpick[=<mapping>[,<mapping>]...]
                              If the primary unpick information fails, these are
-                               tried (in given order). By default none is tried
-                               as a fallback. Possible values are: none, yarn,
-                               feather
+                               tried (in given order). By default this list is
+                               empty. Possible values are: none, yarn, feather
   -h, --help                 Displays this help screen
       --manifest-source=<manifestsrc>
                              Specifies the manifest source used to fetch the
@@ -107,7 +108,8 @@ Options:
                                versions and the dependencies between versions.
                                The Minecraft Launcher Meta (from Mojang) is
                                selected by default. Possible values are:
-                               mojang, skyrising, ornithemc, mojang_historic
+                               mojang, skyrising, ornithemc, omniarchive,
+                               mojang_historic
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
                                Possible values are: mojmap,
