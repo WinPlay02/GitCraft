@@ -144,6 +144,10 @@ public record OrderedVersion(
 		return this.serverDist().serverZip() != null;
 	}
 
+	public boolean hasSideMissing() {
+		return this.hasSharedVersioning() && (!this.hasClientCode() || !this.hasServerCode());
+	}
+
 	public boolean hasClientMojMaps() {
 		return this.clientMappings() != null;
 	}

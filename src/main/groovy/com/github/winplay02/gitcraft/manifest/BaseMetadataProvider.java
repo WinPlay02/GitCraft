@@ -287,6 +287,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
-		return mcVersion.isPending();
+		// TODO: allow disabling second check through config/run args?
+		return mcVersion.isPending() || mcVersion.hasSideMissing();
 	}
 }
