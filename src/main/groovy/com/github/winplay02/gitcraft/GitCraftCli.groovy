@@ -202,7 +202,7 @@ class GitCraftCli {
 			fallbackMappings != null ? fallbackMappings : original.fallbackMappings(),
 			usedUnpick != null ? usedUnpick : original.usedUnpickFlavour(),
 			fallbackUnpicks != null ? fallbackUnpicks : original.fallbackUnpickFlavours(),
-			original.singleSideVersionsOnMainBranch() && !noSingleSideVersionsOnMainBranch
+			original.singleSideVersionsOnMainBranch() && !noSingleSideVersionsOnMainBranch,
 			original.onlyStableReleases() || onlyStableReleases,
 			original.onlySnapshots() || onlySnapshots,
 			original.skipNonLinear() || skipNonLinear,
