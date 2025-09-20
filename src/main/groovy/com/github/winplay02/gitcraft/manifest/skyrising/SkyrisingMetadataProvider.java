@@ -121,11 +121,9 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	}
 
 	@Override
-	public List<String> getParentVersion(OrderedVersion mcVersion) {
+	public List<OrderedVersion> getParentVersions(OrderedVersion mcVersion) {
 		return this.getVersionDetails(mcVersion.launcherFriendlyVersionName()).previous().stream()
-			.map(this::getVersionDetails)
-			.filter(Objects::nonNull)
-			.map(VersionDetails::normalizedVersion)
+			.map(this::getVersionByVersionID)
 			.toList();
 	}
 

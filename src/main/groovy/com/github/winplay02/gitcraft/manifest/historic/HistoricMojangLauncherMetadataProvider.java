@@ -271,7 +271,7 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 	}
 
 	@Override
-	public List<String> getParentVersion(OrderedVersion mcVersion) {
-		return this.mojangLauncherMetadataProvider.getParentVersion(mcVersion);
+	public List<OrderedVersion> getParentVersions(OrderedVersion mcVersion) {
+		return this.mojangLauncherMetadataProvider.getParentVersions(mcVersion);
 	}
 }

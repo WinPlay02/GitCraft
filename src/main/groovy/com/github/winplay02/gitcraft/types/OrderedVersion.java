@@ -227,4 +227,8 @@ public record OrderedVersion(
 		}
 		return c;
 	}
+
+	public boolean hasSideInCommon(OrderedVersion o) {
+		return (this.hasClientCode() && o.hasClientCode()) || (this.hasServerCode() && o.hasServerCode());
+	}
 }
