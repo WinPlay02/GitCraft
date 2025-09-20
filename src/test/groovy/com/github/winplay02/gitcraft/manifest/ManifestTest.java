@@ -6,6 +6,8 @@ import com.github.winplay02.gitcraft.MinecraftVersionGraph;
 import com.github.winplay02.gitcraft.manifest.historic.HistoricMojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -88,7 +90,7 @@ public class ManifestTest {
 		assertTrue(metadataBootstrap.versionsById.containsKey("11w47a"));
 		assertTrue(metadataBootstrap.versionsById.containsKey("1.0.1"));
 		assertEquals("1.1.0-alpha.11.47.a", metadataBootstrap.versionsById.get("11w47a").semanticVersion());
-		assertTrue(metadataBootstrap.getParentVersion(metadataBootstrap.versionsById.get("11w47a")).containsAll(List.of("1.0.0", "1.0.1")));
+		assertTrue(metadataBootstrap.getParentVersions(metadataBootstrap.versionsById.get("11w47a")).stream().map(OrderedVersion::friendlyVersion).toList().containsAll(List.of("1.0.0", "1.0.1")));
 	}
 
 	@Test
