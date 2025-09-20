@@ -293,106 +293,111 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	}
 
 	@Override
-	public List<String> getParentVersion(OrderedVersion mcVersion) {
-		switch (mcVersion.semanticVersion()) {
+	public List<OrderedVersion> getParentVersions(OrderedVersion mcVersion) {
+		List<String> parentVersionIds = this.getParentVersionIds(mcVersion.friendlyVersion());
+		return parentVersionIds == null ? null : parentVersionIds.stream().map(this::getVersionByVersionID).toList();
+	}
+
+	protected List<String> getParentVersionIds(String versionId) {
+		switch (versionId) {
 			// Combat
-			case "1.14.3-rc.4.combat.1" -> {
-				return List.of("1.14.3-rc.4");
+			case "1.14_combat-212796" -> {
+				return List.of("1.14.3-pre4");
 			}
-			case "1.14.5-combat.2" -> {
-				return List.of("1.14.4", "1.14.3-rc.4.combat.1");
+			case "1.14_combat-0" -> {
+				return List.of("1.14.4", "1.14_combat-212796");
 			}
-			case "1.14.5-combat.3" -> {
-				return List.of("1.14.5-combat.2");
+			case "1.14_combat-3" -> {
+				return List.of("1.14_combat-0");
 			}
-			case "1.15-rc.3.combat.4" -> {
-				return List.of("1.15-rc.3", "1.14.5-combat.3");
+			case "1.15_combat-1" -> {
+				return List.of("1.15-pre3", "1.14_combat-3");
 			}
-			case "1.15.2-rc.2.combat.5" -> {
-				return List.of("1.15.2-rc.2", "1.15-rc.3.combat.4");
+			case "1.15_combat-6" -> {
+				return List.of("1.15.2-pre2", "1.15_combat-1");
 			}
-			case "1.16.2-beta.3.combat.6" -> {
-				return List.of("1.16.2-beta.3", "1.15.2-rc.2.combat.5");
+			case "1.16_combat-0" -> {
+				return List.of("1.16.2-pre3", "1.15_combat-6");
 			}
-			case "1.16.3-combat.7" -> {
-				return List.of("1.16.2", "1.16.2-beta.3.combat.6");
+			case "1.16_combat-1" -> {
+				return List.of("1.16.2", "1.16_combat-0");
 			}
-			case "1.16.3-combat.7.b" -> {
-				return List.of("1.16.3-combat.7");
+			case "1.16_combat-2" -> {
+				return List.of("1.16_combat-1");
 			}
-			case "1.16.3-combat.7.c" -> {
-				return List.of("1.16.3-combat.7.b");
+			case "1.16_combat-3" -> {
+				return List.of("1.16_combat-2");
 			}
-			case "1.16.3-combat.8" -> {
-				return List.of("1.16.3-combat.7.c");
+			case "1.16_combat-4" -> {
+				return List.of("1.16_combat-3");
 			}
-			case "1.16.3-combat.8.b" -> {
-				return List.of("1.16.3-combat.8");
+			case "1.16_combat-5" -> {
+				return List.of("1.16_combat-4");
 			}
-			case "1.16.3-combat.8.c" -> {
-				return List.of("1.16.3-combat.8.b");
+			case "1.16_combat-6" -> {
+				return List.of("1.16_combat-5");
 			}
 			// Experimental 1.18
-			case "1.18-alpha.0.0.Experimental.1" -> {
+			case "1.18_experimental-snapshot-1" -> {
 				return List.of("1.17.1");
 			}
-			case "1.18-alpha.0.0.Experimental.2" -> {
-				return List.of("1.18-alpha.0.0.Experimental.1");
+			case "1.18_experimental-snapshot-2" -> {
+				return List.of("1.18_experimental-snapshot-1");
 			}
-			case "1.18-alpha.0.0.Experimental.3" -> {
-				return List.of("1.18-alpha.0.0.Experimental.2");
+			case "1.18_experimental-snapshot-3" -> {
+				return List.of("1.18_experimental-snapshot-2");
 			}
-			case "1.18-alpha.0.0.Experimental.4" -> {
-				return List.of("1.18-alpha.0.0.Experimental.3");
+			case "1.18_experimental-snapshot-4" -> {
+				return List.of("1.18_experimental-snapshot-3");
 			}
-			case "1.18-alpha.0.0.Experimental.5" -> {
-				return List.of("1.18-alpha.0.0.Experimental.4");
+			case "1.18_experimental-snapshot-5" -> {
+				return List.of("1.18_experimental-snapshot-4");
 			}
-			case "1.18-alpha.0.0.Experimental.6" -> {
-				return List.of("1.18-alpha.0.0.Experimental.5");
+			case "1.18_experimental-snapshot-6" -> {
+				return List.of("1.18_experimental-snapshot-5");
 			}
-			case "1.18-alpha.0.0.Experimental.7" -> {
-				return List.of("1.18-alpha.0.0.Experimental.6");
+			case "1.18_experimental-snapshot-7" -> {
+				return List.of("1.18_experimental-snapshot-6");
 			}
-			case "1.18-alpha.21.37.a" -> {
-				return List.of("1.17.1", "1.18-alpha.0.0.Experimental.7");
+			case "21w37a" -> {
+				return List.of("1.17.1", "1.18_experimental-snapshot-7");
 			}
 			// Experimental 1.19
-			case "1.19-alpha.0.0.Experimental.1" -> {
+			case "1.19_deep_dark_experimental_snapshot-1" -> {
 				return List.of("1.18.1");
 			}
-			case "1.19-alpha.22.11.a" -> {
-				return List.of("1.18.2", "1.19-alpha.0.0.Experimental.1");
+			case "22w11a" -> {
+				return List.of("1.18.2", "1.19_deep_dark_experimental_snapshot-1");
 			}
 			// April
-			case "1.8.4-alpha.15.14.a+loveandhugs" -> {
+			case "15w14a" -> {
 				return List.of("1.8.3");
 			}
-			case "1.9.2-rv+trendy" -> {
+			case "1.RV-Pre1" -> {
 				return List.of("1.9.2");
 			}
-			case "1.14-alpha.19.13.shareware" -> {
-				return List.of("1.14-alpha.19.13.b");
+			case "3D Shareware v1.34" -> {
+				return List.of("19w13b");
 			}
-			case "1.16-alpha.20.13.inf" -> {
-				return List.of("1.16-alpha.20.13.b");
+			case "20w14infinite" -> {
+				return List.of("20w13b");
 			}
-			case "1.19-alpha.22.13.oneblockatatime" -> {
-				return List.of("1.19-alpha.22.13.a");
+			case "22w13oneblockatatime" -> {
+				return List.of("22w13a");
 			}
-			case "1.20-alpha.23.13.ab" -> {
-				return List.of("1.20-alpha.23.13.ab.original", "1.20-alpha.23.13.a");
+			case "23w13a_or_b" -> {
+				return List.of("23w13a_or_b_original", "23w13a");
 			}
-			case "1.20-alpha.23.13.ab.original" -> {
-				return List.of("1.20-alpha.23.13.a");
+			case "23w13a_or_b_original" -> {
+				return List.of("23w13a");
 			}
-			case "1.20.5-alpha.24.12.potato" -> {
-				return List.of("1.20.5-alpha.24.12.potato.original", "1.20.5-alpha.24.12.a");
+			case "24w14potato" -> {
+				return List.of("24w14potato_original", "24w12a");
 			}
-			case "1.20.5-alpha.24.12.potato.original" -> {
-				return List.of("1.20.5-alpha.24.12.a");
+			case "24w14potato_original" -> {
+				return List.of("24w12a");
 			}
-			case "1.21.6-alpha.25.14.craftmine" -> {
+			case "25w14craftmine" -> {
 				return List.of("1.21.5");
 			}
 			// Special case to make version graph not contain a cycle

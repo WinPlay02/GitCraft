@@ -144,6 +144,10 @@ public record OrderedVersion(
 		return this.serverDist().serverZip() != null;
 	}
 
+	public boolean hasSideMissing() {
+		return this.hasSharedVersioning() && (!this.hasClientCode() || !this.hasServerCode());
+	}
+
 	public boolean hasClientMojMaps() {
 		return this.clientMappings() != null;
 	}
@@ -222,5 +226,9 @@ public record OrderedVersion(
 			c = thisBuild.compareTo(otherBuild);
 		}
 		return c;
+	}
+
+	public boolean hasSideInCommon(OrderedVersion o) {
+		return (this.hasClientCode() && o.hasClientCode()) || (this.hasServerCode() && o.hasServerCode());
 	}
 }

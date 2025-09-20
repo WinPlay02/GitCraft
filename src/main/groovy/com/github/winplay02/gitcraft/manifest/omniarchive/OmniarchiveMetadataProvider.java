@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
-import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider {
 
@@ -28,13 +27,13 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 	}
 
 	@Override
-	public List<String> getParentVersion(OrderedVersion mcVersion) {
-		switch (mcVersion.semanticVersion()) {
-		case "1.14-alpha.19.13.shareware" -> {
-			return List.of("1.14-alpha.19.13.b+1653");
+	public List<String> getParentVersionIds(String versionId) {
+		switch (versionId) {
+		case "3D Shareware v1.34" -> {
+			return List.of("19w13b+1653");
 		}
 		}
 
-		return super.getParentVersion(mcVersion);
+		return super.getParentVersionIds(versionId);
 	}
 }

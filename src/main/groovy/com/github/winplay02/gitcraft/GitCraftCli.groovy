@@ -38,6 +38,7 @@ class GitCraftCli {
 		cli_args._(longOpt: 'no-datagen-snbt', 'Disables datagen for converting NBT files (like structures) to SNBT files. If "no-datapack" is set, this flag is automatically set.');
 		cli_args._(longOpt: 'no-datagen-report', 'Disables datagen for versioning reports (like blocks, and other registries)');
 		cli_args._(longOpt: 'no-assets', 'Disables assets versioning (includes external assets)');
+		cli_args._(longOpt: 'no-single-side-versions-on-main-branch', 'Forces versions with missing sides (like Beta 1.2_02 or 1.0.1) onto side branches instead of the main branch');
 		cli_args._(longOpt:
 			'no-external-assets', 'Disables assets versioning for assets not included inside "minecraft".jar (e.g. other languages). Has no effect if --no-assets is specified');
 		cli_args._(longOpt: 'skip-nonlinear', 'Skips non-linear (e.g. April Fools, Combat Snapshots, ...) versions completely');
@@ -156,6 +157,7 @@ class GitCraftCli {
 			fallbackUnpicks = cli_args_parsed.'fallback-unpicks';
 		}
 
+		boolean noSingleSideVersionsOnMainBranch = cli_args_parsed.hasOption("no-single-side-versions-on-main-branch");
 		boolean onlyStableReleases = cli_args_parsed.hasOption("only-stable");
 		boolean onlySnapshots = cli_args_parsed.hasOption("only-snapshot");
 		boolean skipNonLinear = cli_args_parsed.hasOption("skip-nonlinear");
@@ -200,6 +202,7 @@ class GitCraftCli {
 			fallbackMappings != null ? fallbackMappings : original.fallbackMappings(),
 			usedUnpick != null ? usedUnpick : original.usedUnpickFlavour(),
 			fallbackUnpicks != null ? fallbackUnpicks : original.fallbackUnpickFlavours(),
+			original.singleSideVersionsOnMainBranch() && !noSingleSideVersionsOnMainBranch,
 			original.onlyStableReleases() || onlyStableReleases,
 			original.onlySnapshots() || onlySnapshots,
 			original.skipNonLinear() || skipNonLinear,

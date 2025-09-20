@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Executor;
@@ -203,28 +204,55 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		}
 		TreeSet<OrderedVersion> metaVersions = new TreeSet<>(provider.getVersions(executor).values());
 		TreeSet<OrderedVersion> metaVersionsMainline = new TreeSet<>(provider.getVersions(executor).values().stream().filter(value -> !provider.shouldExcludeFromMainBranch(value)).toList());
-		Map<String, OrderedVersion> semverMetaVersions = provider.getVersions(executor).values().stream().collect(Collectors.toMap(OrderedVersion::semanticVersion, Function.identity()));
 		for (OrderedVersion version : metaVersions) {
-			graph.edgesFw.computeIfAbsent(version, value -> new TreeSet<>());
-			List<String> previousVersion = provider.getParentVersion(version);
-			if (previousVersion == null) {
-				OrderedVersion prevLinearVersion = metaVersionsMainline.lower(version);
-				previousVersion = prevLinearVersion != null ? List.of(prevLinearVersion.semanticVersion()) : Collections.emptyList();
-			}
-			if (previousVersion.isEmpty()) {
-				graph.edgesBack.computeIfAbsent(version, value -> new TreeSet<>());
-				continue;
-			}
-			for (String parentVersionSemver : previousVersion) {
-				OrderedVersion parentVersion = semverMetaVersions.get(parentVersionSemver);
-				graph.edgesBack.computeIfAbsent(version, value -> new TreeSet<>()).add(parentVersion);
-				graph.edgesFw.computeIfAbsent(parentVersion, value -> new TreeSet<>()).add(version);
+			graph.edgesBack.computeIfAbsent(version, _ -> new TreeSet<>());
+			graph.edgesFw.computeIfAbsent(version, _ -> new TreeSet<>());
+			for (OrderedVersion previousVersion : findPreviousVersions(provider, metaVersionsMainline, version)) {
+				graph.edgesBack.computeIfAbsent(version, _ -> new TreeSet<>()).add(previousVersion);
+				graph.edgesFw.computeIfAbsent(previousVersion, _ -> new TreeSet<>()).add(version);
 			}
 		}
 		graph.testGraphConnectivity();
 		graph.validateNoCycles();
 		graph.findBranchStructure();
 		return graph;
+	}
+
+	private static List<OrderedVersion> findPreviousVersions(MetadataProvider<OrderedVersion> metadata, NavigableSet<OrderedVersion> versions, OrderedVersion version) {
+		return findPreviousVersions(metadata, versions, version, version);
+	}
+
+	private static List<OrderedVersion> findPreviousVersions(MetadataProvider<OrderedVersion> metadata, NavigableSet<OrderedVersion> versions, OrderedVersion version, OrderedVersion target) {
+		List<OrderedVersion> previousVersions = new ArrayList<>();
+
+		// some manifest providers have built-in ordering for all or certain versions
+		List<OrderedVersion> parentVersions = metadata.getParentVersions(version);
+
+		// if that is not the case, use the ordering from the semantic versioning
+		if (parentVersions == null) {
+			OrderedVersion parentVersion = versions.lower(version);
+
+			parentVersions = (parentVersion == null)
+				? Collections.emptyList()
+				: List.of(parentVersion);
+		}
+
+		// if a parent version cannot form a valid edge with the target,
+		// find valid edges in that version's parent versions, recursively
+		for (OrderedVersion parentVersion : parentVersions) {
+			if (isValidEdge(parentVersion, target)) {
+				previousVersions.add(parentVersion);
+			} else {
+				previousVersions.addAll(findPreviousVersions(metadata, versions, parentVersion, version));
+			}
+		}
+
+		return previousVersions;
+	}
+
+	private static boolean isValidEdge(OrderedVersion v1, OrderedVersion v2) {
+		// TODO: allow disabling this check through the config/run args?
+		return v1.hasSideInCommon(v2);
 	}
 
 	public MinecraftVersionGraph filterMapping(MappingFlavour mappingFlavour, MappingFlavour[] mappingFallback) {
