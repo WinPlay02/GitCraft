@@ -44,6 +44,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 									   MappingFlavour[] fallbackMappings,
 									   UnpickFlavour usedUnpickFlavour,
 									   UnpickFlavour[] fallbackUnpickFlavours,
+									   boolean singleSideVersionsOnMainBranch,
 									   boolean onlyStableReleases,
 									   boolean onlySnapshots,
 									   boolean skipNonLinear,
@@ -77,6 +78,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		false,
 		false,
 		false,
+		false,
 		null,
 		null,
 		null,
@@ -99,6 +101,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 				"fallbackMappings", array(Arrays.stream(this.fallbackMappings()).map(MappingFlavour::toString).toList()),
 				"usedUnpickFlavour", prim(this.usedUnpickFlavour().toString()),
 				"fallbackUnpickFlavours", array(Arrays.stream(this.fallbackUnpickFlavours()).map(UnpickFlavour::toString).toList()),
+				"singleSideVersionsOnMainBranch", prim(this.singleSideVersionsOnMainBranch()),
 				"onlyStableReleases", prim(this.onlyStableReleases()),
 				"onlySnapshots", prim(this.onlySnapshots()),
 				"skipNonLinear", prim(this.skipNonLinear())
@@ -127,6 +130,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			info.add(String.format("Mappings used as fallback: %s", Arrays.stream(this.fallbackMappings()).map(Object::toString).collect(Collectors.joining(", "))));
 		}
 		info.add(String.format("Unpick information used: %s (fallback: %s)", this.usedUnpickFlavour(), this.fallbackUnpickFlavours() != null ? Arrays.stream(this.fallbackUnpickFlavours()).map(Object::toString).collect(Collectors.joining(", ")) : "<null>"));
+		info.add(String.format("Versions with a missing side (like Beta 1.2_02 or 1.0.1) are %s the main branch.", this.singleSideVersionsOnMainBranch() ? "included on" : "excluded from"));
 		String excludedBranches = this.onlyStableReleases() ? " (only stable releases)" : (this.onlySnapshots() ? " (only snapshots)" : "");
 		String excludedVersions = this.isAnyVersionExcluded() && this.excludedVersion().length > 0 ? String.format(" (excluding: %s)", String.join(", ", this.excludedVersion())) : "";
 		if (this.isOnlyVersion()) {
@@ -234,6 +238,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			Utils.getStringArray(map, "fallbackMappings", List.of()).stream().map(MappingFlavour::valueOf).toArray(MappingFlavour[]::new),
 			UnpickFlavour.valueOf(Utils.getString(map, "usedUnpickFlavour", DEFAULT.usedUnpickFlavour().toString()).toUpperCase(Locale.ROOT)),
 			Utils.getStringArray(map, "fallbackUnpickFlavours", List.of()).stream().map(UnpickFlavour::valueOf).toArray(UnpickFlavour[]::new),
+			Utils.getBoolean(map, "singleSideVersionsOnMainBranch", DEFAULT.singleSideVersionsOnMainBranch),
 			Utils.getBoolean(map, "onlyStableReleases", DEFAULT.onlyStableReleases()),
 			Utils.getBoolean(map, "onlySnapshots", DEFAULT.onlySnapshots()),
 			Utils.getBoolean(map, "skipNonLinear", DEFAULT.skipNonLinear()),

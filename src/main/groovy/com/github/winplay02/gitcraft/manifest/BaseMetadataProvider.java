@@ -1,5 +1,6 @@
 package com.github.winplay02.gitcraft.manifest;
 
+import com.github.winplay02.gitcraft.GitCraftApplication;
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.LibraryPaths;
 import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
@@ -42,6 +43,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	protected final List<MetadataSources.LocalRepository> repositorySources;
 	protected final LinkedHashMap<String, OrderedVersion> versionsById = new LinkedHashMap<>();
 	protected final TreeMap<String, String> semverCache = new TreeMap<>();
+	protected final boolean singleSideVersionsOnMainBranch = GitCraftApplication.getApplicationConfiguration().singleSideVersionsOnMainBranch();
 	protected boolean versionsLoaded;
 
 	protected BaseMetadataProvider() {
@@ -287,7 +289,6 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
-		// TODO: allow disabling second check through config/run args?
-		return mcVersion.isPending() || mcVersion.hasSideMissing();
+		return mcVersion.isPending() || (!this.singleSideVersionsOnMainBranch && mcVersion.hasSideMissing());
 	}
 }
