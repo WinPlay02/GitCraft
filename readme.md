@@ -148,6 +148,10 @@ Options:
       --no-repo              Prevents the creation/modification of a repository
                                for versioning, only decompiles the provided (or
                                all) version(s)
+      --no-single-side-versions-on-main-branch
+                             Forces versions with missing sides (like Beta 1.2
+                               _02 or 1.0.1) onto side branches instead of the
+                               main branch
       --no-verify            Disables checksum verification
       --only-snapshot        Only decompiles snapshots (includes pending and
                                non-linear, if not otherwise specified).

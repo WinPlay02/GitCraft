@@ -122,6 +122,7 @@ class GitCraftLauncherCli {
 			fallbackMappings != null ? fallbackMappings : original.fallbackMappings(),
 			usedUnpick != null ? usedUnpick : original.usedUnpickFlavour(),
 			fallbackUnpicks != null ? fallbackUnpicks : original.fallbackUnpickFlavours(),
+			original.singleSideVersionsOnMainBranch(),
 			original.onlyStableReleases(),
 			original.onlySnapshots(),
 			original.skipNonLinear(),

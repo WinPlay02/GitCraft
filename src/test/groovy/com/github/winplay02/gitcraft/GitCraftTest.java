@@ -29,8 +29,11 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -830,5 +833,135 @@ public class GitCraftTest {
 		GitCraft.main(new String[]{"--only-version=20w13b,20w14infinite,20w14a", "--no-assets", "--no-datagen-report", "--no-datagen-snbt", "--no-datapack", "--no-external-assets", "--mappings=identity_unmapped"});
 		//
  		// If this doesn't crash, then it has succeeded
+	}
+
+	@Test
+	public void pipelineSideBranchMissingSides() throws Exception {
+		SkyrisingMetadataProvider metadataBootstrap = new SkyrisingMetadataProvider();
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		metadataBootstrap = new SkyrisingMetadataProvider();
+		MinecraftVersionGraph _versionGraph;
+		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
+			_versionGraph = MinecraftVersionGraph.createFromMetadata(executor, metadataBootstrap);
+		}
+		Configuration.reset();
+		//
+		GitCraft.main("--manifest-source=skyrising", "--min-version=1.0.0", "--max-version=11w47a", "--mappings=feather", "--patch-lvt", "--preening-enabled", "--nests=ornithe_nests", "--signatures=sparrow", "--exceptions=raven");
+		assertEquals(MappingFlavour.FEATHER, GitCraft.getApplicationConfiguration().usedMapping());
+		assertTrue(GitCraft.getApplicationConfiguration().patchLvt());
+		assertTrue(GitCraft.getApplicationConfiguration().enablePreening());
+		assertEquals(NestsFlavour.ORNITHE_NESTS, GitCraft.getApplicationConfiguration().usedNests());
+		assertEquals(SignaturesFlavour.SPARROW, GitCraft.getApplicationConfiguration().usedSignatures());
+		assertEquals(ExceptionsFlavour.RAVEN, GitCraft.getApplicationConfiguration().usedExceptions());
+		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
+			assertNotNull(repoWrapper);
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()));
+			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.0"))).getParentCount());
+			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.1"))).getParentCount());
+			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("11w47a"))).getParentCount());
+			assertEquals(
+				Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.0"))),
+				Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.1"))).getParent(0)
+			);
+			Set<RevCommit> parentsOf11w47a = new HashSet<>(List.of(Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("11w47a"))).getParents()));
+			assertTrue(parentsOf11w47a.contains(Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.0")))));
+			assertTrue(parentsOf11w47a.contains(Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.1")))));
+			{
+				RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.0")));
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets/terrain.png", targetCommit.getTree())) { //
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets/com", targetCommit.getTree())) { //
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/external-resources", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/data", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-snbt", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-reports", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/exp-vanilla-worldgen", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				// split version
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/client", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/server", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+			}
+			{
+				RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.0.1")));
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/external-resources", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/data", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-snbt", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-reports", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/exp-vanilla-worldgen", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				// split version
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/client", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/server", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+			}
+			{
+				RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("11w47a")));
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets/terrain.png", targetCommit.getTree())) { //
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets/com", targetCommit.getTree())) { //
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/external-resources", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/data", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-snbt", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/datagen-reports", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/exp-vanilla-worldgen", targetCommit.getTree())) {
+					assertNull(walk);
+				}
+				// split version
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/client", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+				try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/server", targetCommit.getTree())) {
+					assertNotNull(walk);
+				}
+			}
+		}
 	}
 }
