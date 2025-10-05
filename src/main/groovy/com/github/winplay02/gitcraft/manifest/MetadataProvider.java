@@ -35,7 +35,7 @@ public interface MetadataProvider<E extends AbstractVersion<E>> {
 	 * @param mcVersion Subject version
 	 * @return List of parent versions, or an empty list, if the provided version is the root version. {@code null} is returned, if the default ordering should be used (specified by {@link E})
 	 */
-	List<String> getParentVersion(E mcVersion);
+	List<E> getParentVersions(E mcVersion);
 
 	E getVersionByVersionID(String versionId);
 
