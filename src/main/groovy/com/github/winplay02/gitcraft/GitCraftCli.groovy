@@ -130,16 +130,20 @@ class GitCraftCli {
 
 		// Application
 		ManifestSource manifestSource = null;
-		try {
-			manifestSource = cli_args_parsed.'manifest-source';
-		} catch (IllegalArgumentException ignored) {
-			MiscHelper.println("Ignoring value for 'manifest-source': %s (not recognized)", cli_args_parsed.'manifest-source')
+		if (cli_args_parsed.hasOption("manifest-source")) {
+			try {
+				manifestSource = cli_args_parsed.'manifest-source';
+			} catch (IllegalArgumentException ignored) {
+				MiscHelper.println("Ignoring value for 'manifest-source': %s (not recognized)", cli_args_parsed.'manifest-source')
+			}
 		}
 		MappingFlavour usedMapping = null;
-		try {
-			usedMapping = cli_args_parsed.'mappings';
-		} catch (IllegalArgumentException ignored) {
-			MiscHelper.println("Ignoring value for 'mappings': %s (not recognized)", cli_args_parsed.'mappings')
+		if (cli_args_parsed.hasOption("mappings")) {
+			try {
+				usedMapping = cli_args_parsed.'mappings';
+			} catch (IllegalArgumentException ignored) {
+				MiscHelper.println("Ignoring value for 'mappings': %s (not recognized)", cli_args_parsed.'mappings')
+			}
 		}
 		MappingFlavour[] fallbackMappings = null;
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
@@ -147,10 +151,12 @@ class GitCraftCli {
 		}
 
 		UnpickFlavour usedUnpick = null;
-		try {
-			usedUnpick = cli_args_parsed.'unpick';
-		} catch (IllegalArgumentException ignored) {
-			MiscHelper.println("Ignoring value for 'unpick': %s (not recognized)", cli_args_parsed.'unpick')
+		if (cli_args_parsed.hasOption("unpick")) {
+			try {
+				usedUnpick = cli_args_parsed.'unpick';
+			} catch (IllegalArgumentException ignored) {
+				MiscHelper.println("Ignoring value for 'unpick': %s (not recognized)", cli_args_parsed.'unpick')
+			}
 		}
 		UnpickFlavour[] fallbackUnpicks = null;
 		if (cli_args_parsed.hasOption("fallback-unpick")) {
