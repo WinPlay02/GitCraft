@@ -188,7 +188,7 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("ornithe-intermediary-generation")) {
 			generation = (int) cli_args_parsed.'ornithe-intermediary-generation';
 		}
-		boolean patchLvt = cli_args_parsed.'patch-lvt';
+		boolean patchLvt = cli_args_parsed.hasOption("patch-lvt");
 		ExceptionsFlavour usedExceptions = null;
 		if (cli_args_parsed.hasOption("exceptions")) {
 			usedExceptions = cli_args_parsed.'exceptions';
@@ -201,7 +201,7 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("nests")) {
 			usedNests = cli_args_parsed.'nests';
 		}
-		boolean preeningEnabled = cli_args_parsed.'preening-enabled';
+		boolean preeningEnabled = cli_args_parsed.hasOption("preening-enabled");
 		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
 			manifestSource != null ? manifestSource : original.manifestSource(),
 			usedMapping != null ? usedMapping : original.usedMapping(),
