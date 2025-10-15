@@ -143,7 +143,7 @@ class GitCraftCli {
 		}
 		MappingFlavour[] fallbackMappings = null;
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
-			fallbackMappings = cli_args_parsed.'fallback-mappingss';
+			fallbackMappings = cli_args_parsed.'fallback-mappings';
 		}
 
 		UnpickFlavour usedUnpick = null;
@@ -154,7 +154,7 @@ class GitCraftCli {
 		}
 		UnpickFlavour[] fallbackUnpicks = null;
 		if (cli_args_parsed.hasOption("fallback-unpick")) {
-			fallbackUnpicks = cli_args_parsed.'fallback-unpicks';
+			fallbackUnpicks = cli_args_parsed.'fallback-unpick';
 		}
 
 		boolean noSingleSideVersionsOnMainBranch = cli_args_parsed.hasOption("no-single-side-versions-on-main-branch");
