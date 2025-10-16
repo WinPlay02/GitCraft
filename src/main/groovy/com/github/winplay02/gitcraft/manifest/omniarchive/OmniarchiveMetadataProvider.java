@@ -99,6 +99,15 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 				return List.of("1.18.2", "1.19-exp1");
 			}
 			// April
+			case "2.0-blue" -> {
+				return List.of("1.5.1");
+			}
+			case "2.0-purple" -> {
+				return List.of("1.5.1");
+			}
+			case "2.0-red" -> {
+				return List.of("1.5.1");
+			}
 			case "3D Shareware v1.34" -> {
 				return List.of("19w13b-1653");
 			}
