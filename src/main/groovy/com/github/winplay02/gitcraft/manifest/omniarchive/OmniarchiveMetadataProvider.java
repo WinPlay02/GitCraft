@@ -29,9 +29,9 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 	@Override
 	public List<String> getParentVersionIds(String versionId) {
 		switch (versionId) {
-		case "3D Shareware v1.34" -> {
-			return List.of("19w13b+1653");
-		}
+			case "3D Shareware v1.34" -> {
+				return List.of("19w13b-1653");
+			}
 		}
 
 		return super.getParentVersionIds(versionId);
