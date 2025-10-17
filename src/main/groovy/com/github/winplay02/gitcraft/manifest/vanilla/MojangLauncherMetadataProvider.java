@@ -299,7 +299,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			.map(this::getVersionByVersionID)
 			.peek(ver -> {
 				if (ver == null) {
-					MiscHelper.panic("One or more of the parent versions were not found for %", mcVersion.friendlyVersion());
+					MiscHelper.panic("One or more of the parent versions were not found for %s", mcVersion.friendlyVersion());
 				}
 			})
 			.toList();
