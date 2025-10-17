@@ -295,7 +295,14 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	@Override
 	public List<OrderedVersion> getParentVersions(OrderedVersion mcVersion) {
 		List<String> parentVersionIds = this.getParentVersionIds(mcVersion.friendlyVersion());
-		return parentVersionIds == null ? null : parentVersionIds.stream().map(this::getVersionByVersionID).filter(Objects::nonNull).toList();
+		return parentVersionIds == null ? null : parentVersionIds.stream()
+			.map(this::getVersionByVersionID)
+			.peek(ver -> {
+				if (ver == null) {
+					MiscHelper.panic("One or more of the parent versions were not found for %", mcVersion.friendlyVersion());
+				}
+			})
+			.toList();
 	}
 
 	protected List<String> getParentVersionIds(String versionId) {
