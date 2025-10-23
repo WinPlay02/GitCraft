@@ -424,6 +424,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// filter out april fools snapshots and experimental versions,
 			// which often have typical ids that do not match normal snapshots
-			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
+			|| (mcVersion.isSnapshotOrPending()
+				&& !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches())
+			// Exclude april fools that looks like regular snapshot
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "15w14a");;
 	}
 }
