@@ -390,7 +390,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 				return List.of("20w13b");
 			}
 			case "22w13oneblockatatime" -> {
-				return List.of("22w13a");
+				return List.of("1.18.2");
 			}
 			case "23w13a_or_b" -> {
 				return List.of("23w13a_or_b_original", "23w13a");
