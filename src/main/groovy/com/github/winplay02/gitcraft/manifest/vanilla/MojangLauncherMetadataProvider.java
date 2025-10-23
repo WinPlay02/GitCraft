@@ -419,13 +419,17 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)\\d+|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
 
+	protected Pattern getNormalSnapshotPattern() {
+		return NORMAL_SNAPSHOT_PATTERN;
+	}
+
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// filter out april fools snapshots and experimental versions,
 			// which often have typical ids that do not match normal snapshots
 			|| (mcVersion.isSnapshotOrPending()
-				&& !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches())
+				&& !this.getNormalSnapshotPattern().matcher(mcVersion.launcherFriendlyVersionName()).matches())
 			// Exclude april fools that looks like regular snapshot
 			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "15w14a");;
 	}
