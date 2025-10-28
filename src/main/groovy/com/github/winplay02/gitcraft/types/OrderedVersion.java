@@ -116,8 +116,37 @@ public record OrderedVersion(
 		return Objects.equals(this.versionInfo().type(), "snapshot");
 	}
 
+	// Can be found in Mojang and Skyrising manifests
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
+	}
+
+	public boolean isOldBeta() {
+		return Objects.equals(this.versionInfo().type(), "old_beta");
+	}
+
+	public boolean isOldAlpha() {
+		return Objects.equals(this.versionInfo().type(), "old_alpha");
+	}
+
+	// Can be found in Skyrising manifest
+	public boolean isAlphaServer() {
+		return Objects.equals(this.versionInfo().type(), "alpha_server");
+	}
+
+	// Can be found in Skyrising manifest
+	public boolean isClassicServer() {
+		return Objects.equals(this.versionInfo().type(), "classic_server");
+	}
+
+	// Can be found in Omniarchive manifest
+	public boolean isSpecial() {
+		return Objects.equals(this.versionInfo().type(), "special");
+	}
+
+	// Can be found in Omniarchive manifest
+	public boolean isAprilFools() {
+		return Objects.equals(this.versionInfo().type(), "april-fools");
 	}
 
 	public boolean isSnapshotOrPending() {
