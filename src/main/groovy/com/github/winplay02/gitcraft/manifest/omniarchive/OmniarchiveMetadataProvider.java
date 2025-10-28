@@ -123,8 +123,70 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "24w14potato-0838" -> {
 				return List.of("24w12a");
 			}
+			//Beta
+			case "b1.3-demo" -> {
+				return List.of("b1.3_01");
+			}
+			case "b1.2_02-dev" -> {
+				return List.of("b1.2_02");
+			}
+			case "b1.2_02-launcher" -> {
+				return List.of("b1.2_02");
+			}
+			//Alpha
+			case "a1.2.0_02-launcher" -> {
+				return List.of("a1.2.0_02");
+			}
+			case "a1.1.0-101847-launcher" -> {
+				return List.of("a1.1.0-101847");
+			}
+			case "a1.0.14-1659-launcher" -> {
+				return List.of("a1.0.14-1659");
+			}
+			case "a1.0.4-launcher" -> {
+				return List.of("a1.0.4");
+			}
+			//Classic
+			case "c0.30-c-1900-renew" -> {
+				return List.of("c0.30-c-1900");
+			}
+			case "c0.0.13a_03-launcher" -> {
+				return List.of("c0.0.13a_03");
+			}
 		}
 
 		return super.getParentVersionIds(versionId);
+	}
+
+	private static final Pattern OMNI_NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)(\\d+)?(-\\d+)?|-exp\\d+)?$)");
+
+	@Override
+	protected Pattern getNormalSnapshotPattern() {
+		return OMNI_NORMAL_SNAPSHOT_PATTERN;
+	}
+
+	@Override
+	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
+		return super.shouldExcludeFromMainBranch(mcVersion)
+			// Exclude all april fools snapshots
+			|| mcVersion.isAprilFools()
+			// Exclude special versions such as combat experiments and b1.3-demo
+			|| (mcVersion.isSpecial()
+				// Allow special versions which do not branch out
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "13w12~-1439")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "1.5-pre-whitelinefix")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "13w04a-whitelinefix")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "13w02a-whitetexturefix")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "1.0.0-tominecon")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "b1.6-tb3")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "c0.0.13a-launcher")
+				&& !Objects.equals(mcVersion.launcherFriendlyVersionName(), "c0.0.11a-launcher"))
+			// Exclude duplicate versions from launcher
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "b1.2_02-launcher")
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "a1.2.0_02-launcher")
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "a1.1.0-101847-launcher")
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "a1.0.14-1659-launcher")
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "a1.0.4-launcher")
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "c0.0.13a_03-launcher");
 	}
 }
