@@ -431,6 +431,6 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			|| (mcVersion.isSnapshotOrPending()
 				&& !this.getNormalSnapshotPattern().matcher(mcVersion.launcherFriendlyVersionName()).matches())
 			// Exclude april fools that looks like regular snapshot
-			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "15w14a");;
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "15w14a");
 	}
 }
