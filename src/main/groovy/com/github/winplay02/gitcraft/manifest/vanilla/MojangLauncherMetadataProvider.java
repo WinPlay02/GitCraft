@@ -140,6 +140,10 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"24w14potato_original",
 			"https://maven.fabricmc.net/net/minecraft/24w14potato_original.json",
 			"4e54c25e6eafdf0a2f1f6e86fb1b8c1d239dd8d5");
+		this.addMetadataSource(
+			"25w45a_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/de334d80d9ddc5abb94c611b8ad10f9125c4c421/25w45a_unobfuscated.zip",
+			"de334d80d9ddc5abb94c611b8ad10f9125c4c421");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
@@ -201,8 +205,10 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// support extra original for 23w13a_or_b
 		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",
 		// support extra original for 24w14potato...
-		"24w14potato_original", "1.20.5-alpha.24.12.potato.original"
+		"24w14potato_original", "1.20.5-alpha.24.12.potato.original",
 		// FIX until fabric-loader is updated
+		"25w45a_unobfuscated", "1.21.11-alpha.25.45.a.unobfuscated",
+		"25w46a_unobfuscated", "1.21.11-alpha.25.46.a.unobfuscated"
 		// END FIX
 	);
 
@@ -368,6 +374,13 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			}
 			case "22w11a" -> {
 				return List.of("1.18.2", "1.19_deep_dark_experimental_snapshot-1");
+			}
+			// Unobfuscated
+			case "25w45a_unobfuscated" -> {
+				return List.of("25w44a");
+			}
+			case "25w46a_unobfuscated" -> {
+				return List.of("25w45a_unobfuscated");
 			}
 			// April
 			case "15w14a" -> {
