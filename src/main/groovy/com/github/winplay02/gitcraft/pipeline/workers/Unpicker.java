@@ -42,6 +42,7 @@ import daomephsta.unpick.api.classresolvers.ClassResolvers;
 import daomephsta.unpick.api.classresolvers.IClassResolver;
 import daomephsta.unpick.api.classresolvers.IConstantResolver;
 import daomephsta.unpick.api.classresolvers.IInheritanceChecker;
+import daomephsta.unpick.api.classresolvers.IMemberChecker;
 import daomephsta.unpick.api.constantgroupers.ConstantGroupers;
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Reader;
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Remapper;
