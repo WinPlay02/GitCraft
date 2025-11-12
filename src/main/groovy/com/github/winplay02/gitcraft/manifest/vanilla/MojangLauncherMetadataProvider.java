@@ -144,6 +144,10 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"25w45a_unobfuscated",
 			"https://piston-data.mojang.com/v1/objects/de334d80d9ddc5abb94c611b8ad10f9125c4c421/25w45a_unobfuscated.zip",
 			"de334d80d9ddc5abb94c611b8ad10f9125c4c421");
+		this.addMetadataSource(
+			"25w46a_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/f9c5e4f9c1469296299635b498438e94d312f0c6/25w46a_unobfuscated.zip",
+			"f9c5e4f9c1469296299635b498438e94d312f0c6");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
