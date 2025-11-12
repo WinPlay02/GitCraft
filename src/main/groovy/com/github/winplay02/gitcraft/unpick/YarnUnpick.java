@@ -96,7 +96,7 @@ public class YarnUnpick implements Unpick {
 
 	@Override
 	public boolean doesUnpickInformationExist(OrderedVersion mcVersion)  {
-		if (YarnMappings.isYarnBrokenVersion(mcVersion)) { // exclude broken versions
+		if (YarnMappings.isYarnBrokenVersion(mcVersion) || mcVersion.isUnobfuscated()) { // exclude broken and unobfuscated versions
 			return false;
 		}
 		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.YARN_UNPICK_START_VERSION_ID)) >= 0;
