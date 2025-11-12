@@ -120,6 +120,10 @@ public record OrderedVersion(
 		return Objects.equals(this.versionInfo().type(), "pending");
 	}
 
+	public boolean isUnobfuscated() {
+		return Objects.equals(this.versionInfo().type(), "unobfuscated");
+	}
+
 	public boolean isSnapshotOrPending() {
 		return this.isSnapshot() || this.isPending();
 	}
