@@ -42,10 +42,9 @@ public class YarnUnpick implements Unpick {
 		Files.deleteIfExists(unpickDefinitionsFile);
 		Files.deleteIfExists(unpickDescriptionPath);
 		// Get latest build info
-		GameVersionBuildMeta yarnVersion = YarnMappings.getYarnLatestBuild(versionContext.targetVersion());
+		GameVersionBuildMeta yarnVersion = YarnMappings.getTargetYarnBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
-			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", versionContext.targetVersion().launcherFriendlyVersionName());
-			yarnVersion = new GameVersionBuildMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
+			return StepStatus.FAILED;
 		}
 		// Only try latest yarn merged v2 JAR build
 		{
@@ -128,7 +127,7 @@ public class YarnUnpick implements Unpick {
 			return StepStatus.FAILED;
 		}
 		try {
-			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), YarnMappings.usePotentialBuildOverride(yarnVersion).makeConstantsJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(unpickingConstantsJar, null, null, "yarn unpicking constants", versionContext.targetVersion().launcherFriendlyVersionName()));
+			return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeConstantsJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(unpickingConstantsJar, null, null, "yarn unpicking constants", versionContext.targetVersion().launcherFriendlyVersionName()));
 		} catch (RuntimeException ignored) {
 			Files.deleteIfExists(unpickingConstantsJar);
 		}
