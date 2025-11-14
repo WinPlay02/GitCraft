@@ -194,7 +194,6 @@ public class YarnMappings extends Mapping {
 		}
 		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(mcVersion);
 		if (yarnVersion == null) {
-			
 			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", mcVersion.launcherFriendlyVersionName());
 			yarnVersion = new GameVersionBuildMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
 		}
