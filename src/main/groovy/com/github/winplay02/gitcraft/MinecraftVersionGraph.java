@@ -320,7 +320,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		Set<OrderedVersion> branches = this.getPreviousVertices(mcVersion);
 
 		if (branches.size() == 1) {
-			return this.walkBackToBranchPoint(branches.iterator().next());
+			return this.walkBackToBranchPoint(branches.iterator().next(), root);
 		}
 
 		// version is not a branch point or root, and number of prev versions
@@ -337,7 +337,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			// if path length to tip is not present, then this version
 			// was already marked as lying on a branch
 			if (!this.pathsToTip.containsKey(branch)) {
-				return this.walkBackToBranchPoint(branch);
+				return this.walkBackToBranchPoint(branch, root);
 			}
 
 			int pathToRoot = this.pathsToRoot.get(branch);
