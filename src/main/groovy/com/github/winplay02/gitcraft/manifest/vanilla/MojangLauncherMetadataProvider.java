@@ -346,7 +346,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			}
 			// Experimental 1.18
 			case "1.18_experimental-snapshot-1" -> {
-				return List.of("1.17.1");
+				return List.of("1.17.1-pre1");
 			}
 			case "1.18_experimental-snapshot-2" -> {
 				return List.of("1.18_experimental-snapshot-1");
@@ -372,9 +372,6 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			// Experimental 1.19
 			case "1.19_deep_dark_experimental_snapshot-1" -> {
 				return List.of("1.18.1");
-			}
-			case "22w11a" -> {
-				return List.of("1.18.2", "1.19_deep_dark_experimental_snapshot-1");
 			}
 			// April
 			case "15w14a" -> {
