@@ -312,22 +312,22 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 				return List.of("1.14.3-pre4");
 			}
 			case "1.14_combat-0" -> {
-				return List.of("1.14.4", "1.14_combat-212796");
+				return List.of("1.14_combat-212796", "1.14.4");
 			}
 			case "1.14_combat-3" -> {
 				return List.of("1.14_combat-0");
 			}
 			case "1.15_combat-1" -> {
-				return List.of("1.15-pre3", "1.14_combat-3");
+				return List.of("1.14_combat-3", "1.15-pre3");
 			}
 			case "1.15_combat-6" -> {
-				return List.of("1.15.2-pre2", "1.15_combat-1");
+				return List.of("1.15_combat-1", "1.15.2-pre2");
 			}
 			case "1.16_combat-0" -> {
-				return List.of("1.16.2-pre3", "1.15_combat-6");
+				return List.of("1.15_combat-6", "1.16.2-pre3");
 			}
 			case "1.16_combat-1" -> {
-				return List.of("1.16.2", "1.16_combat-0");
+				return List.of("1.16_combat-0", "1.16.2");
 			}
 			case "1.16_combat-2" -> {
 				return List.of("1.16_combat-1");
