@@ -404,10 +404,6 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			case "25w14craftmine" -> {
 				return List.of("1.21.5");
 			}
-			// Special case to make version graph not contain a cycle
-			case "1.9.2" -> {
-				return List.of("1.9.1");
-			}
 			default -> {
 				return null;
 			}
