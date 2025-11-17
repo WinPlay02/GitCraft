@@ -37,22 +37,22 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 				return List.of("1.14.3-pre4");
 			}
 			case "combat2" -> {
-				return List.of("1.14.4", "combat1");
+				return List.of("combat1", "1.14.4");
 			}
 			case "combat3" -> {
 				return List.of("combat2");
 			}
 			case "combat4" -> {
-				return List.of("1.15-pre3", "combat3");
+				return List.of("combat3", "1.15-pre3");
 			}
 			case "combat5" -> {
-				return List.of("1.15.2-pre2", "combat4");
+				return List.of("combat4", "1.15.2-pre2");
 			}
 			case "combat6" -> {
-				return List.of("1.16.2-pre3", "combat5");
+				return List.of("combat5", "1.16.2-pre3");
 			}
 			case "combat7" -> {
-				return List.of("1.16.2", "combat6");
+				return List.of("combat6", "1.16.2");
 			}
 			case "combat7b" -> {
 				return List.of("combat7");
@@ -71,7 +71,7 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			}
 			// Experimental 1.18
 			case "1.18-exp1" -> {
-				return List.of("1.17.1");
+				return List.of("1.17.1-pre1");
 			}
 			case "1.18-exp2" -> {
 				return List.of("1.18-exp1");
@@ -98,9 +98,6 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "1.19-exp1" -> {
 				return List.of("1.18.1");
 			}
-			case "22w11a" -> {
-				return List.of("1.18.2", "1.19-exp1");
-			}
 			// April
 			case "2.0-blue" -> {
 				return List.of("1.5.1");
@@ -114,17 +111,17 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "3D Shareware v1.34" -> {
 				return List.of("19w13b-1653");
 			}
-			case "23w13a_or_b-1249" -> {
-				return List.of("23w13a_or_b-0722", "23w13a");
-			}
 			case "23w13a_or_b-0722" -> {
 				return List.of("23w13a");
 			}
-			case "24w14potato-1104" -> {
-				return List.of("24w14potato-0838", "24w12a");
+			case "23w13a_or_b-1249" -> {
+				return List.of("23w13a_or_b-0722");
 			}
 			case "24w14potato-0838" -> {
 				return List.of("24w12a");
+			}
+			case "24w14potato-1104" -> {
+				return List.of("24w14potato-0838");
 			}
 			//Beta
 			case "b1.3-demo" -> {
