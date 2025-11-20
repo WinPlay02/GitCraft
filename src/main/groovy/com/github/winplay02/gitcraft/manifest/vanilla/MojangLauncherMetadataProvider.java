@@ -201,7 +201,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// support extra original for 23w13a_or_b
 		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",
 		// support extra original for 24w14potato...
-		"24w14potato_original", "1.20.5-alpha.24.12.potato.original"
+		"24w14potato_original", "1.20.5-alpha.24.12.potato.original",
+		// present in Omniarchive manifest and fabric-loader does not parse it correctly
+		"2.0-preview", "2.0-preview"
 		// FIX until fabric-loader is updated
 		// END FIX
 	);
