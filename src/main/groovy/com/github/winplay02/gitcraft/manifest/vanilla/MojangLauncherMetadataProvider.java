@@ -148,6 +148,10 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"25w46a_unobfuscated",
 			"https://piston-data.mojang.com/v1/objects/f9c5e4f9c1469296299635b498438e94d312f0c6/25w46a_unobfuscated.zip",
 			"f9c5e4f9c1469296299635b498438e94d312f0c6");
+		this.addMetadataSource(
+			"1.21.11-pre1_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/f98a0c053a8246cce12f8f29f2ba4ce00872fd53/1_21_11-pre1_unobfuscated.zip",
+			"f98a0c053a8246cce12f8f29f2ba4ce00872fd53");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
@@ -211,8 +215,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// support extra original for 24w14potato...
 		"24w14potato_original", "1.20.5-alpha.24.12.potato.original",
 		// FIX until fabric-loader is updated
-		"25w45a_unobfuscated", "1.21.11-alpha.25.45.a.unobfuscated",
-		"25w46a_unobfuscated", "1.21.11-alpha.25.46.a.unobfuscated"
+		"25w45a_unobfuscated", "1.21.11-alpha.25.45.a+unobfuscated",
+		"25w46a_unobfuscated", "1.21.11-alpha.25.46.a+unobfuscated",
+		"1.21.11-pre1_unobfuscated", "1.21.11-beta.1+unobfuscated"
 		// END FIX
 	);
 
@@ -385,6 +390,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			}
 			case "25w46a_unobfuscated" -> {
 				return List.of("25w45a_unobfuscated");
+			}
+			case "1.21.11-pre1_unobfuscated" -> {
+				return List.of("25w46a_unobfuscated");
 			}
 			// April
 			case "15w14a" -> {
