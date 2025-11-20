@@ -124,12 +124,14 @@ public class FileSystemNetworkManager {
 	protected static final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
 
 	protected static final Map<String, Semaphore> connectionLimiter = new ConcurrentHashMap<>();
-
+	
+	private static final String ETAG_ATTRIBUTE = "ETag";
+	
 	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile, boolean useEtag) {
 		HttpRequest.Builder builder = HttpRequest.newBuilder(uri).GET();
 		if (useEtag) {
 			try {
-				Optional<String> etag = AttributeHelper.readAttribute(targetFile, "ETag");
+				Optional<String> etag = AttributeHelper.readAttribute(targetFile, ETAG_ATTRIBUTE);
 				if (etag.isPresent()) {
 					builder.header("If-None-Match", etag.orElseThrow());
 				}
@@ -156,7 +158,7 @@ public class FileSystemNetworkManager {
 
 						Optional<String> received_etag = response.headers().firstValue("etag");
 						if (received_etag.isPresent()) {
-							AttributeHelper.writeAttribute(targetFile, "ETag", received_etag.orElseThrow());
+							AttributeHelper.writeAttribute(targetFile, ETAG_ATTRIBUTE, received_etag.orElseThrow());
 						}
 					} catch (IOException e) {
 						try {
