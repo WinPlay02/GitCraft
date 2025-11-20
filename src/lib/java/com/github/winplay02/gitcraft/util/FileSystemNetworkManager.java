@@ -3,6 +3,7 @@ package com.github.winplay02.gitcraft.util;
 import com.github.winplay02.gitcraft.Library;
 import com.github.winplay02.gitcraft.integrity.IntegrityAlgorithm;
 import com.github.winplay02.gitcraft.pipeline.StepStatus;
+import net.fabricmc.loom.util.AttributeHelper;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -14,11 +15,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -57,15 +60,15 @@ public class FileSystemNetworkManager {
 
 	protected static final Map<Path, NetworkProgressInfo> completedJobs = new ConcurrentHashMap<>();
 
-	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable) {
+	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable, boolean useEtag) {
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
-			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum, localFileInfo.checksum()) &&
-			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm, localFileInfo.integrityAlgorithm())) {
+			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum(), localFileInfo.checksum()) &&
+			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm(), localFileInfo.integrityAlgorithm())) {
 			return CompletableFuture.completedFuture(StepStatus.UP_TO_DATE);
 		}
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
-			!Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum, localFileInfo.checksum()) &&
-			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm, localFileInfo.integrityAlgorithm())) {
+			!Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum(), localFileInfo.checksum()) &&
+			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm(), localFileInfo.integrityAlgorithm())) {
 			MiscHelper.panic("Cannot fulfill download to %s, there are multiple requests with different outcomes to the same file", localFileInfo.targetFile());
 		}
 		try (LockGuard $ = acquireDownloadJobsWriteLock()) {
@@ -83,7 +86,10 @@ public class FileSystemNetworkManager {
 					try {
 						MiscHelper.println("Fetching %s %s from: %s", localFileInfo.outputFileKind(), localFileInfo.outputFileId(), url);
 						try {
-							FileSystemNetworkManager.fetchFileAsync(url, localFileInfo.targetFile()).get();
+							HttpResponse<Path> response = FileSystemNetworkManager.fetchFileAsync(url, localFileInfo.targetFile(), useEtag).get();
+							if (useEtag && response.statusCode() == 304) {
+								MiscHelper.println("Skipped downloading %s %s as it is already up-to-date", localFileInfo.outputFileKind(), localFileInfo.outputFileId());
+							}
 							if (!retry) {
 								break;
 							}
@@ -119,8 +125,19 @@ public class FileSystemNetworkManager {
 
 	protected static final Map<String, Semaphore> connectionLimiter = new ConcurrentHashMap<>();
 
-	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile) {
-		HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile, boolean useEtag) {
+		HttpRequest.Builder builder = HttpRequest.newBuilder(uri).GET();
+		if (useEtag) {
+			try {
+				Optional<String> etag = AttributeHelper.readAttribute(targetFile, "ETag");
+				if (etag.isPresent()) {
+					builder.header("If-None-Match", etag.orElseThrow());
+				}
+			} catch (IOException e) {
+				MiscHelper.panicBecause(e, "Cannot read etag for %s", targetFile);
+			}
+		}
+		HttpRequest request = builder.build();
 		final Semaphore semaphore = connectionLimiter.computeIfAbsent(uri.getHost().toLowerCase(Locale.ROOT), $ -> new Semaphore(Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin()));
 		if (targetFile.getParent() != null) {
 			try {
@@ -130,12 +147,47 @@ public class FileSystemNetworkManager {
 			}
 		}
 		semaphore.acquireUninterruptibly();
-		return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofFile(targetFile, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE)).thenApply(response -> {
-			if (response.statusCode() == 404) {
-				MiscHelper.throwUnchecked(new FileNotFoundException(uri.toString()));
-			}
-			return response;
-		}).whenComplete(($, $$) -> semaphore.release());
+		if (useEtag) {
+			Path tmpDownloadFile = targetFile.resolveSibling(targetFile.getFileName() + ".tmp"); // we have to download to temporary location because empty 304 Not Modified response erases file contents
+			return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofFile(tmpDownloadFile, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE)).thenApply(response -> {
+				if (response.statusCode() >= 200 && response.statusCode() < 300) {
+					try {
+						Files.move(tmpDownloadFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+
+						Optional<String> received_etag = response.headers().firstValue("etag");
+						if (received_etag.isPresent()) {
+							AttributeHelper.writeAttribute(targetFile, "ETag", received_etag.orElseThrow());
+						}
+					} catch (IOException e) {
+						try {
+							Files.deleteIfExists(tmpDownloadFile);
+						} catch (IOException e1) {
+							MiscHelper.throwUnchecked(e1);
+						}
+
+						MiscHelper.throwUnchecked(e);
+					}
+				}
+
+				try {
+					Files.deleteIfExists(tmpDownloadFile);
+				} catch (IOException e) {
+					MiscHelper.throwUnchecked(e);
+				}
+
+				if (response.statusCode() == 404) {
+					MiscHelper.throwUnchecked(new FileNotFoundException(uri.toString()));
+				}
+				return response;
+			}).whenComplete(($, $$) -> semaphore.release());
+		} else {
+			return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofFile(targetFile, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE)).thenApply(response -> {
+				if (response.statusCode() == 404) {
+					MiscHelper.throwUnchecked(new FileNotFoundException(uri.toString()));
+				}
+				return response;
+			}).whenComplete(($, $$) -> semaphore.release());
+		}
 	}
 
 	public static String fetchAllFromURLSync(URL url) throws IOException, URISyntaxException, InterruptedException {

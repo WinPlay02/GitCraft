@@ -167,7 +167,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	@Override
 	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, MojangLauncherManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		CompletableFuture<VersionInfo> futureInfo = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir, "version info", VersionInfo.class);
+		CompletableFuture<VersionInfo> futureInfo = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), manifestEntry.sha1(), targetDir, "version info", VersionInfo.class, false);
 		return futureInfo.thenApply(info -> {
 			String semanticVersion = this.lookupSemanticVersion(executor, info);
 			return OrderedVersion.from(info, semanticVersion);

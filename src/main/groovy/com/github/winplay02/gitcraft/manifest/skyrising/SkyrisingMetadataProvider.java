@@ -58,7 +58,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	public CompletableFuture<VersionInfo> fetchSpecificManifest(Executor executor, String id, VersionDetails.ManifestEntry manifestEntryPtr) {
 		try {
-			return this.fetchVersionMetadataFilename(executor, String.format("%s_%s.json", id, manifestEntryPtr.hash()), id, manifestEntryPtr.url(), manifestEntryPtr.hash(), this.manifestMetadata.resolve("manifests"), "version manifest", VersionInfo.class);
+			return this.fetchVersionMetadataFilename(executor, String.format("%s_%s.json", id, manifestEntryPtr.hash()), id, manifestEntryPtr.url(), manifestEntryPtr.hash(), this.manifestMetadata.resolve("manifests"), "version manifest", VersionInfo.class, true);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -66,8 +66,8 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	protected CompletableFuture<OrderedVersion> loadVersionFromManifest(Executor executor, SkyrisingManifest.VersionEntry manifestEntry, Path targetDir) throws IOException {
-		CompletableFuture<VersionInfo> infoFuture = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), null, targetDir.resolve("info"), "version info", VersionInfo.class);
-		CompletableFuture<VersionDetails> detailsFuture = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"), "version details", VersionDetails.class);
+		CompletableFuture<VersionInfo> infoFuture = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.url(), null, targetDir.resolve("info"), "version info", VersionInfo.class, true);
+		CompletableFuture<VersionDetails> detailsFuture = this.fetchVersionMetadata(executor, manifestEntry.id(), manifestEntry.details(), null, targetDir.resolve("details"), "version details", VersionDetails.class, true);
 		return CompletableFuture.allOf(infoFuture, detailsFuture).thenApply($ -> {
 			VersionInfo info = infoFuture.join();
 			VersionDetails details = detailsFuture.join();
