@@ -192,7 +192,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	 */
 	protected abstract void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException;
 
-	protected final <T> CompletableFuture<T> fetchVersionMetadata(Executor executor, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass) throws IOException {
+	protected final <T> CompletableFuture<T> fetchVersionMetadata(Executor executor, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass, boolean useEtag) throws IOException {
 		URI uri = null;
 		try {
 			uri = new URI(url);
@@ -203,7 +203,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		String fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
 		String fileExt = fileName.lastIndexOf(".") != -1 ? fileName.substring(fileName.lastIndexOf(".") + 1) : "";
 		Path filePath = sha1 != null ? targetDir.resolve(String.format("%s_%s.%s", fileNameWithoutExt, sha1, fileExt)) : targetDir.resolve(fileName); // allow multiple files with same hash to coexist (in case of reuploads with same meta name, referenced from different versions)
-		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, true);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false, useEtag);
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass, fileName);
@@ -214,7 +214,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		});
 	}
 
-	protected final <T> CompletableFuture<T> fetchVersionMetadataFilename(Executor executor, String filename, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass) throws IOException {
+	protected final <T> CompletableFuture<T> fetchVersionMetadataFilename(Executor executor, String filename, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass, boolean useEtag) throws IOException {
 		URI uri = null;
 		try {
 			uri = new URI(url);
@@ -222,7 +222,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			throw new IOException(e);
 		}
 		Path filePath = targetDir.resolve(filename);
-		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, true);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false, useEtag);
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass, filePath.getFileName().toString());
