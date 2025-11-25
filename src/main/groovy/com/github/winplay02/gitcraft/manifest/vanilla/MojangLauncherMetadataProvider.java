@@ -152,6 +152,14 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"1.21.11-pre1_unobfuscated",
 			"https://piston-data.mojang.com/v1/objects/f98a0c053a8246cce12f8f29f2ba4ce00872fd53/1_21_11-pre1_unobfuscated.zip",
 			"f98a0c053a8246cce12f8f29f2ba4ce00872fd53");
+		this.addMetadataSource(
+			"1.21.11-pre2_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/528731e05b7be26c90fedf8f2ef6470abb0d1994/1_21_11-pre2_unobfuscated.zip",
+			"528731e05b7be26c90fedf8f2ef6470abb0d1994");
+		this.addMetadataSource(
+			"1.21.11-pre3_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/7717a481468cc33d2414d82ee9c0450f56264db0/1_21_11-pre3_unobfuscated.zip",
+			"7717a481468cc33d2414d82ee9c0450f56264db0");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
@@ -217,7 +225,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// FIX until fabric-loader is updated
 		"25w45a_unobfuscated", "1.21.11-alpha.25.45.a+unobfuscated",
 		"25w46a_unobfuscated", "1.21.11-alpha.25.46.a+unobfuscated",
-		"1.21.11-pre1_unobfuscated", "1.21.11-beta.1+unobfuscated"
+		"1.21.11-pre1_unobfuscated", "1.21.11-beta.1+unobfuscated",
+		"1.21.11-pre2_unobfuscated", "1.21.11-beta.2+unobfuscated",
+		"1.21.11-pre3_unobfuscated", "1.21.11-beta.2+unobfuscated"
 		// END FIX
 	);
 
