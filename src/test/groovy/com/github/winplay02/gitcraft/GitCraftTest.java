@@ -76,6 +76,7 @@ public class GitCraftTest {
 		assertTrue(vgSnapshots.containsVersion(versionGraphComplete.getMinecraftVersionBySemanticVersion("1.20-rc.1")));
 		assertNotNull(versionGraphComplete.getMinecraftVersionBySemanticVersion("1.20-rc.1"));
 		assertEquals("1.14.4", versionGraphComplete.filterMapping(MappingFlavour.MOJMAP, new MappingFlavour[0]).getMainRootVersion().launcherFriendlyVersionName());
+		assertEquals("21w11a", versionGraphComplete.filterUnpick(UnpickFlavour.YARN, new UnpickFlavour[0]).getMainRootVersion().launcherFriendlyVersionName());
 		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.filterMinVersion(versionGraphComplete.getMinecraftVersionByName("1.20")).getMainRootVersion());
 		MinecraftVersionGraph onlyVersionGraph = versionGraphComplete.filterOnlyVersion(versionGraphComplete.getMinecraftVersionByName("1.20"), versionGraphComplete.getMinecraftVersionByName("1.19"));
 		assertEquals(versionGraphComplete.getMinecraftVersionByName("1.19"), onlyVersionGraph.getMainRootVersion());

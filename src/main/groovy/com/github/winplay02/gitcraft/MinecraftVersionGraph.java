@@ -8,6 +8,7 @@ import com.github.winplay02.gitcraft.mappings.MappingFlavour;
 import com.github.winplay02.gitcraft.nests.NestsFlavour;
 import com.github.winplay02.gitcraft.signatures.SignaturesFlavour;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
+import com.github.winplay02.gitcraft.unpick.UnpickFlavour;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 
 import java.io.IOException;
@@ -257,6 +258,10 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 
 	public MinecraftVersionGraph filterMapping(MappingFlavour mappingFlavour, MappingFlavour[] mappingFallback) {
 		return new MinecraftVersionGraph(this, (entry -> mappingFlavour.exists(entry) || (mappingFallback != null && mappingFallback.length > 0 && Arrays.stream(mappingFallback).anyMatch(mapping -> mapping.exists(entry)))));
+	}
+
+	public MinecraftVersionGraph filterUnpick(UnpickFlavour unpickFlavour, UnpickFlavour[] unpickFallback) {
+		return new MinecraftVersionGraph(this, (entry -> unpickFlavour.exists(entry) || (unpickFallback != null && unpickFallback.length > 0 && Arrays.stream(unpickFallback).anyMatch(unpick -> unpick.exists(entry)))));
 	}
 
 	public MinecraftVersionGraph filterMainlineVersions() {
