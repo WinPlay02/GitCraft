@@ -225,14 +225,8 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		// support extra original for 23w13a_or_b
 		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",
 		// support extra original for 24w14potato...
-		"24w14potato_original", "1.20.5-alpha.24.12.potato.original",
+		"24w14potato_original", "1.20.5-alpha.24.12.potato.original"
 		// FIX until fabric-loader is updated
-		"25w45a_unobfuscated", "1.21.11-alpha.25.45.a+unobfuscated",
-		"25w46a_unobfuscated", "1.21.11-alpha.25.46.a+unobfuscated",
-		"1.21.11-pre1_unobfuscated", "1.21.11-beta.1+unobfuscated",
-		"1.21.11-pre2_unobfuscated", "1.21.11-beta.2+unobfuscated",
-		"1.21.11-pre3_unobfuscated", "1.21.11-beta.3+unobfuscated",
-		"1.21.11-pre4_unobfuscated", "1.21.11-beta.4+unobfuscated"
 		// END FIX
 	);
 
