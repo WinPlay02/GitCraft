@@ -62,7 +62,7 @@ public interface Configuration {
 			if (!config.containsKey(key) || !config.get(key).isJsonArray()) {
 				return defaultValue;
 			}
-			return config.get(key).getAsJsonArray().asList().stream().map(JsonElement::toString).collect(Collectors.toList());
+			return config.get(key).getAsJsonArray().asList().stream().map(JsonElement::getAsString).collect(Collectors.toList());
 		}
 
 		public static JsonPrimitive prim(boolean value) {

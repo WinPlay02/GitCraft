@@ -10,7 +10,7 @@ public record AssetsIndex(AssetsIndexMetadata assetsIndex, List<Artifact> assets
 	public static AssetsIndex from(AssetsIndexMetadata assetsIndex) {
 		List<Artifact> assets = new ArrayList<>(assetsIndex.objects().size());
 		for (AssetsIndexMetadata.Asset info : assetsIndex.objects().values()) {
-			assets.add(new Artifact(makeMinecraftAssetUrl(info.hash()), info.hash(), info.hash()));
+			assets.add(new Artifact(info.url(), info.hash(), info.hash()));
 		}
 		return new AssetsIndex(assetsIndex, Collections.unmodifiableList(assets));
 	}

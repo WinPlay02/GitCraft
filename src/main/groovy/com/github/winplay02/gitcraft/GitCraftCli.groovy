@@ -130,31 +130,37 @@ class GitCraftCli {
 
 		// Application
 		ManifestSource manifestSource = null;
-		try {
-			manifestSource = cli_args_parsed.'manifest-source';
-		} catch (IllegalArgumentException ignored) {
-			MiscHelper.println("Ignoring value for 'manifest-source': %s (not recognized)", cli_args_parsed.'manifest-source')
+		if (cli_args_parsed.hasOption("manifest-source")) {
+			try {
+				manifestSource = cli_args_parsed.'manifest-source';
+			} catch (IllegalArgumentException ignored) {
+				MiscHelper.println("Ignoring value for 'manifest-source': %s (not recognized)", cli_args_parsed.'manifest-source')
+			}
 		}
 		MappingFlavour usedMapping = null;
-		try {
-			usedMapping = cli_args_parsed.'mappings';
-		} catch (IllegalArgumentException ignored) {
-			MiscHelper.println("Ignoring value for 'mappings': %s (not recognized)", cli_args_parsed.'mappings')
+		if (cli_args_parsed.hasOption("mappings")) {
+			try {
+				usedMapping = cli_args_parsed.'mappings';
+			} catch (IllegalArgumentException ignored) {
+				MiscHelper.println("Ignoring value for 'mappings': %s (not recognized)", cli_args_parsed.'mappings')
+			}
 		}
 		MappingFlavour[] fallbackMappings = null;
 		if (cli_args_parsed.hasOption("fallback-mappings")) {
-			fallbackMappings = cli_args_parsed.'fallback-mappingss';
+			fallbackMappings = cli_args_parsed.'fallback-mappings';
 		}
 
 		UnpickFlavour usedUnpick = null;
-		try {
-			usedUnpick = cli_args_parsed.'unpick';
-		} catch (IllegalArgumentException ignored) {
-			MiscHelper.println("Ignoring value for 'unpick': %s (not recognized)", cli_args_parsed.'unpick')
+		if (cli_args_parsed.hasOption("unpick")) {
+			try {
+				usedUnpick = cli_args_parsed.'unpick';
+			} catch (IllegalArgumentException ignored) {
+				MiscHelper.println("Ignoring value for 'unpick': %s (not recognized)", cli_args_parsed.'unpick')
+			}
 		}
 		UnpickFlavour[] fallbackUnpicks = null;
 		if (cli_args_parsed.hasOption("fallback-unpick")) {
-			fallbackUnpicks = cli_args_parsed.'fallback-unpicks';
+			fallbackUnpicks = cli_args_parsed.'fallback-unpick';
 		}
 
 		boolean noSingleSideVersionsOnMainBranch = cli_args_parsed.hasOption("no-single-side-versions-on-main-branch");
@@ -182,7 +188,7 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("ornithe-intermediary-generation")) {
 			generation = (int) cli_args_parsed.'ornithe-intermediary-generation';
 		}
-		boolean patchLvt = cli_args_parsed.'patch-lvt';
+		boolean patchLvt = cli_args_parsed.hasOption("patch-lvt");
 		ExceptionsFlavour usedExceptions = null;
 		if (cli_args_parsed.hasOption("exceptions")) {
 			usedExceptions = cli_args_parsed.'exceptions';
@@ -195,7 +201,7 @@ class GitCraftCli {
 		if (cli_args_parsed.hasOption("nests")) {
 			usedNests = cli_args_parsed.'nests';
 		}
-		boolean preeningEnabled = cli_args_parsed.'preening-enabled';
+		boolean preeningEnabled = cli_args_parsed.hasOption("preening-enabled");
 		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
 			manifestSource != null ? manifestSource : original.manifestSource(),
 			usedMapping != null ? usedMapping : original.usedMapping(),
