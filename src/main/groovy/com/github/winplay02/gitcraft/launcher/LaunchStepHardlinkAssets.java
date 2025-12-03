@@ -63,7 +63,7 @@ public record LaunchStepHardlinkAssets(GitCraftStepConfig config) implements Git
 			for (Map.Entry<String, AssetsIndexMetadata.Asset> object : assetsIndex.assetsIndex().objects().entrySet()) {
 				Path targetPath = assetsPathVfs.resolve(object.getKey());
 				Files.createDirectories(targetPath.getParent());
-				Artifact assetArtifact = new Artifact(AssetsIndex.makeMinecraftAssetUrl(object.getValue().hash()), object.getValue().hash(), object.getValue().hash());
+				Artifact assetArtifact = new Artifact(object.getValue().url(), object.getValue().hash(), object.getValue().hash());
 				Files.createLink(targetPath, assetArtifact.resolve(assetsObjectsDir));
 			}
 			// Check for icons

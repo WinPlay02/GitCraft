@@ -196,12 +196,6 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	// Version Override
 	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
-		// wrongly ordered 1.16 snapshots (pre gets mapped to rc for version 1.16, so there would be two rc1 versions)
-		"1.16-rc1", "1.16-rc.9",
-		// support extra original for 23w13a_or_b
-		"23w13a_or_b_original", "1.20-alpha.23.13.ab.original",
-		// support extra original for 24w14potato...
-		"24w14potato_original", "1.20.5-alpha.24.12.potato.original"
 		// FIX until fabric-loader is updated
 		// END FIX
 	);
@@ -253,39 +247,6 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	}
 
 	private String fixupSemver(String proposedSemVer) {
-		if (Objects.equals(proposedSemVer, "1.19-22.w.13.oneBlockAtATime")) {
-			return "1.19-alpha.22.13.oneblockatatime";
-		}
-		if (Objects.equals(proposedSemVer, "1.16.2-Combat.Test.8")) { // this is wrong here, fabric gets it correct
-			return "1.16.3-combat.8";
-		}
-		if (Objects.equals(proposedSemVer, "0.30.1.c")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.30.1-c";
-		}
-		if (Objects.equals(proposedSemVer, "0.0.13.a")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.13-a";
-		}
-		if (Objects.equals(proposedSemVer, "0.0.13.a.3")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.13-a3";
-		}
-		if (Objects.equals(proposedSemVer, "0.0.11.a")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.11-a";
-		}
-		if (Objects.equals(proposedSemVer, "rd-161348")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.0.161348-rd";
-		}
-		if (Objects.equals(proposedSemVer, "rd-160052")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.0.160052-rd";
-		}
-		if (Objects.equals(proposedSemVer, "rd-20090515")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.0.132328-rd20090515";
-		}
-		if (Objects.equals(proposedSemVer, "rd-132328")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.0.132328-rd";
-		}
-		if (Objects.equals(proposedSemVer, "rd-132211")) { // this might be correct, but semver parser from fabric loader does not accept it
-			return "0.0.0.132211-rd";
-		}
 		if (proposedSemVer.contains("-Experimental")) {
 			return proposedSemVer.replace("-Experimental", "-alpha.0.0.Experimental");
 		}
