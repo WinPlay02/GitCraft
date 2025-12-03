@@ -120,6 +120,7 @@ public abstract class GitCraftApplication {
 			graph = graph.filterMainlineVersions();
 		}
 		graph = graph.filterMapping(getApplicationConfiguration().usedMapping(), getApplicationConfiguration().fallbackMappings());
+		graph = graph.filterUnpick(getApplicationConfiguration().usedUnpickFlavour(), getApplicationConfiguration().fallbackUnpickFlavours());
 		return graph;
 	}
 

@@ -42,6 +42,7 @@ import daomephsta.unpick.api.classresolvers.ClassResolvers;
 import daomephsta.unpick.api.classresolvers.IClassResolver;
 import daomephsta.unpick.api.classresolvers.IConstantResolver;
 import daomephsta.unpick.api.classresolvers.IInheritanceChecker;
+import daomephsta.unpick.api.classresolvers.IMemberChecker;
 import daomephsta.unpick.api.constantgroupers.ConstantGroupers;
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Reader;
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Remapper;
@@ -215,6 +216,7 @@ public record Unpicker(GitCraftStepConfig config) implements GitCraftStepWorker<
 
 			IConstantResolver unpickConstantResolver = chainedInputClassResolver.asConstantResolver();
 			IInheritanceChecker unpickInheritanceChecker = chainedInputClassResolver.asInheritanceChecker();
+			IMemberChecker unpickMemberChecker = chainedInputClassResolver.asMemberChecker();
 			final ConstantUninliner unInliner;
 			// Remap Unpick
 			MappingFlavour applicableMappingFlavour = unpickFlavour.applicableMappingFlavour(unpickDescription);
@@ -258,7 +260,7 @@ public record Unpicker(GitCraftStepConfig config) implements GitCraftStepWorker<
 						remapper.readInputs(libraries.toArray(Path[]::new));
 						// Create unpick stuff
 						Consumer<UnpickV3Visitor> unpickVisitorConsumer = createUnpickV3VisitorRemapper(unpickReader, remapper, JarPackageIndex.create(jarsClasspath));
-						DataDrivenConstantGrouper constantGrouper = (DataDrivenConstantGrouper) ConstantGroupers.dataDriven().lenient(true).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).mappingSource(unpickVisitorConsumer).build();
+						DataDrivenConstantGrouper constantGrouper = (DataDrivenConstantGrouper) ConstantGroupers.dataDriven().lenient(true).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).memberChecker(unpickMemberChecker).mappingSource(unpickVisitorConsumer).build();
 						unInliner = ConstantUninliner.builder().logger(Library.getSubLogger("GitCraft/Unpicker", Level.ALL)).classResolver(chainedInputClassResolver).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).grouper(constantGrouper).build();
 						remapper.finish();
 					}
@@ -321,7 +323,7 @@ public record Unpicker(GitCraftStepConfig config) implements GitCraftStepWorker<
 					}
 				}
 			} else {
-				DataDrivenConstantGrouper constantGrouper = (DataDrivenConstantGrouper) ConstantGroupers.dataDriven().lenient(true).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).mappingSource(unpickDefinitionReader).build();
+				DataDrivenConstantGrouper constantGrouper = (DataDrivenConstantGrouper) ConstantGroupers.dataDriven().lenient(true).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).memberChecker(unpickMemberChecker).mappingSource(unpickDefinitionReader).build();
 				unInliner = ConstantUninliner.builder().logger(Library.getSubLogger("GitCraft/Unpicker", Level.ALL)).classResolver(chainedInputClassResolver).constantResolver(unpickConstantResolver).inheritanceChecker(unpickInheritanceChecker).grouper(constantGrouper).build();
 			}
 
