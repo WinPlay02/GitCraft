@@ -164,6 +164,10 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"1.21.11-pre4_unobfuscated",
 			"https://piston-data.mojang.com/v1/objects/834666571f1e1374923b73f4baec4203d44e9c0d/1_21_11-pre4_unobfuscated.zip",
 			"834666571f1e1374923b73f4baec4203d44e9c0d");
+		this.addMetadataSource(
+			"1.21.11-pre5_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/931df659128f913ce356d6036c318c5d9a039e85/1_21_11-pre5_unobfuscated.zip",
+			"931df659128f913ce356d6036c318c5d9a039e85");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
@@ -372,6 +376,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			}
 			case "1.21.11-pre4_unobfuscated" -> {
 				return List.of("1.21.11-pre3_unobfuscated");
+			}
+			case "1.21.11-pre5_unobfuscated" -> {
+				return List.of("1.21.11-pre4_unobfuscated");
 			}
 			// April
 			case "15w14a" -> {
