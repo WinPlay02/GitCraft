@@ -176,6 +176,14 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"1.21.11-rc2_unobfuscated",
 			"https://piston-data.mojang.com/v1/objects/fb70de3ae3e19825622b7687d2fd783d78c4b05f/1_21_11-rc2_unobfuscated.zip",
 			"fb70de3ae3e19825622b7687d2fd783d78c4b05f");
+		this.addMetadataSource(
+			"1.21.11-rc3_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/7abe399a1b3c07754c5dc3ec4e5c6f50ee03c10e/1_21_11-rc3_unobfuscated.zip",
+			"7abe399a1b3c07754c5dc3ec4e5c6f50ee03c10e");
+		this.addMetadataSource(
+			"1.21.11_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/82332dfb17146de34cb7a36d2b910e3b2009191a/1_21_11_unobfuscated.zip",
+			"82332dfb17146de34cb7a36d2b910e3b2009191a");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
@@ -393,6 +401,12 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			}
 			case "1.21.11-rc2_unobfuscated" -> {
 				return List.of("1.21.11-rc1_unobfuscated");
+			}
+			case "1.21.11-rc3_unobfuscated" -> {
+				return List.of("1.21.11-rc2_unobfuscated");
+			}
+			case "1.21.11_unobfuscated" -> {
+				return List.of("1.21.11-rc3_unobfuscated");
 			}
 			// April
 			case "15w14a" -> {
