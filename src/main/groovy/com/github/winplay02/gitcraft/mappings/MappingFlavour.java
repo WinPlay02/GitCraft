@@ -22,14 +22,15 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
 public enum MappingFlavour {
-	MOJMAP(MojangMappings::new),
+	IDENTITY_UNMAPPED(IdentityMappings::new),
+	MOJMAP_STRICT(MojangMappings::new),
+	MOJMAP(() -> new MojangOrIdentityMappings((MojangMappings) MOJMAP_STRICT.impl.get(), (IdentityMappings) IDENTITY_UNMAPPED.impl.get(), OrderedVersion::isNotObfuscated)),
 	FABRIC_INTERMEDIARY(FabricIntermediaryMappings::new),
 	YARN(() -> new YarnMappings((FabricIntermediaryMappings) FABRIC_INTERMEDIARY.impl.get())),
-	MOJMAP_PARCHMENT(() -> new ParchmentMappings((MojangMappings) MOJMAP.impl.get())),
+	MOJMAP_PARCHMENT(() -> new ParchmentMappings((MojangMappings) MOJMAP_STRICT.impl.get())),
 	CALAMUS_INTERMEDIARY(CalamusIntermediaryMappings::new),
 	FEATHER(FeatherMappings::new),
-	IDENTITY_UNMAPPED(IdentityMappings::new),
-	MOJMAP_YARN(() -> new MojangPlusYarnMappings((MojangMappings) MOJMAP.impl.get(), (YarnMappings) YARN.impl.get()));
+	MOJMAP_YARN(() -> new MojangPlusYarnMappings((MojangMappings) MOJMAP_STRICT.impl.get(), (YarnMappings) YARN.impl.get()));
 
 	private final LazyValue<? extends Mapping> impl;
 

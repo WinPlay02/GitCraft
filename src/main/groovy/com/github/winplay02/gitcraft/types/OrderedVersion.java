@@ -177,6 +177,10 @@ public record OrderedVersion(
 		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
 	}
 
+	public boolean isNotObfuscated() {
+		return this.timestamp().isAfter(GitCraftQuirks.RELEASE_TIME_1_21_11) || this.isUnobfuscated();
+	}
+
 	/**
 	 * @return whether the client and server for this version share obfuscation mappings
 	 */
