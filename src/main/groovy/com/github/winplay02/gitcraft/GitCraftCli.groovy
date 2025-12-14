@@ -67,6 +67,7 @@ class GitCraftCli {
 		cli_args._(longOpt: 'nests', "Specifies the nests used to patch inner classes. None is selected by default. Possible values are: ${Arrays.stream(NestsFlavour.values()).map(Object::toString).collect(Collectors.joining(", "))}", type: NestsFlavour, argName: "nests", defaultValue: "none");
 		cli_args._(longOpt: 'only-stable', 'Only decompiles stable releases.');
 		cli_args._(longOpt: 'only-snapshot', 'Only decompiles snapshots (includes pending and non-linear, if not otherwise specified).');
+		cli_args._(longOpt: 'only-unobfuscated', 'Only decompiles versions which are not obfuscated.');
 		cli_args._(longOpt: 'override-repo-target', args: 1, argName: 'path', type: Path,
 			'Changes the location of the target repository, as repo names may get quite long and unintuitive. If not used carefully, this can lead to repositories with unwanted mixed mappings or straight up refuse to work as some versions in the target repository may be missing.');
 		cli_args._(longOpt: 'create-version-branches', 'Creates a separate branch for each version, including linear versions. This may be useful for quickly switching between multiple versions.')
@@ -166,6 +167,7 @@ class GitCraftCli {
 		boolean noSingleSideVersionsOnMainBranch = cli_args_parsed.hasOption("no-single-side-versions-on-main-branch");
 		boolean onlyStableReleases = cli_args_parsed.hasOption("only-stable");
 		boolean onlySnapshots = cli_args_parsed.hasOption("only-snapshot");
+		boolean onlyUnobfuscated = cli_args_parsed.hasOption("only-unobfuscated");
 		boolean skipNonLinear = cli_args_parsed.hasOption("skip-nonlinear");
 		String[] onlyVersion = null;
 		if (cli_args_parsed.hasOption("only-version")) {
@@ -211,6 +213,7 @@ class GitCraftCli {
 			original.singleSideVersionsOnMainBranch() && !noSingleSideVersionsOnMainBranch,
 			original.onlyStableReleases() || onlyStableReleases,
 			original.onlySnapshots() || onlySnapshots,
+			original.onlyUnobfuscated() || onlyUnobfuscated,
 			original.skipNonLinear() || skipNonLinear,
 			onlyVersion,
 			minVersion,
