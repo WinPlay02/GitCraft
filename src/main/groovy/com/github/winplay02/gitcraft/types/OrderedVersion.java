@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Represents a minecraft version with an order
@@ -116,6 +117,8 @@ public record OrderedVersion(
 
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
+		// special case required because the manifest for experimental unobfuscated versions
+		// does not specify their snapshot status and always uses 'unobfuscated' as version type
 				|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches());
 	}
 
