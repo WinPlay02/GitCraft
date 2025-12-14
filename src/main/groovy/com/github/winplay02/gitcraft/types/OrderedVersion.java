@@ -112,8 +112,11 @@ public record OrderedVersion(
 		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
+	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]_unobfuscated$)|(^\\d.\\d+(.\\d+)?-(pre|rc)\\d+_unobfuscated$)");
+
 	public boolean isSnapshot() {
-		return Objects.equals(this.versionInfo().type(), "snapshot");
+		return Objects.equals(this.versionInfo().type(), "snapshot")
+				|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches());
 	}
 
 	public boolean isPending() {
