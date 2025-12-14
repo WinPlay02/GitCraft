@@ -113,7 +113,7 @@ public record OrderedVersion(
 		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
-	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]_unobfuscated$)|(^\\d.\\d+(.\\d+)?-(pre|rc)\\d+_unobfuscated$)");
+	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(\\d.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
 
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
@@ -127,7 +127,14 @@ public record OrderedVersion(
 	}
 
 	public boolean isUnobfuscated() {
-		return Objects.equals(this.versionInfo().type(), "unobfuscated");
+		return Objects.equals(this.versionInfo().type(), "unobfuscated")
+		// special case for omniarchive manifest
+				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
+	}
+
+	// Can be found in Omniarchive manifest
+	public boolean isSpecial() {
+		return Objects.equals(this.versionInfo().type(), "special");
 	}
 
 	public boolean isSnapshotOrPending() {
