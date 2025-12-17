@@ -56,6 +56,11 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 		this.versionDetails.keySet().removeIf(version -> this.versionsById.get(version) == null);
 	}
 
+	@Override
+	public int getConcurrentRequestLimit() {
+		return 8;
+	}
+
 	public CompletableFuture<VersionInfo> fetchSpecificManifest(Executor executor, String id, VersionDetails.ManifestEntry manifestEntryPtr) {
 		try {
 			return this.fetchVersionMetadataFilename(executor, String.format("%s_%s.json", id, manifestEntryPtr.hash()), id, manifestEntryPtr.url(), manifestEntryPtr.hash(), this.manifestMetadata.resolve("manifests"), "version manifest", VersionInfo.class);
