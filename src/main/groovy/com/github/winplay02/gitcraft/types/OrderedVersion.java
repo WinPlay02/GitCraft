@@ -113,7 +113,7 @@ public record OrderedVersion(
 		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
-	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(\\d.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
+	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(1.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
 
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
@@ -190,8 +190,11 @@ public record OrderedVersion(
 		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
 	}
 
+    /**
+	 * @return whether the client and server for this version are not obfuscated
+	 */
 	public boolean isNotObfuscated() {
-		return this.timestamp().isAfter(GitCraftQuirks.RELEASE_TIME_1_21_11) || this.isUnobfuscated();
+		return !this.timestamp().isBefore(GitCraftQuirks.RELEASE_TIME_26_1_SNAPSHOT_1) || this.isUnobfuscated();
 	}
 
 	/**
