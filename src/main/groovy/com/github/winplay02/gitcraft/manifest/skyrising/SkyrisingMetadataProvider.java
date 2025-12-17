@@ -58,7 +58,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	public int getConcurrentRequestLimit() {
-		return 8;
+		return 4;
 	}
 
 	public CompletableFuture<VersionInfo> fetchSpecificManifest(Executor executor, String id, VersionDetails.ManifestEntry manifestEntryPtr) {
