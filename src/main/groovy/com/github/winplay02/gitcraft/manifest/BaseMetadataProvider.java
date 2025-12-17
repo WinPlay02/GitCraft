@@ -193,7 +193,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	protected abstract void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException;
 
 	/**
-	 * @return Highest amount of concurrent HTTP requests this provider supports, -1 if not limited.
+	 * @return The highest number of concurrent HTTP requests this provider supports, -1 if not limited.
 	 */
 	public int getConcurrentRequestLimit() {
 		return -1;
