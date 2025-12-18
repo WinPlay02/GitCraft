@@ -416,6 +416,49 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			case "1.9.2" -> {
 				return List.of("1.9.1");
 			}
+			// support unobfuscated versions
+			case "25w45a_unobfuscated" -> {
+				return List.of("25w44a");
+			}
+			case "25w46a_unobfuscated" -> {
+				return List.of("25w45a_unobfuscated");
+			}
+			case "1.21.11-pre1_unobfuscated" -> {
+				return List.of("25w46a_unobfuscated");
+			}
+			case "1.21.11-pre2_unobfuscated" -> {
+				return List.of("1.21.11-pre1_unobfuscated");
+			}
+			case "1.21.11-pre3_unobfuscated" -> {
+				return List.of("1.21.11-pre2_unobfuscated");
+			}
+			case "1.21.11-pre4_unobfuscated" -> {
+				return List.of("1.21.11-pre3_unobfuscated");
+			}
+			case "1.21.11-pre5_unobfuscated" -> {
+				return List.of("1.21.11-pre4_unobfuscated");
+			}
+			case "1.21.11-rc1_unobfuscated" -> {
+				return List.of("1.21.11-pre5_unobfuscated");
+			}
+			case "1.21.11-rc2_unobfuscated" -> {
+				return List.of("1.21.11-rc1_unobfuscated");
+			}
+			case "1.21.11-rc3_unobfuscated" -> {
+				return List.of("1.21.11-rc2_unobfuscated");
+			}
+			case "1.21.11_unobfuscated" -> {
+				return List.of("1.21.10", "1.21.11-rc3_unobfuscated");
+			}
+			case "1.21.11-rc3" -> {
+				return List.of("1.21.11-rc2");
+			}
+			case "1.21.11" -> {
+				return List.of("1.21.10", "1.21.11-rc3");
+			}
+			case "26.1-snapshot-1" -> {
+				return List.of("1.21.11_unobfuscated");
+			}
 			default -> {
 				return null;
 			}
