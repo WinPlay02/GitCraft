@@ -160,20 +160,9 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 	private String getLauncherVersionDuplicate(String versionId) {
 		if (versionId.endsWith(LAUNCHER_SUFFIX)) {
 			String potential_duplicate = versionId.substring(0, versionId.length() - LAUNCHER_SUFFIX.length());
-
-			if (!this.versionsLoaded) {
-				MiscHelper.panic("Could not check if '%s' is a duplicate launcher version", versionId);
-			}
-			if (this.versionsById.containsKey(potential_duplicate)) {
+			if (this.getVersionsAssumeLoaded().containsKey(potential_duplicate)) {
 				return potential_duplicate;
 			}
-			/*try {
-				if (this.getVersions(null).containsKey(potential_duplicate)) {
-					return potential_duplicate;
-				}
-			} catch (Exception e) {
-				MiscHelper.panicBecause(e, "Could not check if '%s' is a duplicate launcher version", versionId);
-			}*/
 		}
 		return null;
 	}
