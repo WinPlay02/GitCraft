@@ -290,12 +290,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	@Override
 	public final OrderedVersion getVersionByVersionID(String versionId) {
-		try {
-			return this.getVersions(null).get(versionId);
-		} catch (Exception e) {
-			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
-			return null;
-		}
+		return this.getVersionsAssumeLoaded().get(versionId);
 	}
 
 	@Override
