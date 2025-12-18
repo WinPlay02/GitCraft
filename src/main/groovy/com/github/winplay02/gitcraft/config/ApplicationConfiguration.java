@@ -170,6 +170,9 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 	}
 
 	public Optional<MappingFlavour> getMappingsForMinecraftVersion(OrderedVersion mcVersion) {
+		if (mcVersion.isUnobfuscated()) {
+			return Optional.of(MappingFlavour.IDENTITY_UNMAPPED);
+		}
 		if (this.usedMapping().exists(mcVersion)) {
 			return Optional.of(this.usedMapping());
 		}

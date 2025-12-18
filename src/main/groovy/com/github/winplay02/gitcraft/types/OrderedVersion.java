@@ -112,6 +112,10 @@ public record OrderedVersion(
 		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
+	public boolean isUnobfuscated() {
+		return Objects.equals(this.versionInfo().type(), "unobfuscated");
+	}
+
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot");
 	}

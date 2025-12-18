@@ -43,7 +43,7 @@ public class MojangMappings extends Mapping {
 
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
-		return mcVersion.hasClientMojMaps() || mcVersion.hasServerMojMaps();
+		return mcVersion.isUnobfuscated() || mcVersion.hasClientMojMaps() || mcVersion.hasServerMojMaps();
 	}
 
 	@Override
