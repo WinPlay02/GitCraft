@@ -113,7 +113,17 @@ public record OrderedVersion(
 	}
 
 	public boolean isUnobfuscated() {
-		return Objects.equals(this.versionInfo().type(), "unobfuscated");
+		if (Objects.equals(this.versionInfo().type(), "unobfuscated")) {
+			return true;
+		}
+		try {
+			if (SemanticVersion.parse(this.semanticVersion()).getVersionComponent(0) >= 26) {
+				return true;
+			}
+		} catch (VersionParsingException e) {
+			MiscHelper.panicBecause(e, "Could not parse version %s (%s) as semantic version", launcherFriendlyVersionName(), semanticVersion());
+		}
+		return false;
 	}
 
 	public boolean isSnapshot() {
