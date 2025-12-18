@@ -63,6 +63,9 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "1.21.11-unobf" -> {
 				return List.of("1.21.11-rc3-unobf");
 			}
+			case "26.1-snapshot-1" -> {
+				return List.of("1.21.11-unobf", "1.21.11");
+			}
 			// April
 			case "3D Shareware v1.34" -> {
 				return List.of("19w13b+1653");

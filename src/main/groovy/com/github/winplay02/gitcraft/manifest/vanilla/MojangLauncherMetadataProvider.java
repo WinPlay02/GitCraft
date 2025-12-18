@@ -408,6 +408,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			case "1.21.11_unobfuscated" -> {
 				return List.of("1.21.11-rc3_unobfuscated");
 			}
+			case "26.1-snapshot-1" -> {
+				return List.of("1.21.11_unobfuscated", "1.21.11");
+			}
 			// April
 			case "15w14a" -> {
 				return List.of("1.8.3");
