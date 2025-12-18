@@ -25,9 +25,16 @@ public interface MetadataProvider<E extends AbstractVersion<E>> {
 	String getInternalName();
 
 	/**
+	 * Loads versions using given executor if they were not already loaded. Executor must be not <c>null</c>.
 	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id VersionInfo.id}).
 	 */
 	Map<String, E> getVersions(Executor executor) throws IOException;
+
+	/**
+	 * When calling the versions must be already loaded. Crashes if not.
+	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id VersionInfo.id}).
+	 */
+	Map<String, E> getVersionsAssumeLoaded();
 
 	/**
 	 * Finds parent nodes to the provided version. Used to construct the {@link com.github.winplay02.gitcraft.graph.AbstractVersionGraph}.
