@@ -126,6 +126,10 @@ public record OrderedVersion(
 		return Objects.equals(this.versionInfo().type(), "pending");
 	}
 
+	/**
+	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
+	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
+	 */
 	public boolean isUnobfuscated() {
 		return Objects.equals(this.versionInfo().type(), "unobfuscated")
 		// special case for omniarchive manifest
