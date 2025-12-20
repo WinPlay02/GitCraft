@@ -60,7 +60,14 @@ public class YarnMappings extends Mapping {
 		if (meta.build() == build) {
 			return meta;
 		}
-		return new GameVersionBuildMeta(meta.gameVersion(), meta.separator(), build, meta.maven(), meta.version(), meta.stable());
+		String prefix = meta.gameVersion() + meta.separator();
+		return new GameVersionBuildMeta(
+			meta.gameVersion(),
+			meta.separator(),
+			build,
+			meta.maven().replace(prefix + meta.build(), prefix + build),
+			meta.version().replace(prefix + meta.build(), prefix + build),
+			meta.stable());
 	}
 
 	protected FabricIntermediaryMappings intermediaryMappings;
@@ -115,7 +122,7 @@ public class YarnMappings extends Mapping {
 
 	public static StepStatus fetchYarnMergedV2Jar(IStepContext<?, OrderedVersion> versionContext, GameVersionBuildMeta yarnVersion) {
 		Path mappingsFileJar = getYarnMergedV2JarPath(versionContext.targetVersion(), yarnVersion);
-		return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeMergedV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileJar, null, null, "yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
+		return RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeMergedV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileJar, null, null, "yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 	}
 
 	@Override
@@ -131,10 +138,9 @@ public class YarnMappings extends Mapping {
 		}
 		Files.deleteIfExists(mappingsFile);
 		// Get latest build info
-		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(versionContext.targetVersion());
+		GameVersionBuildMeta yarnVersion = getTargetYarnBuild(versionContext.targetVersion());
 		if (yarnVersion == null) {
-			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", versionContext.targetVersion().launcherFriendlyVersionName());
-			yarnVersion = new GameVersionBuildMeta(versionContext.targetVersion().launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), String.format("%s+build.%s", versionContext.targetVersion().launcherFriendlyVersionName(), 1), !versionContext.targetVersion().isSnapshotOrPending());
+			return StepStatus.FAILED;
 		}
 		// Try latest yarn merged v2 JAR build
 		{
@@ -188,9 +194,10 @@ public class YarnMappings extends Mapping {
 		}
 		GameVersionBuildMeta yarnVersion = getYarnLatestBuild(mcVersion);
 		if (yarnVersion == null) {
+			MiscHelper.println("Tried to use yarn for version %s. Yarn mappings do not exist for this version in meta.fabricmc.net. Falling back to generated version...", mcVersion.launcherFriendlyVersionName());
 			yarnVersion = new GameVersionBuildMeta(mcVersion.launcherFriendlyVersionName(), "+build.", 1, String.format("net.fabricmc:yarn:%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), String.format("%s+build.%s", mcVersion.launcherFriendlyVersionName(), 1), !mcVersion.isSnapshotOrPending());
 		}
-		return yarnVersion;
+		return usePotentialBuildOverride(yarnVersion);
 	}
 
 	@Override
@@ -233,7 +240,7 @@ public class YarnMappings extends Mapping {
 				return Tuple2.tuple(mappingsFileUnmerged, StepStatus.UP_TO_DATE);
 			}
 			Path mappingsFileUnmergedJar = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-unmerged-build.%s.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
-			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJar, null, null, "unmerged yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
+			StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeV2JarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJar, null, null, "unmerged yarn mapping", versionContext.targetVersion().launcherFriendlyVersionName()));
 			try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJar)) {
 				Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 				Files.copy(mappingsPathInJar, mappingsFileUnmerged, StandardCopyOption.REPLACE_EXISTING);
@@ -247,7 +254,7 @@ public class YarnMappings extends Mapping {
 					return Tuple2.tuple(mappingsFileUnmergedv1, StepStatus.UP_TO_DATE);
 				}
 				Path mappingsFileUnmergedJarv1 = GitCraftPipelineFilesystemRoot.getMappings().apply(GitCraftPipelineFilesystemStorage.DEFAULT.get().rootFilesystem()).resolve(String.format("%s-yarn-unmerged-build.%s-v1.jar", versionContext.targetVersion().launcherFriendlyVersionName(), yarnVersion.build()));
-				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), usePotentialBuildOverride(yarnVersion).makeJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJarv1, null, null, "unmerged yarn mapping (v1 fallback)", versionContext.targetVersion().launcherFriendlyVersionName()));
+				StepStatus result = RemoteHelper.downloadToFileWithChecksumIfNotExistsNoRetryMaven(versionContext.executorService(), yarnVersion.makeJarMavenUrl(GitCraft.FABRIC_MAVEN), new FileSystemNetworkManager.LocalFileInfo(mappingsFileUnmergedJarv1, null, null, "unmerged yarn mapping (v1 fallback)", versionContext.targetVersion().launcherFriendlyVersionName()));
 				try (FileSystem fs = FileSystems.newFileSystem(mappingsFileUnmergedJarv1)) {
 					Path mappingsPathInJar = fs.getPath("mappings", "mappings.tiny");
 					Files.copy(mappingsPathInJar, mappingsFileUnmergedv1, StandardCopyOption.REPLACE_EXISTING);
