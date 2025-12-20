@@ -1,13 +1,12 @@
 package com.github.winplay02.gitcraft.manifest.omniarchive;
 
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
-import com.github.winplay02.gitcraft.util.MiscHelper;
 
 public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider {
 
@@ -167,8 +166,6 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 		return null;
 	}
 
-	private static final Set<String> LINEAR_SPECIAL_VERSIONS = Set.of("13w12~-1439", "1.5-pre-whitelinefix", "13w04a-whitelinefix", "13w02a-whitetexturefix", "1.0.0-tominecon", "b1.6-tb3", "c0.0.13a-launcher", "c0.0.11a-launcher");
-
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
 		return super.shouldExcludeFromMainBranch(mcVersion)
@@ -177,7 +174,7 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			// Exclude special versions such as combat experiments and b1.3-demo
 			|| (mcVersion.isSpecial()
 				// Allow special versions which do not branch out
-				&& !LINEAR_SPECIAL_VERSIONS.contains(mcVersion.launcherFriendlyVersionName()))
+				&& !GitCraftQuirks.omniarchiveLinearSpecials.contains(mcVersion.launcherFriendlyVersionName()))
 			// Exclude duplicate versions from launcher
 			|| (this.getLauncherVersionDuplicate(mcVersion.launcherFriendlyVersionName()) != null);
 	}

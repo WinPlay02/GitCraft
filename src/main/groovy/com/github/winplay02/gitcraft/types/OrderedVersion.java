@@ -113,7 +113,9 @@ public record OrderedVersion(
 	}
 
 	public boolean isSnapshot() {
-		return Objects.equals(this.versionInfo().type(), "snapshot");
+		return Objects.equals(this.versionInfo().type(), "snapshot")
+			// another special case for snapshots from Omniarchive manifest which are marked as "special"
+			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()));
 	}
 
 	// Can be found in Mojang and Skyrising manifests
