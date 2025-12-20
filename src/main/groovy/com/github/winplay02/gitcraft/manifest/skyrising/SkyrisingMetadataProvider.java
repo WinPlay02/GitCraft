@@ -58,8 +58,8 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	@Override
 	public int getConcurrentRequestLimit() {
-		// derived experimantally
-		// reduce this if SKyrising tests fail again or multiple failed downloads occur
+		// derived experimentally
+		// reduce this if Skyrising tests fail again or multiple failed downloads occur
 		return 4;
 	}
 
