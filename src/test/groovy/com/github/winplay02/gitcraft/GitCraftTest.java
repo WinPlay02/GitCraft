@@ -89,6 +89,12 @@ public class GitCraftTest {
 		assertEquals(1L, minMaxVersionGraph.stream().count());
 		MinecraftVersionGraph mainlineVersionGraph = versionGraphComplete.filterMainlineVersions();
 		assertTrue(mainlineVersionGraph.stream().allMatch(mainlineVersionGraph::isOnMainBranch));
+		MinecraftVersionGraph vgNonObfuscated = versionGraphComplete.filterNonObfuscated();
+		assertEquals("25w45a_unobfuscated", vgNonObfuscated.getMainRootVersion().launcherFriendlyVersionName());
+		assertEquals("26.1-snapshot-1", vgNonObfuscated.filterMainlineVersions().getMainRootVersion().launcherFriendlyVersionName());
+		MinecraftVersionGraph vgUnobfuscated = vgNonObfuscated.filterMaxVersion(versionGraphComplete.getMinecraftVersionByName("1.21.11_unobfuscated"));
+		assertEquals(11L, vgUnobfuscated.stream().count());
+		assertTrue(vgUnobfuscated.stream().allMatch(OrderedVersion::isUnobfuscated));
 	}
 
 	@Test
@@ -105,6 +111,10 @@ public class GitCraftTest {
 			assertFalse(Files.exists(mappingsPath));
 			assertTrue(MappingFlavour.MOJMAP.exists(versionGraph.getMinecraftVersionByName("1.14.4")));
 			assertFalse(MappingFlavour.MOJMAP.exists(versionGraph.getMinecraftVersionByName("1.12")));
+			assertTrue(MappingFlavour.MOJMAP.exists(versionGraph.getMinecraftVersionByName("25w45a_unobfuscated")));
+			assertTrue(MappingFlavour.MOJMAP.exists(versionGraph.getMinecraftVersionByName("26.1-snapshot-1")));
+			assertFalse(MappingFlavour.MOJMAP_STRICT.exists(versionGraph.getMinecraftVersionByName("25w45a_unobfuscated")));
+			assertFalse(MappingFlavour.MOJMAP_STRICT.exists(versionGraph.getMinecraftVersionByName("26.1-snapshot-1")));
 			IStepContext.SimpleStepContext<OrderedVersion> context = new IStepContext.SimpleStepContext<>(null, versionGraph, versionGraph.getMinecraftVersionByName("1.20"), executor);
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.MOJMAP.provide(context, MinecraftJar.CLIENT));
 			assertEquals(StepStatus.SUCCESS, MappingFlavour.MOJMAP.provide(context, MinecraftJar.SERVER));
@@ -311,12 +321,14 @@ public class GitCraftTest {
 		}
 		Configuration.reset();
 		//
-		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime"});
+		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime,25w45a_unobfuscated,1.21.11,26.1-snapshot-1"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
 			assertNotNull(repoWrapper);
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()));
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("1.18_experimental-snapshot-1"));
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("22w13oneblockatatime"));
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("25w45a_unobfuscated"));
+			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("26.1-snapshot-1"))).getParentCount());
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("22w13oneblockatatime"))).getParentCount());
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18"))).getParentCount());
 			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("21w37a"))).getParentCount());
@@ -505,12 +517,14 @@ public class GitCraftTest {
 	@Test
 	public void pipelineReset() throws Exception {
 		Configuration.reset();
-		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime", "--refresh", "--refresh-min-version=1.18"});
+		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime,25w45a_unobfuscated,1.21.11,26.1-snapshot-1", "--refresh", "--refresh-min-version=1.18"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
 			assertNotNull(repoWrapper);
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()));
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("1.18_experimental-snapshot-1"));
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("22w13oneblockatatime"));
+			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef("25w45a_unobfuscated"));
+			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("26.1-snapshot-1"))).getParentCount());
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("22w13oneblockatatime"))).getParentCount());
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18"))).getParentCount());
 			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("21w37a"))).getParentCount());
