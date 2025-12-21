@@ -93,6 +93,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	}
 
 	/**
+	 * Loads versions using given executor if they were not already loaded. Executor must be not <c>null</c>.
 	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id()}).
 	 */
 	@Override
@@ -101,12 +102,28 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		return Collections.unmodifiableMap(this.versionsById);
 	}
 
+	/**
+	 * When calling the versions must be already loaded. Crashes if not.
+	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id()}).
+	 */
+	@Override
+	public final Map<String, OrderedVersion> getVersionsAssumeLoaded() {
+		if (!this.versionsLoaded) {
+			MiscHelper.panic("getVersionsAssumeLoaded() called but the versions are not loaded");
+		}
+		return Collections.unmodifiableMap(this.versionsById);
+	}
+
 	public final void initializeAndLoadVersions(Executor executor) throws IOException {
 		synchronized (this) {
 			if (!this.versionsLoaded) {
+				if (executor == null) {
+					MiscHelper.panic("Cannot load versions because provided executor is null");
+				}
 				this.loadVersions(executor);
 				this.postLoadVersions();
 				this.writeSemverCache();
+				this.versionsLoaded = true;
 			}
 		}
 	}
@@ -163,7 +180,6 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 				}
 			});
 		}
-		this.versionsLoaded = true;
 	}
 
 	protected void postLoadVersions() {
@@ -281,12 +297,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	@Override
 	public final OrderedVersion getVersionByVersionID(String versionId) {
-		try {
-			return this.getVersions(null).get(versionId);
-		} catch (Exception e) {
-			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
-			return null;
-		}
+		return this.getVersionsAssumeLoaded().get(versionId);
 	}
 
 	@Override
