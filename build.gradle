@@ -19,13 +19,13 @@ repositories {
 }
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_24
-	targetCompatibility = JavaVersion.VERSION_24
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release = 24
+	it.options.release = 25
 }
 
 application {
@@ -95,8 +95,8 @@ dependencies {
 	implementation "org.vineflower:vineflower:${vineflower_version}"
 
 	// Testing
-	testImplementation(platform("org.junit:junit-bom:5.13.+"))
-	testImplementation("org.junit.jupiter:junit-jupiter:5.13.+")
+	testImplementation(platform("org.junit:junit-bom:6.0.+"))
+	testImplementation("org.junit.jupiter:junit-jupiter:6.0.+")
 }
 
 // if not working: run ./gradlew run --refresh-dependencies
