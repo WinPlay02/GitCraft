@@ -14,6 +14,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 - [A11v1r15](https://github.com/A11v1r15)
 - [SpaceWalkerRS](https://github.com/SpaceWalkerRS)
 - [Shnupbups](https://github.com/Shnupbups)
+- [0x189D7997](https://github.com/0x189D7997)
 
 ## Discussion
 

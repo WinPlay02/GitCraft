@@ -93,6 +93,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	}
 
 	/**
+	 * Loads versions using given executor if they were not already loaded. Executor must be not <c>null</c>.
 	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id()}).
 	 */
 	@Override
@@ -101,12 +102,28 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		return Collections.unmodifiableMap(this.versionsById);
 	}
 
+	/**
+	 * When calling the versions must be already loaded. Crashes if not.
+	 * @return A map containing all available versions, keyed by a unique name (see {@linkplain VersionInfo#id()}).
+	 */
+	@Override
+	public final Map<String, OrderedVersion> getVersionsAssumeLoaded() {
+		if (!this.versionsLoaded) {
+			MiscHelper.panic("getVersionsAssumeLoaded() called but the versions are not loaded");
+		}
+		return Collections.unmodifiableMap(this.versionsById);
+	}
+
 	public final void initializeAndLoadVersions(Executor executor) throws IOException {
 		synchronized (this) {
 			if (!this.versionsLoaded) {
+				if (executor == null) {
+					MiscHelper.panic("Cannot load versions because provided executor is null");
+				}
 				this.loadVersions(executor);
 				this.postLoadVersions();
 				this.writeSemverCache();
+				this.versionsLoaded = true;
 			}
 		}
 	}
@@ -163,7 +180,6 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 				}
 			});
 		}
-		this.versionsLoaded = true;
 	}
 
 	protected void postLoadVersions() {
@@ -192,6 +208,13 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 	 */
 	protected abstract void loadVersionsFromRepository(Executor executor, Path dir, Consumer<OrderedVersion> loader) throws IOException;
 
+	/**
+	 * @return The highest number of concurrent HTTP requests this provider supports, -1 if not limited.
+	 */
+	public int getConcurrentRequestLimit() {
+		return -1;
+	}
+
 	protected final <T> CompletableFuture<T> fetchVersionMetadata(Executor executor, String id, String url, String sha1, Path targetDir, String targetFileKind, Class<T> metadataClass) throws IOException {
 		URI uri = null;
 		try {
@@ -203,7 +226,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 		String fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
 		String fileExt = fileName.lastIndexOf(".") != -1 ? fileName.substring(fileName.lastIndexOf(".") + 1) : "";
 		Path filePath = sha1 != null ? targetDir.resolve(String.format("%s_%s.%s", fileNameWithoutExt, sha1, fileExt)) : targetDir.resolve(fileName); // allow multiple files with same hash to coexist (in case of reuploads with same meta name, referenced from different versions)
-		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false, this.getConcurrentRequestLimit());
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass, fileName);
@@ -222,7 +245,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 			throw new IOException(e);
 		}
 		Path filePath = targetDir.resolve(filename);
-		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false);
+		CompletableFuture<StepStatus> status = FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, new FileSystemNetworkManager.LocalFileInfo(filePath, sha1, sha1 != null ? Library.IA_SHA1 : null, targetFileKind, id), true, false, this.getConcurrentRequestLimit());
 		return status.thenApply($ -> {
 			try {
 				return this.loadVersionMetadata(filePath, metadataClass, filePath.getFileName().toString());
@@ -274,12 +297,7 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	@Override
 	public final OrderedVersion getVersionByVersionID(String versionId) {
-		try {
-			return this.getVersions(null).get(versionId);
-		} catch (Exception e) {
-			MiscHelper.panicBecause(e, "Could not fetch version information by id '%s'", versionId);
-			return null;
-		}
+		return this.getVersionsAssumeLoaded().get(versionId);
 	}
 
 	@Override
