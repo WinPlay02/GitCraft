@@ -231,6 +231,13 @@ public class MiscHelper {
 		void run() throws Exception;
 	}
 
+	public static String getCurrentJvmCommand() {
+		return ProcessHandle.current()
+				.info()
+				.command()
+				.orElseThrow();
+	}
+
 	public static void executeTimedStep(String message, ExceptionInsensitiveRunnable runnable) {
 		println(message);
 		long timeStart = System.nanoTime();
@@ -246,7 +253,7 @@ public class MiscHelper {
 	}
 
 	public static void createJavaSubprocess(Executor executor, String description, Path cwd, List<String> args) throws IOException, InterruptedException {
-		List<String> processArgs = new ArrayList<>(List.of("java"));
+		List<String> processArgs = new ArrayList<>(List.of(getCurrentJvmCommand()));
 		processArgs.addAll(args);
 		ProcessBuilder processBuilder = new ProcessBuilder(processArgs)
 			.directory(cwd.toFile())
@@ -286,7 +293,7 @@ public class MiscHelper {
 
 	public static void tryJavaExecution() {
 		try {
-			ProcessBuilder processBuilder = new ProcessBuilder(List.of("java", "--version"));
+			ProcessBuilder processBuilder = new ProcessBuilder(List.of(getCurrentJvmCommand(), "--version"));
 			Process process = processBuilder.start();
 			process.waitFor();
 		} catch (IOException | InterruptedException e) {

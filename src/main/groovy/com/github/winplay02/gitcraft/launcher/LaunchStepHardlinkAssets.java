@@ -51,6 +51,7 @@ public record LaunchStepHardlinkAssets(GitCraftStepConfig config) implements Git
 		Path symlinkedAssetsDir = results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_GAME).resolve("assets");
 
 		Files.deleteIfExists(symlinkedAssetsDir);
+		Files.createDirectories(symlinkedAssetsDir.getParent());
 		Files.createSymbolicLink(
 			symlinkedAssetsDir,
 			results.getPathForKeyAndAdd(pipeline, context, this.config, GitCraftPipelineFilesystemStorage.LAUNCH_ASSETS)
@@ -80,7 +81,7 @@ public record LaunchStepHardlinkAssets(GitCraftStepConfig config) implements Git
 			if (Files.isDirectory(symlinkedResourcesDir)) {
 				MiscHelper.deleteDirectory(symlinkedResourcesDir);
 			} else {
-				Files.delete(symlinkedResourcesDir);
+				Files.deleteIfExists(symlinkedResourcesDir);
 			}
 			Files.createSymbolicLink(
 				symlinkedResourcesDir,

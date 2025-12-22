@@ -60,7 +60,7 @@ public class FileSystemNetworkManager {
 
 	protected static final Map<Path, NetworkProgressInfo> completedJobs = new ConcurrentHashMap<>();
 
-	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable, boolean useEtag) {
+	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable, int concurrentLimit, boolean useEtag) {
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
 			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum(), localFileInfo.checksum()) &&
 			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm(), localFileInfo.integrityAlgorithm())) {
@@ -86,7 +86,7 @@ public class FileSystemNetworkManager {
 					try {
 						MiscHelper.println("Fetching %s %s from: %s", localFileInfo.outputFileKind(), localFileInfo.outputFileId(), url);
 						try {
-							HttpResponse<Path> response = FileSystemNetworkManager.fetchFileAsync(url, localFileInfo.targetFile(), useEtag).get();
+							HttpResponse<Path> response = FileSystemNetworkManager.fetchFileAsync(url, localFileInfo.targetFile(), concurrentLimit, useEtag).get();
 							if (useEtag && response.statusCode() == 304) {
 								MiscHelper.println("Skipped downloading %s %s as it is already up-to-date", localFileInfo.outputFileKind(), localFileInfo.outputFileId());
 							}
@@ -127,7 +127,7 @@ public class FileSystemNetworkManager {
 	
 	private static final String ETAG_ATTRIBUTE = "ETag";
 	
-	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile, boolean useEtag) {
+	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile, int concurrentLimit, boolean useEtag) {
 		HttpRequest.Builder builder = HttpRequest.newBuilder(uri).GET();
 		if (useEtag) {
 			try {
@@ -140,7 +140,10 @@ public class FileSystemNetworkManager {
 			}
 		}
 		HttpRequest request = builder.build();
-		final Semaphore semaphore = connectionLimiter.computeIfAbsent(uri.getHost().toLowerCase(Locale.ROOT), $ -> new Semaphore(Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin()));
+		final Semaphore semaphore = connectionLimiter.computeIfAbsent(uri.getHost().toLowerCase(Locale.ROOT), $ ->
+				new Semaphore(concurrentLimit > 0 ?
+						Math.min(concurrentLimit, Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin())
+						: Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin()));
 		if (targetFile.getParent() != null) {
 			try {
 				Files.createDirectories(targetFile.getParent());
