@@ -191,10 +191,8 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 	@Override
 	protected void loadVersions(Executor executor) throws IOException {
 		this.versionsById.clear();
-		this.mojangLauncherMetadataProvider.initializeAndLoadVersions(executor);
-		this.skyrisingMetadataProvider.initializeAndLoadVersions(executor);
-		Set<String> mojangVersionIds = this.mojangLauncherMetadataProvider.getVersions(null).keySet();
-		Set<String> skyrisingVersionIds = this.skyrisingMetadataProvider.getVersions(null).keySet();
+		Set<String> mojangVersionIds = this.mojangLauncherMetadataProvider.getVersions(executor).keySet();
+		Set<String> skyrisingVersionIds = this.skyrisingMetadataProvider.getVersions(executor).keySet();
 		Set<String> transformedSkyrisingVersionIds = MiscHelper.concatStreams(
 			skyrisingVersionIds.stream().filter(SKYRISING_MOJANG_VERSION_ID_MAPPING::containsKey).map(SKYRISING_MOJANG_VERSION_ID_MAPPING::get),
 			skyrisingVersionIds.stream().filter(Predicate.not(SKYRISING_MOJANG_VERSION_ID_MAPPING::containsKey))
@@ -232,7 +230,6 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 		for (Map.Entry<String, CompletableFuture<OrderedVersion>> futureEntry : futureVersionsMap.entrySet()) {
 			this.versionsById.put(futureEntry.getKey(), futureEntry.getValue().join());
 		}
-		this.versionsLoaded = true;
 	}
 
 	@Override

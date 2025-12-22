@@ -1,7 +1,9 @@
 package com.github.winplay02.gitcraft;
 
+import com.github.winplay02.gitcraft.config.ApplicationConfiguration;
 import com.github.winplay02.gitcraft.config.Configuration;
 import com.github.winplay02.gitcraft.exceptions.ExceptionsFlavour;
+import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.skyrising.SkyrisingMetadataProvider;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
 import com.github.winplay02.gitcraft.mappings.MappingFlavour;
@@ -122,12 +124,32 @@ public class GitCraftTest {
 
 	@Test
 	public void mappingsParchment() throws IOException, URISyntaxException, InterruptedException {
-		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
-		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MojangLauncherMetadataProvider metadataBootstrap1 = new MojangLauncherMetadataProvider();
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap1.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap1.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
+			ManifestSource.MOJANG,
+			original.usedMapping(),
+			original.fallbackMappings(),
+			original.usedUnpickFlavour(),
+			original.fallbackUnpickFlavours(),
+			original.singleSideVersionsOnMainBranch(),
+			original.onlyStableReleases(),
+			original.onlySnapshots(),
+			original.skipNonLinear(),
+			original.onlyVersion(),
+			original.minVersion(),
+			original.maxVersion(),
+			original.excludedVersion(),
+			original.ornitheIntermediaryGeneration(),
+			original.patchLvt(),
+			original.usedExceptions(),
+			original.usedSignatures(),
+			original.usedNests(),
+			original.enablePreening()
+		));
 		MinecraftVersionGraph versionGraph;
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
-			versionGraph = MinecraftVersionGraph.createFromMetadata(executor, metadataBootstrap);
+			versionGraph = MinecraftVersionGraph.createFromMetadata(executor, GitCraftApplication.getApplicationConfiguration().manifestSource().getMetadataProvider());
 			//
 			Path mappingsPath = MappingFlavour.MOJMAP_PARCHMENT.getPath(versionGraph.getMinecraftVersionByName("1.20.1"), MinecraftJar.MERGED).orElse(null);
 			assertNotNull(mappingsPath);
@@ -148,12 +170,32 @@ public class GitCraftTest {
 
 	@Test
 	public void mappingsFabricIntermediary() throws IOException, URISyntaxException, InterruptedException {
-		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
-		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MojangLauncherMetadataProvider metadataBootstrap1 = new MojangLauncherMetadataProvider();
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap1.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap1.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
+			ManifestSource.MOJANG,
+			original.usedMapping(),
+			original.fallbackMappings(),
+			original.usedUnpickFlavour(),
+			original.fallbackUnpickFlavours(),
+			original.singleSideVersionsOnMainBranch(),
+			original.onlyStableReleases(),
+			original.onlySnapshots(),
+			original.skipNonLinear(),
+			original.onlyVersion(),
+			original.minVersion(),
+			original.maxVersion(),
+			original.excludedVersion(),
+			original.ornitheIntermediaryGeneration(),
+			original.patchLvt(),
+			original.usedExceptions(),
+			original.usedSignatures(),
+			original.usedNests(),
+			original.enablePreening()
+		));
 		MinecraftVersionGraph versionGraph;
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
-			versionGraph = MinecraftVersionGraph.createFromMetadata(executor, metadataBootstrap);
+			versionGraph = MinecraftVersionGraph.createFromMetadata(executor, GitCraftApplication.getApplicationConfiguration().manifestSource().getMetadataProvider());
 			//
 			Path mappingsPath = MappingFlavour.FABRIC_INTERMEDIARY.getPath(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED).orElse(null);
 			assertNotNull(mappingsPath);
@@ -174,12 +216,32 @@ public class GitCraftTest {
 
 	@Test
 	public void mappingsYarn() throws IOException, URISyntaxException, InterruptedException {
-		MojangLauncherMetadataProvider metadataBootstrap = new MojangLauncherMetadataProvider();
-		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
-		metadataBootstrap = new MojangLauncherMetadataProvider();
+		MojangLauncherMetadataProvider metadataBootstrap1 = new MojangLauncherMetadataProvider();
+		Files.copy(LibraryPaths.lookupCurrentWorkingDirectory().resolve(String.format("semver-cache-%s.json", metadataBootstrap1.getInternalName())), LibraryPaths.CURRENT_WORKING_DIRECTORY.resolve(String.format("semver-cache-%s.json", metadataBootstrap1.getInternalName())), StandardCopyOption.REPLACE_EXISTING);
+		Configuration.editConfiguration(ApplicationConfiguration.class, (original) -> new ApplicationConfiguration(
+			ManifestSource.MOJANG,
+			original.usedMapping(),
+			original.fallbackMappings(),
+			original.usedUnpickFlavour(),
+			original.fallbackUnpickFlavours(),
+			original.singleSideVersionsOnMainBranch(),
+			original.onlyStableReleases(),
+			original.onlySnapshots(),
+			original.skipNonLinear(),
+			original.onlyVersion(),
+			original.minVersion(),
+			original.maxVersion(),
+			original.excludedVersion(),
+			original.ornitheIntermediaryGeneration(),
+			original.patchLvt(),
+			original.usedExceptions(),
+			original.usedSignatures(),
+			original.usedNests(),
+			original.enablePreening()
+		));
 		MinecraftVersionGraph versionGraph;
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
-			versionGraph = MinecraftVersionGraph.createFromMetadata(executor, metadataBootstrap);
+			versionGraph = MinecraftVersionGraph.createFromMetadata(executor, GitCraftApplication.getApplicationConfiguration().manifestSource().getMetadataProvider());
 			//
 			Path mappingsPath = MappingFlavour.YARN.getPath(versionGraph.getMinecraftVersionByName("1.20"), MinecraftJar.MERGED).orElse(null);
 			assertNotNull(mappingsPath);

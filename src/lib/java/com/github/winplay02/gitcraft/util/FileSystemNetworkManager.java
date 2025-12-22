@@ -57,7 +57,7 @@ public class FileSystemNetworkManager {
 
 	protected static final Map<Path, NetworkProgressInfo> completedJobs = new ConcurrentHashMap<>();
 
-	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable) {
+	public static CompletableFuture<StepStatus> fetchRemoteSerialFSAccess(Executor executor, URI url, LocalFileInfo localFileInfo, boolean retry, boolean tolerateHashUnavailable, int concurrentLimit) {
 		if (completedJobs.containsKey(localFileInfo.targetFile()) &&
 			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityChecksum, localFileInfo.checksum()) &&
 			Objects.equals(completedJobs.get(localFileInfo.targetFile()).integrityAlgorithm, localFileInfo.integrityAlgorithm())) {
@@ -83,7 +83,7 @@ public class FileSystemNetworkManager {
 					try {
 						MiscHelper.println("Fetching %s %s from: %s", localFileInfo.outputFileKind(), localFileInfo.outputFileId(), url);
 						try {
-							FileSystemNetworkManager.fetchFileAsync(url, localFileInfo.targetFile()).get();
+							FileSystemNetworkManager.fetchFileAsync(url, localFileInfo.targetFile(), concurrentLimit).get();
 							if (!retry) {
 								break;
 							}
@@ -119,9 +119,12 @@ public class FileSystemNetworkManager {
 
 	protected static final Map<String, Semaphore> connectionLimiter = new ConcurrentHashMap<>();
 
-	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile) {
+	protected static CompletableFuture<HttpResponse<Path>> fetchFileAsync(URI uri, Path targetFile, int concurrentLimit) {
 		HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
-		final Semaphore semaphore = connectionLimiter.computeIfAbsent(uri.getHost().toLowerCase(Locale.ROOT), $ -> new Semaphore(Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin()));
+		final Semaphore semaphore = connectionLimiter.computeIfAbsent(uri.getHost().toLowerCase(Locale.ROOT), $ ->
+				new Semaphore(concurrentLimit > 0 ?
+						Math.min(concurrentLimit, Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin())
+						: Library.CONF_GLOBAL.maxConcurrentHttpRequestsPerOrigin()));
 		if (targetFile.getParent() != null) {
 			try {
 				Files.createDirectories(targetFile.getParent());
