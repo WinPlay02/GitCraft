@@ -967,10 +967,9 @@ public class GitCraftTest {
 			}
 		}
 	}
-}
 
-private static ApplicationConfiguration appConfigWithManifestSource(ApplicationConfiguration original, ManifestSource manifest) {
-	return new ApplicationConfiguration(
+	private static ApplicationConfiguration appConfigWithManifestSource(ApplicationConfiguration original, ManifestSource manifest) {
+		return new ApplicationConfiguration(
 			manifest,
 			original.usedMapping(),
 			original.fallbackMappings(),
@@ -991,4 +990,5 @@ private static ApplicationConfiguration appConfigWithManifestSource(ApplicationC
 			original.usedNests(),
 			original.enablePreening()
 		);
+	}
 }
