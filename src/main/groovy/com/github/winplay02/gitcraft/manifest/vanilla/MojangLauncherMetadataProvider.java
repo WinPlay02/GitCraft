@@ -240,6 +240,16 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	// Version Override
 	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
+		// Fixes for Omniarchive manifest
+		"1.21.11-pre1-unobf", "1.21.11-beta.1+unobfuscated",
+		"1.21.11-pre2-unobf", "1.21.11-beta.2+unobfuscated",
+		"1.21.11-pre3-unobf", "1.21.11-beta.3+unobfuscated",
+		"1.21.11-pre4-unobf", "1.21.11-beta.4+unobfuscated",
+		"1.21.11-pre5-unobf", "1.21.11-beta.5+unobfuscated",
+		"1.21.11-rc1-unobf", "1.21.11-rc.1+unobfuscated",
+		"1.21.11-rc2-unobf", "1.21.11-rc.2+unobfuscated",
+		"1.21.11-rc3-unobf", "1.21.11-rc.3+unobfuscated",
+		"1.21.11-unobf", "1.21.11+unobfuscated"
 		// FIX until fabric-loader is updated
 		// END FIX
 	);
