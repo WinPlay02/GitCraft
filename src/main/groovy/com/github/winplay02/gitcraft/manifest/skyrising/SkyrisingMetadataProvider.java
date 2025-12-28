@@ -132,7 +132,11 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 		return this.getVersionDetails(mcVersion.launcherFriendlyVersionName()).previous().stream()
 			.filter(it -> !isClassicOrAlphaServer(it))
 			.map(this::getVersionByVersionID)
-			.filter(Objects::nonNull)
+			.peek(ver -> {
+				if (ver == null) {
+					MiscHelper.panic("One or more of the parent versions were not found for %s", mcVersion.friendlyVersion());
+				}
+			})
 			.toList();
 	}
 
