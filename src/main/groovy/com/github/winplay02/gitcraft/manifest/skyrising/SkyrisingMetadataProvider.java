@@ -130,6 +130,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 	@Override
 	public List<OrderedVersion> getParentVersions(OrderedVersion mcVersion) {
 		return this.getVersionDetails(mcVersion.launcherFriendlyVersionName()).previous().stream()
+			.filter(it -> !isClassicOrAlphaServer(it))
 			.map(this::getVersionByVersionID)
 			.filter(Objects::nonNull)
 			.toList();
@@ -137,10 +138,14 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 
 	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)((-\\d+|\\d+)(-\\d+)?)?| Pre-Release \\d+)?$)");
 
+	private static boolean isClassicOrAlphaServer(String versionId) {
+		return versionId.startsWith("server-");
+	}
+
 	@Override
 	public boolean shouldExclude(OrderedVersion mcVersion) {
 		// classic and alpha servers don't work well with the version graph right now
-		return mcVersion.launcherFriendlyVersionName().startsWith("server-");
+		return isClassicOrAlphaServer(mcVersion.launcherFriendlyVersionName());
 	}
 
 	@Override
