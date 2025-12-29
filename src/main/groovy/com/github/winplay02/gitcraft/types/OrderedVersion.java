@@ -115,6 +115,7 @@ public record OrderedVersion(
 
 	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(1.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
 
+	// Found in all manifests
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
 		// special case required because the manifest for experimental unobfuscated versions
@@ -122,10 +123,12 @@ public record OrderedVersion(
 				|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches());
 	}
 
+	// Can be found in Mojang and Skyrising manifests
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
 	}
 
+	// Mojang and Skyrising
 	/**
 	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
 	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
@@ -136,7 +139,27 @@ public record OrderedVersion(
 				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
 	}
 
-	// Can be found in Omniarchive manifest
+	// Mojang and Skyrising
+	public boolean isOldBeta() {
+		return Objects.equals(this.versionInfo().type(), "old_beta");
+	}
+
+	// Mojang and Skyrising
+	public boolean isOldAlpha() {
+		return Objects.equals(this.versionInfo().type(), "old_alpha");
+	}
+
+	// Skyrising
+	public boolean isAlphaServer() {
+		return Objects.equals(this.versionInfo().type(), "alpha_server");
+	}
+
+	// Skyrising
+	public boolean isClassicServer() {
+		return Objects.equals(this.versionInfo().type(), "classic_server");
+	}
+
+	// Omniarchive
 	public boolean isSpecial() {
 		return Objects.equals(this.versionInfo().type(), "special");
 	}

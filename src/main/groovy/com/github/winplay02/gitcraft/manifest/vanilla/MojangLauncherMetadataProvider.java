@@ -310,7 +310,14 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	@Override
 	public List<OrderedVersion> getParentVersions(OrderedVersion mcVersion) {
 		List<String> parentVersionIds = this.getParentVersionIds(mcVersion.friendlyVersion());
-		return parentVersionIds == null ? null : parentVersionIds.stream().map(this::getVersionByVersionID).toList();
+		return parentVersionIds == null ? null : parentVersionIds.stream()
+			.map(this::getVersionByVersionID)
+			.peek(ver -> {
+				if (ver == null) {
+					MiscHelper.panic("One or more of the parent versions were not found for %s", mcVersion.friendlyVersion());
+				}
+			})
+			.toList();
 	}
 
 	protected List<String> getParentVersionIds(String versionId) {
@@ -320,22 +327,22 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 				return List.of("1.14.3-pre4");
 			}
 			case "1.14_combat-0" -> {
-				return List.of("1.14.4", "1.14_combat-212796");
+				return List.of("1.14_combat-212796", "1.14.4");
 			}
 			case "1.14_combat-3" -> {
 				return List.of("1.14_combat-0");
 			}
 			case "1.15_combat-1" -> {
-				return List.of("1.15-pre3", "1.14_combat-3");
+				return List.of("1.14_combat-3", "1.15-pre3");
 			}
 			case "1.15_combat-6" -> {
-				return List.of("1.15.2-pre2", "1.15_combat-1");
+				return List.of("1.15_combat-1", "1.15.2-pre2");
 			}
 			case "1.16_combat-0" -> {
-				return List.of("1.16.2-pre3", "1.15_combat-6");
+				return List.of("1.15_combat-6", "1.16.2-pre3");
 			}
 			case "1.16_combat-1" -> {
-				return List.of("1.16.2", "1.16_combat-0");
+				return List.of("1.16_combat-0", "1.16.2");
 			}
 			case "1.16_combat-2" -> {
 				return List.of("1.16_combat-1");
@@ -354,7 +361,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			}
 			// Experimental 1.18
 			case "1.18_experimental-snapshot-1" -> {
-				return List.of("1.17.1");
+				return List.of("1.17.1-pre1");
 			}
 			case "1.18_experimental-snapshot-2" -> {
 				return List.of("1.18_experimental-snapshot-1");
@@ -380,9 +387,6 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			// Experimental 1.19
 			case "1.19_deep_dark_experimental_snapshot-1" -> {
 				return List.of("1.18.1");
-			}
-			case "22w11a" -> {
-				return List.of("1.18.2", "1.19_deep_dark_experimental_snapshot-1");
 			}
 			// Unobfuscated
 			case "25w45a_unobfuscated" -> {
@@ -435,26 +439,22 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 				return List.of("20w13b");
 			}
 			case "22w13oneblockatatime" -> {
-				return List.of("22w13a");
-			}
-			case "23w13a_or_b" -> {
-				return List.of("23w13a_or_b_original", "23w13a");
+				return List.of("1.18.2");
 			}
 			case "23w13a_or_b_original" -> {
 				return List.of("23w13a");
 			}
-			case "24w14potato" -> {
-				return List.of("24w14potato_original", "24w12a");
+			case "23w13a_or_b" -> {
+				return List.of("23w13a_or_b_original");
 			}
 			case "24w14potato_original" -> {
 				return List.of("24w12a");
 			}
+			case "24w14potato" -> {
+				return List.of("24w14potato_original");
+			}
 			case "25w14craftmine" -> {
 				return List.of("1.21.5");
-			}
-			// Special case to make version graph not contain a cycle
-			case "1.9.2" -> {
-				return List.of("1.9.1");
 			}
 			default -> {
 				return null;
@@ -462,13 +462,15 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		}
 	}
 
-	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot-)\\d+|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot-)\\d+| Pre-Release \\d+)?$)");
 
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// filter out april fools snapshots and experimental versions,
 			// which often have typical ids that do not match normal snapshots
-			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
+			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches())
+			// Exclude april fools that looks like regular snapshot
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "15w14a");
 	}
 }
