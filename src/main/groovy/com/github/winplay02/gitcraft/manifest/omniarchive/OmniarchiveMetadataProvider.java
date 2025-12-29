@@ -1,9 +1,12 @@
 package com.github.winplay02.gitcraft.manifest.omniarchive;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
+import com.github.winplay02.gitcraft.GitCraftQuirks;
 import com.github.winplay02.gitcraft.manifest.ManifestSource;
 import com.github.winplay02.gitcraft.manifest.vanilla.MojangLauncherMetadataProvider;
+import com.github.winplay02.gitcraft.types.OrderedVersion;
 
 public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider {
 
