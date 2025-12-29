@@ -98,7 +98,7 @@ public class YarnMappings extends Mapping {
 
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
-		if (isYarnBrokenVersion(mcVersion)) { // exclude broken versions
+		if (isYarnBrokenVersion(mcVersion) || mcVersion.isNotObfuscated()) { // exclude broken and non-obfuscated versions
 			return false;
 		}
 		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.YARN_MAPPINGS_START_VERSION_ID)) >= 0;

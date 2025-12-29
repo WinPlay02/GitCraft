@@ -44,10 +44,13 @@ To disabled versioning entirely (and only decompile), specify `--no-repo`.
 To disable special versions (e.g. april fools or combat snapshots), specify `--skip-nonlinear`.
 To disable either snapshots or stable releases, use either `--only-stable` or `--only-snapshot`.
 
+To only include versions which do not use obfuscation, specify `--only-unobfuscated`.
+
 To use other mappings than mojmaps, specify `--mappings=<mapping>`. Supported mappings are `mojmap`, `mojmap_parchment`, `fabric_intermediary` and `yarn`.
 The combination of mojmaps and yarn mappings `mojmap_yarn` (like used in Paper) is also available, which uses mojmaps as a base and includes comments and additionally function parameter names from yarn.
 For legacy versions, there are {`calamus_intermediary`, `feather`} mappings from OrnitheMC.
 For just comparing changes without using mappings, `identity_unmapped` can be used.
+Non-obfuscated versions are also accepted by `mojmap` and when this behavior is not desired, `mojmap_strict` can be used.
 
 Fallback mappings can be used with `--fallback-mappings`. For example `mojmap` could be used as a fallback to a `mojmap_parchment` mapping, as not every version of minecraft is available.
 
@@ -113,10 +116,10 @@ Options:
                                mojang_historic
       --mappings=<mapping>   Specifies the mappings used to decompile the
                                source tree. Mojmaps are selected by default.
-                               Possible values are: mojmap,
-                               fabric_intermediary, yarn, mojmap_parchment,
-                               calamus_intermediary, feather,
-                               identity_unmapped, mojmap_yarn
+                               Possible values are: identity_unmapped,
+                               mojmap_strict, mojmap, fabric_intermediary,
+                               yarn, mojmap_parchment, calamus_intermediary,
+                               feather, mojmap_yarn
       --max-version=<version>
                              Specify the max. version to decompile. Every
                                version before (and including) the specified
@@ -157,6 +160,7 @@ Options:
       --only-snapshot        Only decompiles snapshots (includes pending and
                                non-linear, if not otherwise specified).
       --only-stable          Only decompiles stable releases.
+      --only-unobfuscated    Only decompiles versions which are not obfuscated.
       --only-version[=<version>[,<version>]...]
                              Specify the only version(s) to decompile. The
                                repository be stored in

@@ -98,6 +98,43 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "1.19-exp1" -> {
 				return List.of("1.18.1");
 			}
+      // Unobfuscated
+			case "25w45a-unobf" -> {
+				return List.of("25w44a");
+			}
+			case "25w46a-unobf" -> {
+				return List.of("25w45a-unobf");
+			}
+			case "1.21.11-pre1-unobf" -> {
+				return List.of("25w46a-unobf");
+			}
+			case "1.21.11-pre2-unobf" -> {
+				return List.of("1.21.11-pre1-unobf");
+			}
+			case "1.21.11-pre3-unobf" -> {
+				return List.of("1.21.11-pre2-unobf");
+			}
+			case "1.21.11-pre4-unobf" -> {
+				return List.of("1.21.11-pre3-unobf");
+			}
+			case "1.21.11-pre5-unobf" -> {
+				return List.of("1.21.11-pre4-unobf");
+			}
+			case "1.21.11-rc1-unobf" -> {
+				return List.of("1.21.11-pre5-unobf");
+			}
+			case "1.21.11-rc2-unobf" -> {
+				return List.of("1.21.11-rc1-unobf");
+			}
+			case "1.21.11-rc3-unobf" -> {
+				return List.of("1.21.11-rc2-unobf");
+			}
+			case "1.21.11-unobf" -> {
+				return List.of("1.21.11-rc3-unobf");
+			}
+			case "26.1-snapshot-1" -> {
+				return List.of("1.21.11-unobf", "1.21.11");
+			}
 			// April
 			case "2.0-preview" -> {
 				return List.of("1.5.1");

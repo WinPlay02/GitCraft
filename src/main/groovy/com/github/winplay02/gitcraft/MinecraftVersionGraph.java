@@ -297,6 +297,10 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return new MinecraftVersionGraph(this, OrderedVersion::isSnapshotOrPending, "snapshot");
 	}
 
+	public MinecraftVersionGraph filterNonObfuscated() {
+		return new MinecraftVersionGraph(this, OrderedVersion::isNotObfuscated, "unobfuscated");
+	}
+
 	public OrderedVersion getMainRootVersion() {
 		if (this.roots.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");

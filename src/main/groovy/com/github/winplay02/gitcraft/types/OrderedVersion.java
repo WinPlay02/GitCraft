@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Represents a minecraft version with an order
@@ -112,9 +113,14 @@ public record OrderedVersion(
 		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
+	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(1.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
+
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
-			// Special case for snapshots from Omniarchive manifest which are marked as "special"
+		  // Special case required because the manifest for experimental unobfuscated versions
+		  // does not specify their snapshot status and always uses 'unobfuscated' as version type
+			|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches())
+			// Another special case for snapshots from Omniarchive manifest which are marked as "special"
 			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()))
 			// Mark april fools versions from Omniarchive as snapshots
 			|| this.isAprilFools();
@@ -122,6 +128,17 @@ public record OrderedVersion(
 
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
+	}
+
+  // Mojang and Skyrising
+	/**
+	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
+	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
+	 */
+	public boolean isUnobfuscated() {
+		return Objects.equals(this.versionInfo().type(), "unobfuscated")
+		// special case for omniarchive manifest
+				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
 	}
 
 	// Omniarchive
@@ -132,7 +149,6 @@ public record OrderedVersion(
 	// Omniarchive
 	public boolean isAprilFools() {
 		return Objects.equals(this.versionInfo().type(), "april-fools");
-	}
 
 	public boolean isSnapshotOrPending() {
 		return this.isSnapshot() || this.isPending();
@@ -185,6 +201,13 @@ public record OrderedVersion(
 		}
 		// otherwise the check against FIRST_MERGEABLE_VERSION_RELEASE_TIME may fail
 		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
+	}
+
+    /**
+	 * @return whether the client and server for this version are not obfuscated
+	 */
+	public boolean isNotObfuscated() {
+		return !this.timestamp().isBefore(GitCraftQuirks.RELEASE_TIME_26_1_SNAPSHOT_1) || this.isUnobfuscated();
 	}
 
 	/**

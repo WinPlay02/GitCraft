@@ -110,6 +110,9 @@ public abstract class GitCraftApplication {
 			}
 			graph = graph.filterExcludeVersion(mc_versions);
 		}
+		if (getApplicationConfiguration().onlyUnobfuscated()) {
+			graph = graph.filterNonObfuscated();
+		}
 		if (getApplicationConfiguration().onlyStableReleases()) {
 			graph = graph.filterStableRelease();
 		}
