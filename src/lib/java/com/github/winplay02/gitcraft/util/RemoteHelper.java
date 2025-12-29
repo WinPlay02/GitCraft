@@ -40,7 +40,7 @@ public class RemoteHelper {
 		}
 		while (true) {
 			try {
-				return FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, localFileInfo, retry, false, -1).get();
+				return FileSystemNetworkManager.fetchRemoteSerialFSAccess(executor, uri, localFileInfo, retry, false, -1, false).get();
 			} catch (InterruptedException e) {
 				MiscHelper.println("Interrupted while waiting for download of %s to complete", url);
 				continue;
