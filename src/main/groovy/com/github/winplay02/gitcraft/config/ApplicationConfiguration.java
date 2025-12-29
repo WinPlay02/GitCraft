@@ -33,6 +33,7 @@ import static com.github.winplay02.gitcraft.config.Configuration.Utils.prim;
  * @param fallbackUnpickFlavours Unpick information used if primary unpick information is not available (tried in the order provided)
  * @param onlyStableReleases Whether only stable releases should be handled
  * @param onlySnapshots Whether only snapshots should be handled
+ * @param onlyUnobfuscated Whether only non-obfuscated versions should be handled
  * @param skipNonLinear Whether non-linear versions are not handled
  * @param onlyVersion Set of versions that are handled; Order is not important here as there exists a defined partial order on the versions
  * @param minVersion The min version that is handled; Every version greater than this version is also included, as there exists a defined partial order on the versions
@@ -47,6 +48,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 									   boolean singleSideVersionsOnMainBranch,
 									   boolean onlyStableReleases,
 									   boolean onlySnapshots,
+									   boolean onlyUnobfuscated,
 									   boolean skipNonLinear,
 									   String[] onlyVersion,
 									   String minVersion,
@@ -79,6 +81,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		false,
 		false,
 		false,
+		false,
 		null,
 		null,
 		null,
@@ -104,6 +107,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 				"singleSideVersionsOnMainBranch", prim(this.singleSideVersionsOnMainBranch()),
 				"onlyStableReleases", prim(this.onlyStableReleases()),
 				"onlySnapshots", prim(this.onlySnapshots()),
+				"onlyUnobfuscated", prim(this.onlyUnobfuscated()),
 				"skipNonLinear", prim(this.skipNonLinear())
 			),
 			Map.of(
@@ -131,7 +135,9 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 		}
 		info.add(String.format("Unpick information used: %s (fallback: %s)", this.usedUnpickFlavour(), this.fallbackUnpickFlavours() != null ? Arrays.stream(this.fallbackUnpickFlavours()).map(Object::toString).collect(Collectors.joining(", ")) : "<null>"));
 		info.add(String.format("Versions with a missing side (like Beta 1.2_02 or 1.0.1) are %s the main branch.", this.singleSideVersionsOnMainBranch() ? "included on" : "excluded from"));
-		String excludedBranches = this.onlyStableReleases() ? " (only stable releases)" : (this.onlySnapshots() ? " (only snapshots)" : "");
+		String excludedBranches = this.onlyUnobfuscated() ?
+				(this.onlyStableReleases() ? " (only stable non-obfuscated releases)" : (this.onlySnapshots() ? " (only non-obfuscated snapshots)" : " (only non-obfuscated versions)")) :
+				(this.onlyStableReleases() ? " (only stable releases)" : (this.onlySnapshots() ? " (only snapshots)" : ""));
 		String excludedVersions = this.isAnyVersionExcluded() && this.excludedVersion().length > 0 ? String.format(" (excluding: %s)", String.join(", ", this.excludedVersion())) : "";
 		if (this.isOnlyVersion()) {
 			info.add(String.format("Versions to decompile: %s%s%s", String.join(", ", this.onlyVersion()), excludedBranches, excludedVersions));
@@ -241,6 +247,7 @@ public record ApplicationConfiguration(ManifestSource manifestSource,
 			Utils.getBoolean(map, "singleSideVersionsOnMainBranch", DEFAULT.singleSideVersionsOnMainBranch),
 			Utils.getBoolean(map, "onlyStableReleases", DEFAULT.onlyStableReleases()),
 			Utils.getBoolean(map, "onlySnapshots", DEFAULT.onlySnapshots()),
+			Utils.getBoolean(map, "onlyUnobfuscated", DEFAULT.onlyUnobfuscated()),
 			Utils.getBoolean(map, "skipNonLinear", DEFAULT.skipNonLinear()),
 			onlyVersion != null ? onlyVersion.toArray(String[]::new) : null,
 			Utils.getString(map, "minVersion", DEFAULT.minVersion()),

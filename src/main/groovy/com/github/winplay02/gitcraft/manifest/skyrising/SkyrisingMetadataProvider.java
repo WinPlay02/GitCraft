@@ -140,7 +140,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 			.toList();
 	}
 
-	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)((-\\d+|\\d+)(-\\d+)?)?| Pre-Release \\d+)?$)");
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot)((-\\d+|\\d+)(-\\d+)?)?| Pre-Release \\d+)?$)");
 
 	private static boolean isClassicOrAlphaServer(String versionId) {
 		return versionId.startsWith("server-");

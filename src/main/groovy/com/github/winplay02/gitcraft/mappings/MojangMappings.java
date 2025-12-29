@@ -28,7 +28,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 public class MojangMappings extends Mapping {
 	@Override
 	public String getName() {
-		return "Mojang Mappings";
+		return "Mojang Mappings (Strict)";
 	}
 
 	@Override

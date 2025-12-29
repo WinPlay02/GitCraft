@@ -140,6 +140,50 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			"24w14potato_original",
 			"https://maven.fabricmc.net/net/minecraft/24w14potato_original.json",
 			"4e54c25e6eafdf0a2f1f6e86fb1b8c1d239dd8d5");
+		this.addMetadataSource(
+			"25w45a_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/de334d80d9ddc5abb94c611b8ad10f9125c4c421/25w45a_unobfuscated.zip",
+			"de334d80d9ddc5abb94c611b8ad10f9125c4c421");
+		this.addMetadataSource(
+			"25w46a_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/f9c5e4f9c1469296299635b498438e94d312f0c6/25w46a_unobfuscated.zip",
+			"f9c5e4f9c1469296299635b498438e94d312f0c6");
+		this.addMetadataSource(
+			"1.21.11-pre1_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/f98a0c053a8246cce12f8f29f2ba4ce00872fd53/1_21_11-pre1_unobfuscated.zip",
+			"f98a0c053a8246cce12f8f29f2ba4ce00872fd53");
+		this.addMetadataSource(
+			"1.21.11-pre2_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/528731e05b7be26c90fedf8f2ef6470abb0d1994/1_21_11-pre2_unobfuscated.zip",
+			"528731e05b7be26c90fedf8f2ef6470abb0d1994");
+		this.addMetadataSource(
+			"1.21.11-pre3_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/7717a481468cc33d2414d82ee9c0450f56264db0/1_21_11-pre3_unobfuscated.zip",
+			"7717a481468cc33d2414d82ee9c0450f56264db0");
+		this.addMetadataSource(
+			"1.21.11-pre4_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/834666571f1e1374923b73f4baec4203d44e9c0d/1_21_11-pre4_unobfuscated.zip",
+			"834666571f1e1374923b73f4baec4203d44e9c0d");
+		this.addMetadataSource(
+			"1.21.11-pre5_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/931df659128f913ce356d6036c318c5d9a039e85/1_21_11-pre5_unobfuscated.zip",
+			"931df659128f913ce356d6036c318c5d9a039e85");
+		this.addMetadataSource(
+			"1.21.11-rc1_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/38712002b9d02061e662b69c44753a47d24da516/1_21_11-rc1_unobfuscated.zip",
+			"38712002b9d02061e662b69c44753a47d24da516");
+		this.addMetadataSource(
+			"1.21.11-rc2_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/fb70de3ae3e19825622b7687d2fd783d78c4b05f/1_21_11-rc2_unobfuscated.zip",
+			"fb70de3ae3e19825622b7687d2fd783d78c4b05f");
+		this.addMetadataSource(
+			"1.21.11-rc3_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/7abe399a1b3c07754c5dc3ec4e5c6f50ee03c10e/1_21_11-rc3_unobfuscated.zip",
+			"7abe399a1b3c07754c5dc3ec4e5c6f50ee03c10e");
+		this.addMetadataSource(
+			"1.21.11_unobfuscated",
+			"https://piston-data.mojang.com/v1/objects/82332dfb17146de34cb7a36d2b910e3b2009191a/1_21_11_unobfuscated.zip",
+			"82332dfb17146de34cb7a36d2b910e3b2009191a");
 	}
 
 	protected MojangLauncherMetadataProvider(String manifestUrl) {
@@ -196,6 +240,16 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	// Version Override
 	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
+		// Fixes for Omniarchive manifest
+		"1.21.11-pre1-unobf", "1.21.11-beta.1+unobfuscated",
+		"1.21.11-pre2-unobf", "1.21.11-beta.2+unobfuscated",
+		"1.21.11-pre3-unobf", "1.21.11-beta.3+unobfuscated",
+		"1.21.11-pre4-unobf", "1.21.11-beta.4+unobfuscated",
+		"1.21.11-pre5-unobf", "1.21.11-beta.5+unobfuscated",
+		"1.21.11-rc1-unobf", "1.21.11-rc.1+unobfuscated",
+		"1.21.11-rc2-unobf", "1.21.11-rc.2+unobfuscated",
+		"1.21.11-rc3-unobf", "1.21.11-rc.3+unobfuscated",
+		"1.21.11-unobf", "1.21.11+unobfuscated"
 		// FIX until fabric-loader is updated
 		// END FIX
 	);
@@ -334,6 +388,43 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			case "1.19_deep_dark_experimental_snapshot-1" -> {
 				return List.of("1.18.1");
 			}
+			// Unobfuscated
+			case "25w45a_unobfuscated" -> {
+				return List.of("25w44a");
+			}
+			case "25w46a_unobfuscated" -> {
+				return List.of("25w45a_unobfuscated");
+			}
+			case "1.21.11-pre1_unobfuscated" -> {
+				return List.of("25w46a_unobfuscated");
+			}
+			case "1.21.11-pre2_unobfuscated" -> {
+				return List.of("1.21.11-pre1_unobfuscated");
+			}
+			case "1.21.11-pre3_unobfuscated" -> {
+				return List.of("1.21.11-pre2_unobfuscated");
+			}
+			case "1.21.11-pre4_unobfuscated" -> {
+				return List.of("1.21.11-pre3_unobfuscated");
+			}
+			case "1.21.11-pre5_unobfuscated" -> {
+				return List.of("1.21.11-pre4_unobfuscated");
+			}
+			case "1.21.11-rc1_unobfuscated" -> {
+				return List.of("1.21.11-pre5_unobfuscated");
+			}
+			case "1.21.11-rc2_unobfuscated" -> {
+				return List.of("1.21.11-rc1_unobfuscated");
+			}
+			case "1.21.11-rc3_unobfuscated" -> {
+				return List.of("1.21.11-rc2_unobfuscated");
+			}
+			case "1.21.11_unobfuscated" -> {
+				return List.of("1.21.11-rc3_unobfuscated");
+			}
+			case "26.1-snapshot-1" -> {
+				return List.of("1.21.11_unobfuscated", "1.21.11");
+			}
 			// April
 			case "15w14a" -> {
 				return List.of("1.8.3");
@@ -371,7 +462,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		}
 	}
 
-	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^\\d.\\d+(.\\d+)?(-(pre|rc)\\d+| Pre-Release \\d+)?$)");
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot-)\\d+| Pre-Release \\d+)?$)");
 
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
