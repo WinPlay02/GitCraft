@@ -115,7 +115,7 @@ public record OrderedVersion(
 
 	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(1.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
 
-  // Found in all manifests
+	// Found in all manifests
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
 		// special case required because the manifest for experimental unobfuscated versions
@@ -127,8 +127,8 @@ public record OrderedVersion(
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
 	}
-  
-  // Mojang and Skyrising
+
+	// Mojang and Skyrising
 	/**
 	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
 	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
