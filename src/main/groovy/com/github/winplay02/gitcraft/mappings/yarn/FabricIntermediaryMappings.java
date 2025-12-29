@@ -43,7 +43,8 @@ public class FabricIntermediaryMappings extends Mapping {
 
 	@Override
 	public boolean doMappingsExist(OrderedVersion mcVersion) {
-		if (GitCraftQuirks.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())) {
+		if (GitCraftQuirks.intermediaryMissingVersions.contains(mcVersion.launcherFriendlyVersionName())
+		   || mcVersion.isNotObfuscated()) { // exclude missing and non-obfuscated versions
 			return false;
 		}
 		return mcVersion.compareTo(GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().getVersionByVersionID(GitCraftQuirks.FABRIC_INTERMEDIARY_MAPPINGS_START_VERSION_ID)) >= 0;

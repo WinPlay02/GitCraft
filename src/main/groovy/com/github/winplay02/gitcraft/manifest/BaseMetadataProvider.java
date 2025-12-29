@@ -307,6 +307,8 @@ public abstract class BaseMetadataProvider<M extends VersionsManifest<E>, E exte
 
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
-		return mcVersion.isPending() || (!this.singleSideVersionsOnMainBranch && mcVersion.hasSideMissing());
+		return mcVersion.isPending()
+			|| mcVersion.isUnobfuscated()
+			|| (!this.singleSideVersionsOnMainBranch && mcVersion.hasSideMissing());
 	}
 }
