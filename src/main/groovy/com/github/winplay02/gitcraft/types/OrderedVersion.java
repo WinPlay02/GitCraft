@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Represents a minecraft version with an order
@@ -112,12 +113,32 @@ public record OrderedVersion(
 		return this.versionInfo().javaVersion() != null ? this.versionInfo().javaVersion().majorVersion() : 8;
 	}
 
+	private static final Pattern UNOBFUSCATED_SNAPSHOT_PATTERN = Pattern.compile("^((\\d\\dw\\d\\d[a-z])|(1.\\d+(.\\d+)?-(pre|rc)\\d+))(_unobfuscated|-unobf)$");
+
 	public boolean isSnapshot() {
-		return Objects.equals(this.versionInfo().type(), "snapshot");
+		return Objects.equals(this.versionInfo().type(), "snapshot")
+		// special case required because the manifest for experimental unobfuscated versions
+		// does not specify their snapshot status and always uses 'unobfuscated' as version type
+				|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches());
 	}
 
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
+	}
+
+	/**
+	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
+	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
+	 */
+	public boolean isUnobfuscated() {
+		return Objects.equals(this.versionInfo().type(), "unobfuscated")
+		// special case for omniarchive manifest
+				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
+	}
+
+	// Can be found in Omniarchive manifest
+	public boolean isSpecial() {
+		return Objects.equals(this.versionInfo().type(), "special");
 	}
 
 	public boolean isSnapshotOrPending() {
@@ -171,6 +192,13 @@ public record OrderedVersion(
 		}
 		// otherwise the check against FIRST_MERGEABLE_VERSION_RELEASE_TIME may fail
 		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
+	}
+
+    /**
+	 * @return whether the client and server for this version are not obfuscated
+	 */
+	public boolean isNotObfuscated() {
+		return !this.timestamp().isBefore(GitCraftQuirks.RELEASE_TIME_26_1_SNAPSHOT_1) || this.isUnobfuscated();
 	}
 
 	/**

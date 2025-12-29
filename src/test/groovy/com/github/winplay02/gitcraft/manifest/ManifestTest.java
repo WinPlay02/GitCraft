@@ -36,12 +36,14 @@ public class ManifestTest {
 		metadataBootstrap = new MojangLauncherMetadataProvider();
 		metadataBootstrap.loadSemverCache();
 		assertFalse(metadataBootstrap.semverCache.isEmpty());
+		metadataBootstrap.semverCache.remove("26.1-snapshot-1");
 		metadataBootstrap.semverCache.remove("1.20");
 		metadataBootstrap.semverCache.remove("rd-132328");
 		metadataBootstrap.metadataSources.clear();
 		try (ExecutorService executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Testing-Executor").factory())) {
 			metadataBootstrap.getVersions(executor);
 		}
+		assertTrue(metadataBootstrap.versionsById.containsKey("26.1-snapshot-1"));
 		assertTrue(metadataBootstrap.versionsById.containsKey("1.20"));
 		assertTrue(metadataBootstrap.versionsById.containsKey("rd-132328"));
 		assertEquals("0.0.0-rd.132328", metadataBootstrap.versionsById.get("rd-132328").semanticVersion());
