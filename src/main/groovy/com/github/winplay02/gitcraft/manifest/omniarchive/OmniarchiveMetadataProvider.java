@@ -136,6 +136,11 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			}
 		}
 
+		String launcher_duplicate = this.getLauncherVersionDuplicate(versionId);
+		if (launcher_duplicate != null) {
+			return List.of(launcher_duplicate);
+		}
+
 		return super.getParentVersionIds(versionId);
 	}
 
@@ -144,5 +149,30 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 	@Override
 	protected Pattern getNormalSnapshotPattern() {
 		return OMNI_NORMAL_SNAPSHOT_PATTERN;
+	}
+
+	private static final String LAUNCHER_SUFFIX = "-launcher";
+
+	private String getLauncherVersionDuplicate(String versionId) {
+		if (versionId.endsWith(LAUNCHER_SUFFIX)) {
+			String potential_duplicate = versionId.substring(0, versionId.length() - LAUNCHER_SUFFIX.length());
+			if (this.getVersionsAssumeLoaded().containsKey(potential_duplicate)) {
+				return potential_duplicate;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
+		return super.shouldExcludeFromMainBranch(mcVersion)
+			// Exclude all april fools snapshots
+			|| mcVersion.isAprilFools()
+			// Exclude special versions such as combat experiments and b1.3-demo
+			|| (mcVersion.isSpecial()
+				// Allow special versions which do not branch out
+				&& !GitCraftQuirks.omniarchiveLinearSpecials.contains(mcVersion.launcherFriendlyVersionName()))
+			// Exclude duplicate versions from launcher
+			|| (this.getLauncherVersionDuplicate(mcVersion.launcherFriendlyVersionName()) != null);
 	}
 }
