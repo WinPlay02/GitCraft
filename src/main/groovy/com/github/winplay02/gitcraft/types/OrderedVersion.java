@@ -157,8 +157,8 @@ public record OrderedVersion(
 	// Skyrising
 	public boolean isClassicServer() {
 		return Objects.equals(this.versionInfo().type(), "classic_server");
-  }
-  
+	}
+
 	// Omniarchive
 	public boolean isSpecial() {
 		return Objects.equals(this.versionInfo().type(), "special");
