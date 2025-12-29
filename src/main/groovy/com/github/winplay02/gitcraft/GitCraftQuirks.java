@@ -5,6 +5,8 @@ import groovy.lang.Tuple2;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GitCraftQuirks {
 	/// Mapping quirks
@@ -54,4 +56,8 @@ public class GitCraftQuirks {
 
 	// There are no releases for these parchment versions (yet)
 	public static List<String> parchmentMissingVersions = List.of("1.18", "1.19", "1.19.1", "1.20", "1.20.5", "1.21.2");
+
+    // Special cases for Omniarchive manifest
+	public static List<String> omniarchiveSpecialSnapshots = List.of("1.0.0-tominecon", "13w02a-whitetexturefix", "13w04a-whitelinefix", "1.5-pre-whitelinefix", "13w12~-1439");
+	public static List<String> omniarchiveLinearSpecials = Stream.concat(Stream.of("c0.0.11a-launcher", "c0.0.13a-launcher", "b1.6-tb3"), omniarchiveSpecialSnapshots.stream()).collect(Collectors.toList());
 }

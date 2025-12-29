@@ -113,11 +113,23 @@ public record OrderedVersion(
 	}
 
 	public boolean isSnapshot() {
-		return Objects.equals(this.versionInfo().type(), "snapshot");
+		return Objects.equals(this.versionInfo().type(), "snapshot")
+			// Special case for snapshots from Omniarchive manifest which are marked as "special"
+			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()));
 	}
 
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
+	}
+
+	// Omniarchive
+	public boolean isSpecial() {
+		return Objects.equals(this.versionInfo().type(), "special");
+	}
+
+	// Omniarchive
+	public boolean isAprilFools() {
+		return Objects.equals(this.versionInfo().type(), "april-fools");
 	}
 
 	public boolean isSnapshotOrPending() {
