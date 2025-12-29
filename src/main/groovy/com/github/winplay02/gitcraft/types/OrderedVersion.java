@@ -115,7 +115,9 @@ public record OrderedVersion(
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
 			// Special case for snapshots from Omniarchive manifest which are marked as "special"
-			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()));
+			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()))
+			// Mark april fools versions from Omniarchive as snapshots
+			|| this.isAprilFools();
 	}
 
 	public boolean isPending() {
