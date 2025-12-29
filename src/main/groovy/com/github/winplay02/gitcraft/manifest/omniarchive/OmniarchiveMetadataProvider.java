@@ -139,7 +139,7 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 		return super.getParentVersionIds(versionId);
 	}
 
-	private static final Pattern OMNI_NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot)(\\d+)?(-\\d+)?)?$)");
+	private static final Pattern OMNI_NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z](-\\d+)?$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot-)(\\d+)?(-\\d+)?)?$)");
 
 	@Override
 	protected Pattern getNormalSnapshotPattern() {
