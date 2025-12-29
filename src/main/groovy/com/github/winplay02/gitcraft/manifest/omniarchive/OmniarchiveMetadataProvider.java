@@ -98,7 +98,7 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "1.19-exp1" -> {
 				return List.of("1.18.1");
 			}
-      // Unobfuscated
+			// Unobfuscated
 			case "25w45a-unobf" -> {
 				return List.of("25w44a");
 			}

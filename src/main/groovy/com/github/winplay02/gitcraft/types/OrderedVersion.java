@@ -117,8 +117,8 @@ public record OrderedVersion(
 
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
-		  // Special case required because the manifest for experimental unobfuscated versions
-		  // does not specify their snapshot status and always uses 'unobfuscated' as version type
+			// Special case required because the manifest for experimental unobfuscated versions
+			// does not specify their snapshot status and always uses 'unobfuscated' as version type
 			|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches())
 			// Another special case for snapshots from Omniarchive manifest which are marked as "special"
 			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()))
@@ -130,15 +130,15 @@ public record OrderedVersion(
 		return Objects.equals(this.versionInfo().type(), "pending");
 	}
 
-  // Mojang and Skyrising
+	// Mojang and Skyrising
 	/**
 	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
 	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
 	 */
 	public boolean isUnobfuscated() {
 		return Objects.equals(this.versionInfo().type(), "unobfuscated")
-		// special case for omniarchive manifest
-				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
+			// special case for omniarchive manifest
+			|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
 	}
 
 	// Omniarchive
@@ -149,6 +149,7 @@ public record OrderedVersion(
 	// Omniarchive
 	public boolean isAprilFools() {
 		return Objects.equals(this.versionInfo().type(), "april-fools");
+	}
 
 	public boolean isSnapshotOrPending() {
 		return this.isSnapshot() || this.isPending();
