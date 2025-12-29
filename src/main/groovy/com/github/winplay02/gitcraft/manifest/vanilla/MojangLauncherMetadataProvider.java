@@ -196,6 +196,8 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	// Version Override
 	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
+		// present in Omniarchive manifest and fabric-loader does not parse it correctly
+		"2.0-preview", "2.0-preview"
 		// FIX until fabric-loader is updated
 		// END FIX
 	);

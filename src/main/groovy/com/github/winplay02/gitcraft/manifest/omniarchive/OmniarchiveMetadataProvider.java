@@ -126,14 +126,14 @@ public class OmniarchiveMetadataProvider extends MojangLauncherMetadataProvider 
 			case "24w14potato-1104" -> {
 				return List.of("24w14potato-0838");
 			}
-			//Beta
+			// Beta
 			case "b1.3-demo" -> {
 				return List.of("b1.3_01");
 			}
 			case "b1.2_02-dev" -> {
 				return List.of("b1.2_02");
 			}
-			//Classic
+			// Classic
 			case "c0.30-c-1900-renew" -> {
 				return List.of("c0.30-c-1900");
 			}
