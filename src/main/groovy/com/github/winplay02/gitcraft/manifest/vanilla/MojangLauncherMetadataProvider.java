@@ -240,7 +240,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	// Version Override
 	private static final Map<String, String> minecraftVersionSemVerOverride = Map.of(
-		// Fixes for Omniarchive manifest
+		// present in Omniarchive manifest and fabric-loader does not parse it correctly
+		"2.0-preview", "2.0-preview",
+		// More fixes for Omniarchive manifest
 		"1.21.11-pre1-unobf", "1.21.11-beta.1+unobfuscated",
 		"1.21.11-pre2-unobf", "1.21.11-beta.2+unobfuscated",
 		"1.21.11-pre3-unobf", "1.21.11-beta.3+unobfuscated",
@@ -464,11 +466,15 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 
 	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot-)\\d+|_[a-z_\\-]+snapshot-\\d+| Pre-Release \\d+)?$)");
 
+	protected Pattern getNormalSnapshotPattern() {
+		return NORMAL_SNAPSHOT_PATTERN;
+	}
+
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// filter out april fools snapshots and experimental versions,
 			// which often have typical ids that do not match normal snapshots
-			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
+			|| (mcVersion.isSnapshotOrPending() && !this.getNormalSnapshotPattern().matcher(mcVersion.launcherFriendlyVersionName()).matches());
 	}
 }

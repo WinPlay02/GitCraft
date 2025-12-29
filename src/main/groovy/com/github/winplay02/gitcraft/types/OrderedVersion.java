@@ -117,28 +117,38 @@ public record OrderedVersion(
 
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
-		// special case required because the manifest for experimental unobfuscated versions
-		// does not specify their snapshot status and always uses 'unobfuscated' as version type
-				|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches());
+			// Special case required because the manifest for experimental unobfuscated versions
+			// does not specify their snapshot status and always uses 'unobfuscated' as version type
+			|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches())
+			// Another special case for snapshots from Omniarchive manifest which are marked as "special"
+			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()))
+			// Mark april fools versions from Omniarchive as snapshots
+			|| this.isAprilFools();
 	}
 
 	public boolean isPending() {
 		return Objects.equals(this.versionInfo().type(), "pending");
 	}
 
+	// Mojang and Skyrising
 	/**
 	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
 	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
 	 */
 	public boolean isUnobfuscated() {
 		return Objects.equals(this.versionInfo().type(), "unobfuscated")
-		// special case for omniarchive manifest
-				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
+			// special case for omniarchive manifest
+			|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
 	}
 
-	// Can be found in Omniarchive manifest
+	// Omniarchive
 	public boolean isSpecial() {
 		return Objects.equals(this.versionInfo().type(), "special");
+	}
+
+	// Omniarchive
+	public boolean isAprilFools() {
+		return Objects.equals(this.versionInfo().type(), "april-fools");
 	}
 
 	public boolean isSnapshotOrPending() {
