@@ -157,6 +157,7 @@ public class SkyrisingMetadataProvider extends BaseMetadataProvider<SkyrisingMan
 		return super.shouldExcludeFromMainBranch(mcVersion)
 			// ensure the main branch goes through 12w32a rather than 1.3.2
 			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "1.3.2")
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "26w14a") // April Fools '26
 			|| (mcVersion.isSnapshotOrPending()
 				// filter out april fools snapshots and experimental versions,
 				// which often have typical ids that do not match normal snapshots

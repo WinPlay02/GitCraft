@@ -125,6 +125,7 @@ class GitCraftLauncherCli {
 			original.singleSideVersionsOnMainBranch(),
 			original.onlyStableReleases(),
 			original.onlySnapshots(),
+			original.onlyUnobfuscated(),
 			original.skipNonLinear(),
 			new String[] { onlyVersion },
 			null,
