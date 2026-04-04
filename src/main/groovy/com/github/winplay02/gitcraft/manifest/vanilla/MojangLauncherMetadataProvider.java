@@ -452,6 +452,9 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 			case "25w14craftmine" -> {
 				return List.of("1.21.5");
 			}
+			case "26w14a" -> {
+				return List.of("26.1.1");
+			}
 			// Special case to make version graph not contain a cycle
 			case "1.9.2" -> {
 				return List.of("1.9.1");
@@ -467,6 +470,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 	@Override
 	public boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
 		return super.shouldExcludeFromMainBranch(mcVersion)
+			|| Objects.equals(mcVersion.launcherFriendlyVersionName(), "26w14a") // April Fools '26
 			// filter out april fools snapshots and experimental versions,
 			// which often have typical ids that do not match normal snapshots
 			|| (mcVersion.isSnapshotOrPending() && !NORMAL_SNAPSHOT_PATTERN.matcher(mcVersion.launcherFriendlyVersionName()).matches());
