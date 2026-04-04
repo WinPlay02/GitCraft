@@ -96,7 +96,12 @@ public record Decompiler(GitCraftStepConfig config) implements GitCraftStepWorke
 		options.put(IFernflowerPreferences.TRY_LOOP_FIX, "1");
 		if (config.mappingFlavour().supportsComments()) {
 			// TODO: this will break for mapping flavours that support unpicking but for the client and server separately
-			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(config.mappingFlavour().getPath(context.targetVersion(), inFile).orElseThrow().toFile()));
+			options.put(IFabricJavadocProvider.PROPERTY_NAME,
+				new TinyJavadocProvider(
+					config.mappingFlavour().getPath(context.targetVersion(), inFile).orElseThrow().toFile(),
+					config.mappingFlavour().getDestinationNS()
+				)
+			);
 		}
 
 		try (FileSystemUtil.Delegate decompiledJar = FileSystemUtil.getJarFileSystem(jarOut, true)) {
