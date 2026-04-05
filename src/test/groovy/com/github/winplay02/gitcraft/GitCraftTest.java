@@ -324,7 +324,7 @@ public class GitCraftTest {
 		}
 		Configuration.reset();
 		//
-		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime,25w45a_unobfuscated,1.21.11,26.1-snapshot-1"});
+		GitCraft.main(new String[]{"--only-version=1.17.1-pre1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime,25w45a_unobfuscated,1.21.11,26.1-snapshot-1"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
 			assertNotNull(repoWrapper);
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()));
@@ -336,8 +336,8 @@ public class GitCraftTest {
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18"))).getParentCount());
 			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("21w37a"))).getParentCount());
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18_experimental-snapshot-1"))).getParentCount());
-			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1"))).getParentCount());
-			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1")));
+			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1-pre1"))).getParentCount());
+			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1-pre1")));
 			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
 				assertNotNull(walk);
 			}
@@ -520,7 +520,7 @@ public class GitCraftTest {
 	@Test
 	public void pipelineReset() throws Exception {
 		Configuration.reset();
-		GitCraft.main(new String[]{"--only-version=1.17.1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime,25w45a_unobfuscated,1.21.11,26.1-snapshot-1", "--refresh", "--refresh-min-version=1.18"});
+		GitCraft.main(new String[]{"--only-version=1.17.1-pre1,1.18_experimental-snapshot-1,21w37a,1.18,22w13oneblockatatime,25w45a_unobfuscated,1.21.11,26.1-snapshot-1", "--refresh", "--refresh-min-version=1.18"});
 		try (RepoWrapper repoWrapper = GitCraft.getRepository()) {
 			assertNotNull(repoWrapper);
 			assertNotNull(repoWrapper.getGit().getRepository().getRefDatabase().findRef(GitCraft.getRepositoryConfiguration().gitMainlineLinearBranch()));
@@ -532,8 +532,8 @@ public class GitCraftTest {
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18"))).getParentCount());
 			assertEquals(2, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("21w37a"))).getParentCount());
 			assertEquals(1, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.18_experimental-snapshot-1"))).getParentCount());
-			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1"))).getParentCount());
-			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1")));
+			assertEquals(0, Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1-pre1"))).getParentCount());
+			RevCommit targetCommit = Objects.requireNonNull(findCommit(repoWrapper, GitCraft.versionGraph.getMinecraftVersionByName("1.17.1-pre1")));
 			try (TreeWalk walk = TreeWalk.forPath(repoWrapper.getGit().getRepository(), "minecraft/resources/assets", targetCommit.getTree())) { //
 				assertNotNull(walk);
 			}
