@@ -52,7 +52,7 @@ public record DataConfiguration(boolean loadIntegratedDatapack,
 		List<String> info = new ArrayList<>(List.of(
 			String.format("Integrated datapack versioning is: %s", this.loadIntegratedDatapack() ? "enabled" : "disabled"),
 			String.format("Asset versioning is: %s", this.loadAssets() ? "enabled" : "disabled"),
-			String.format("External asset versioning is: %s", this.loadAssetsExtern() ? (this.loadAssets() ? "enabled" : "implicitely disabled") : "disabled"),
+			String.format("External asset versioning is: %s", this.loadAssetsExtern() ? (this.loadAssets() ? "enabled" : "implicitly disabled") : "disabled"),
 			String.format("Conversion of NBT data is: %s", this.readableNbt() ? "enabled" : "disabled"),
 			String.format("Data-generation from registries is: %s", this.loadDatagenRegistry() ? "enabled" : "disabled")
 		));
