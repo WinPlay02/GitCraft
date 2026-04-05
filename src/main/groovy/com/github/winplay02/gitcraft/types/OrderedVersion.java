@@ -118,9 +118,13 @@ public record OrderedVersion(
 	// Found in all manifests
 	public boolean isSnapshot() {
 		return Objects.equals(this.versionInfo().type(), "snapshot")
-		// special case required because the manifest for experimental unobfuscated versions
-		// does not specify their snapshot status and always uses 'unobfuscated' as version type
-				|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches());
+			// Special case required because the manifest for experimental unobfuscated versions
+			// does not specify their snapshot status and always uses 'unobfuscated' as version type
+			|| (this.isUnobfuscated() && UNOBFUSCATED_SNAPSHOT_PATTERN.matcher(this.versionInfo().id()).matches())
+			// Another special case for snapshots from Omniarchive manifest which are marked as "special"
+			|| (this.isSpecial() && GitCraftQuirks.omniarchiveSpecialSnapshots.contains(this.versionInfo().id()))
+			// Mark april fools versions from Omniarchive as snapshots
+			|| this.isAprilFools();
 	}
 
 	// Can be found in Mojang and Skyrising manifests
@@ -135,8 +139,8 @@ public record OrderedVersion(
 	 */
 	public boolean isUnobfuscated() {
 		return Objects.equals(this.versionInfo().type(), "unobfuscated")
-		// special case for omniarchive manifest
-				|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
+			// special case for omniarchive manifest
+			|| (this.isSpecial() && this.versionInfo().id().endsWith("-unobf"));
 	}
 
 	// Mojang and Skyrising
@@ -162,6 +166,11 @@ public record OrderedVersion(
 	// Omniarchive
 	public boolean isSpecial() {
 		return Objects.equals(this.versionInfo().type(), "special");
+	}
+
+	// Omniarchive
+	public boolean isAprilFools() {
+		return Objects.equals(this.versionInfo().type(), "april-fools");
 	}
 
 	public boolean isSnapshotOrPending() {
