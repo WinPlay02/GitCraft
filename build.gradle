@@ -74,6 +74,7 @@ dependencies {
 	implementation "net.fabricmc:access-widener:${access_widener_version}"
 	implementation "net.fabricmc:mapping-io:${mappingio_version}"
 	implementation "net.fabricmc:fabric-loom:${loom_version}"
+	libImplementation "net.fabricmc:fabric-loom:${loom_version}"
 	implementation "net.fabricmc.unpick:unpick:${unpick_version}"
 	implementation "net.fabricmc.unpick:unpick-format-utils:${unpick_version}"
 
