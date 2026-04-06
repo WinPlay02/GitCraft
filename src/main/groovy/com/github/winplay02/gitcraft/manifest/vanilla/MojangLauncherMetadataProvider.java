@@ -467,7 +467,7 @@ public class MojangLauncherMetadataProvider extends BaseMetadataProvider<MojangL
 		}
 	}
 
-	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^(1|\\d\\d).\\d+(.\\d+)?(-(pre|rc|snapshot-)\\d+| Pre-Release \\d+)?$)");
+	private static final Pattern NORMAL_SNAPSHOT_PATTERN = Pattern.compile("(^\\d\\dw\\d\\d[a-z]$)|(^(1|\\d\\d).\\d+(.\\d+)?(-((pre|rc|snapshot)-?)\\d+| Pre-Release \\d+)?$)");
 
 	protected Pattern getNormalSnapshotPattern() {
 		return NORMAL_SNAPSHOT_PATTERN;
