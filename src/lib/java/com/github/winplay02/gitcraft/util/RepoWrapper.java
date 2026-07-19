@@ -30,6 +30,7 @@ public class RepoWrapper implements Closeable {
 	private final Git git;
 	private final Path root_path;
 	private boolean log_cache = false;
+	private ObjectId head_ref_cache = null;
 	private List<CommitInfo> commit_cache = null;
 
 	private record CommitInfo(String message, ObjectId objectId) {
@@ -70,6 +71,7 @@ public class RepoWrapper implements Closeable {
 		if (this.commit_cache != null) {
 			this.commit_cache.clear();
 			this.commit_cache = null;
+			this.head_ref_cache = null;
 		}
 	}
 
@@ -77,7 +79,15 @@ public class RepoWrapper implements Closeable {
 		if (this.commit_cache != null) {
 			return;
 		}
+		try {
+			this.head_ref_cache = this.git.getRepository().resolve(Constants.HEAD);
+		} catch (IOException e) {
+			MiscHelper.panicBecause(e, "Could not lookup HEAD in repository");
+		}
 		this.commit_cache = new ArrayList<>();
+		if (this.head_ref_cache == null) {
+			return;
+		}
 		try {
 			for (RevCommit commitInfo : this.git.log().all().call()) {
 				this.commit_cache.add(new CommitInfo(commitInfo.getFullMessage(), commitInfo));
