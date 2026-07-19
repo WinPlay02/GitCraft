@@ -23,11 +23,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TimeZone;
 
 public class RepoWrapper implements Closeable {
 	private final Git git;
 	private final Path root_path;
+	private boolean log_cache = false;
+	private List<CommitInfo> commit_cache = null;
+
+	private record CommitInfo(String message, ObjectId objectId) {
+	}
 
 	public Git getGit() {
 		return this.git;
@@ -59,7 +65,33 @@ public class RepoWrapper implements Closeable {
 		}
 	}
 
+	public void changeGitLogCacheBehavior(boolean enable) {
+		this.log_cache = enable;
+		if (this.commit_cache != null) {
+			this.commit_cache.clear();
+			this.commit_cache = null;
+		}
+	}
+
+	private void populateCommitCache() {
+		if (this.commit_cache != null) {
+			return;
+		}
+		this.commit_cache = new ArrayList<>();
+		try {
+			for (RevCommit commitInfo : this.git.log().all().call()) {
+				this.commit_cache.add(new CommitInfo(commitInfo.getFullMessage(), commitInfo));
+			}
+		} catch (GitAPIException | IOException e) {
+			MiscHelper.panicBecause(e, "Could not lookup revision in repository");
+		}
+	}
+
 	public boolean existsRevWithCommitMessage(String commitMessage) throws GitAPIException, IOException {
+		if (this.log_cache) {
+			this.populateCommitCache();
+			return this.commit_cache.stream().anyMatch(info -> Objects.equals(info.message(), commitMessage));
+		}
 		if (this.git.getRepository().resolve(Constants.HEAD) == null) {
 			return false;
 		}
@@ -76,6 +108,17 @@ public class RepoWrapper implements Closeable {
 	}
 
 	public RevCommit findRevByCommitMessage(String commitMessage) throws GitAPIException, IOException {
+		if (this.log_cache) {
+			this.populateCommitCache();
+			Optional<CommitInfo> commit = this.commit_cache.stream().filter(info -> Objects.equals(info.message(), commitMessage)).findFirst();
+			if (commit.isPresent()) {
+				try (RevWalk walk = new RevWalk(this.git.getRepository())) {
+					return walk.parseCommit(commit.orElseThrow().objectId());
+				}
+			} else {
+				return null;
+			}
+		}
 		Iterator<RevCommit> iterator = this.git.log().all().setRevFilter(new CommitMsgFilter(commitMessage)).call().iterator();
 		if (iterator.hasNext()) {
 			return iterator.next();

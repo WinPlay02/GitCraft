@@ -127,7 +127,7 @@ public final class IPipeline<T extends AbstractVersion<T>, C extends IStepContex
 		}
 		if (!executionPlan.failedTasks().isEmpty()) {
 			executionPlan.failedTasks().forEach((key, value) -> {
-				MiscHelper.println("Step %s for version %s failed: %s", key.step().getName(), key.version().friendlyVersion(), value);
+				MiscHelper.println("Step %s for version %s failed: %s", key.inner().step().getName(), key.inner().version().friendlyVersion(), value);
 				value.printStackTrace();
 			});
 			MiscHelper.panic("Execution failed, for more information see trace(s) above");

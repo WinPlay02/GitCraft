@@ -27,6 +27,7 @@ import com.github.winplay02.gitcraft.pipeline.GitCraftStepWorker;
 import com.github.winplay02.gitcraft.pipeline.key.StorageKey;
 import com.github.winplay02.gitcraft.types.OrderedVersion;
 import com.github.winplay02.gitcraft.util.SerializationHelper;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
@@ -99,7 +100,8 @@ public record Decompiler(GitCraftStepConfig config) implements GitCraftStepWorke
 			options.put(IFabricJavadocProvider.PROPERTY_NAME,
 				new TinyJavadocProvider(
 					config.mappingFlavour().getPath(context.targetVersion(), inFile).orElseThrow().toFile(),
-					config.mappingFlavour().getDestinationNS()
+					config.mappingFlavour().getDestinationNS(),
+					JavadocStyle.HTML
 				)
 			);
 		}

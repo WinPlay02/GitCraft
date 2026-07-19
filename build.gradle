@@ -30,7 +30,7 @@ tasks.withType(JavaCompile).configureEach {
 
 application {
 	mainClass = 'com.github.winplay02.gitcraft.GitCraft'
-	applicationDefaultJvmArgs = ['-Xmx4G', '-XX:+HeapDumpOnOutOfMemoryError']
+	applicationDefaultJvmArgs = ['-Xmx10G', '-XX:+UseCompactObjectHeaders', '-XX:+HeapDumpOnOutOfMemoryError']
 }
 
 sourceSets {
@@ -96,8 +96,8 @@ dependencies {
 	implementation "org.vineflower:vineflower:${vineflower_version}"
 
 	// Testing
-	testImplementation(platform("org.junit:junit-bom:6.0.+"))
-	testImplementation("org.junit.jupiter:junit-jupiter:6.0.+")
+	testImplementation(platform("org.junit:junit-bom:6.1.+"))
+	testImplementation("org.junit.jupiter:junit-jupiter:6.1.+")
 }
 
 // if not working: run ./gradlew run --refresh-dependencies

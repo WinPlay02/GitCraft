@@ -2,6 +2,7 @@ package com.github.winplay02.gitcraft.pipeline;
 
 import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.graph.AbstractVersionGraph;
+import com.github.winplay02.gitcraft.util.CachedHashKeyWrapper;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import com.github.winplay02.gitcraft.util.RepoWrapper;
 
@@ -9,23 +10,58 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends IStepContext<C, T>, D extends IStepConfig>(PipelineExecutionGraph<T, C, D> executionGraph,
-																			Set<IPipeline.TupleVersionStep<T, C, D>> completedSubset,
-																			Set<IPipeline.TupleVersionStep<T, C, D>> executingSubset,
-																			Set<IStep<T, ?, C, D>> activeSteps,
-																			Map<IPipeline.TupleVersionStep<T, C, D>, Exception> failedTasks,
-																			Map<T, C> versionedContexts,
-																			Map<T, D> versionedConfigs,
-																			Object executionLock,
-																			Object conditionalVar) {
+public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends IStepContext<C, T>, D extends IStepConfig>(
+	PipelineExecutionGraph<T, C, D> executionGraph,
+	Set<CachedHashKeyWrapper<IPipeline.TupleVersionStep<T, C, D>>> completedSubset,
+	Set<CachedHashKeyWrapper<IPipeline.TupleVersionStep<T, C, D>>> executingSubset,
+	Set<IStep<T, ?, C, D>> activeSteps,
+	Map<CachedHashKeyWrapper<IPipeline.TupleVersionStep<T, C, D>>, Exception> failedTasks,
+	Map<T, C> versionedContexts,
+	Map<T, D> versionedConfigs,
+	Object executionLock,
+	Object conditionalVar) {
 
 	public static <T extends AbstractVersion<T>, C extends IStepContext<C, T>, D extends IStepConfig> InFlightExecutionPlan<T, C, D> create(PipelineDescription<T, C, D> description, AbstractVersionGraph<T> versionGraph) {
-		return new InFlightExecutionPlan<>(PipelineExecutionGraph.populate(description, versionGraph), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new Object(), new Object());
+		return new InFlightExecutionPlan<>(
+			PipelineExecutionGraph.populate(description, versionGraph),
+			ConcurrentHashMap.newKeySet(),
+			ConcurrentHashMap.newKeySet(),
+			ConcurrentHashMap.newKeySet(),
+			new ConcurrentHashMap<>(),
+			new ConcurrentHashMap<>(),
+			new ConcurrentHashMap<>(),
+			new Object(),
+			new Object()
+		);
 	}
 
-	private void runSingleTask(ExecutorService executor, IPipeline.TupleVersionStep<T, C, D> task, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+	private void reduce(ExecutorService executor, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+		Set<CachedHashKeyWrapper<IPipeline.TupleVersionStep<T, C, D>>> tasks = null;
+		int completed = completedSubset.size();
+		// Cache access to repository
+		if (repository != null) {
+			repository.changeGitLogCacheBehavior(true);
+		}
+		{
+			do {
+				tasks = this.executionGraph.nextTuples(this.completedSubset).stream().filter(
+					task -> {
+						C context = this.versionedContexts().computeIfAbsent(task.inner().version(), ctxVersion -> pipeline.getDescription().contextCreator().getContext(ctxVersion, repository, versionGraph, executor));
+						return pipeline.getDescription().skipVersion().apply(versionGraph, context);
+					}).collect(Collectors.toSet());
+				completedSubset.addAll(tasks);
+			} while (!tasks.isEmpty());
+		}
+		if (repository != null) {
+			repository.changeGitLogCacheBehavior(false);
+		}
+		int skipped = completedSubset.size() - completed;
+		MiscHelper.println("Skipping %s steps!", skipped);
+	}
+
+	private void runSingleTask(ExecutorService executor, CachedHashKeyWrapper<IPipeline.TupleVersionStep<T, C, D>> task, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 		if (executor.isShutdown()) {
 			return;
 		}
@@ -35,11 +71,11 @@ public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends ISte
 				if (executingSubset.contains(task) || completedSubset.contains(task)) {
 					return;
 				}
-				if (task.step().getParallelismPolicy().isRestrictedToSequential() && activeSteps.contains(task.step())) {
+				if (task.inner().step().getParallelismPolicy().isRestrictedToSequential() && activeSteps.contains(task.inner().step())) {
 					return;
 				}
 
-				activeSteps.add(task.step());
+				activeSteps.add(task.inner().step());
 				executingSubset.add(task);
 			}
 
@@ -47,22 +83,22 @@ public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends ISte
 				pipeline.threadLimiter().acquireUninterruptibly();
 			}
 
-			C context = this.versionedContexts().computeIfAbsent(task.version(), ctxVersion -> pipeline.getDescription().contextCreator().getContext(ctxVersion, repository, versionGraph, executor));
-			D config = this.versionedConfigs().computeIfAbsent(task.version(), pipeline.getDescription().configCreator());
+			C context = this.versionedContexts().computeIfAbsent(task.inner().version(), ctxVersion -> pipeline.getDescription().contextCreator().getContext(ctxVersion, repository, versionGraph, executor));
+			D config = this.versionedConfigs().computeIfAbsent(task.inner().version(), pipeline.getDescription().configCreator());
 			Exception storedException = null;
 
 			try {
 				if (!pipeline.getDescription().skipVersion().apply(versionGraph, context)) {
-					pipeline.runSingleVersionSingleStep(task, context, config);
+					pipeline.runSingleVersionSingleStep(task.inner(), context, config);
 				} else {
-					MiscHelper.println("Skipping step '%s' for %s (%s)...", task.step().getName(), context, config);
+					MiscHelper.println("Skipping step '%s' for %s (%s)...", task.inner().step().getName(), context, config);
 				}
 				executingSubset.remove(task);
 				completedSubset.add(task);
-				activeSteps.remove(task.step());
+				activeSteps.remove(task.inner().step());
 			} catch (Exception e) {
 				storedException = e;
-				MiscHelper.println("Step '%s' for %s (%s) failed: %s", task.step().getName(), context, config, e);
+				MiscHelper.println("Step '%s' for %s (%s) failed: %s", task.inner().step().getName(), context, config, e);
 				e.printStackTrace();
 			}
 			if (pipeline.threadLimiter() != null) {
@@ -73,7 +109,7 @@ public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends ISte
 				if (storedException == null) {
 					// success :)
 					executingSubset.remove(task);
-					activeSteps.remove(task.step());
+					activeSteps.remove(task.inner().step());
 					completedSubset.add(task);
 				} else {
 					// failure :(
@@ -93,12 +129,13 @@ public record InFlightExecutionPlan<T extends AbstractVersion<T>, C extends ISte
 
 	private void scanForTasks(ExecutorService executor, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
 		// These are approximations of the set of tasks to execute; they should be equal or greater than the actual set; duplicate tasks get discarded later
-		for (IPipeline.TupleVersionStep<T, C, D> task : this.executionGraph.nextTuples(this.completedSubset)) {
+		for (CachedHashKeyWrapper<IPipeline.TupleVersionStep<T, C, D>> task : this.executionGraph.nextTuples(this.completedSubset)) {
 			this.runSingleTask(executor, task, pipeline, repository, versionGraph);
 		}
 	}
 
 	public void run(ExecutorService executor, IPipeline<T, C, D> pipeline, RepoWrapper repository, AbstractVersionGraph<T> versionGraph) {
+		reduce(executor, pipeline, repository, versionGraph);
 		scanForTasks(executor, pipeline, repository, versionGraph);
 		await();
 	}

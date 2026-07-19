@@ -5,6 +5,7 @@ import com.github.winplay02.gitcraft.graph.AbstractVersion;
 import com.github.winplay02.gitcraft.manifest.metadata.ArtifactMetadata;
 import com.github.winplay02.gitcraft.manifest.metadata.LibraryMetadata;
 import com.github.winplay02.gitcraft.manifest.metadata.VersionInfo;
+import com.github.winplay02.gitcraft.util.CachedHashKeyWrapper;
 import com.github.winplay02.gitcraft.util.MiscHelper;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -22,16 +23,27 @@ import java.util.regex.Pattern;
 /**
  * Represents a minecraft version with an order
  *
- * @param versionInfo     Version Info, e.g. from Mojang, or provided in extra-versions
- * @param semanticVersion Semantic Version. This field is used to order versions.
- * @param clientJar       Client JAR Artifact, if exists
- * @param clientMappings  Client Mappings Artifact (mojmaps), if exists
- * @param serverDist      Server Distribution, if any exists (e.g. JAR Artifact, Windows Server or ZIP)
- * @param serverMappings  Server Mappings Artifact (mojmaps), if exists
- * @param libraries       Libraries needed for this version
- * @param assetsIndex     Assets Index, containing assets for this version
+ * @param versionInfoWrapper Version Info, e.g. from Mojang, or provided in extra-versions
+ * @param semanticVersion    Semantic Version. This field is used to order versions.
+ * @param clientJar          Client JAR Artifact, if exists
+ * @param clientMappings     Client Mappings Artifact (mojmaps), if exists
+ * @param serverDist         Server Distribution, if any exists (e.g. JAR Artifact, Windows Server or ZIP)
+ * @param serverMappings     Server Mappings Artifact (mojmaps), if exists
+ * @param libraries          Libraries needed for this version
+ * @param assetsIndex        Assets Index, containing assets for this version
  */
 public record OrderedVersion(
+	CachedHashKeyWrapper<VersionInfo> versionInfoWrapper,
+	String semanticVersion,
+	Artifact clientJar,
+	Artifact clientMappings,
+	ServerDistribution serverDist,
+	Artifact serverMappings,
+	Set<Artifact> libraries,
+	Artifact assetsIndex
+) implements AbstractVersion<OrderedVersion> {
+
+	public OrderedVersion(
 		VersionInfo versionInfo,
 		String semanticVersion,
 		Artifact clientJar,
@@ -40,7 +52,18 @@ public record OrderedVersion(
 		Artifact serverMappings,
 		Set<Artifact> libraries,
 		Artifact assetsIndex
-) implements AbstractVersion<OrderedVersion> {
+	) {
+		this(
+			CachedHashKeyWrapper.of(versionInfo),
+			semanticVersion,
+			clientJar,
+			clientMappings,
+			serverDist,
+			serverMappings,
+			libraries,
+			assetsIndex
+		);
+	}
 
 	/*
 	 * For some old Minecraft versions, the download URLs end in the same
@@ -105,6 +128,10 @@ public record OrderedVersion(
 		return new OrderedVersion(versionInfo, semanticVersion, clientJar, clientMappings, new ServerDistribution(serverJar, serverWindows, serverZip), serverMappings, libs, assetsIndex);
 	}
 
+	public VersionInfo versionInfo() {
+		return this.versionInfoWrapper().inner();
+	}
+
 	public String launcherFriendlyVersionName() {
 		return this.versionInfo().id();
 	}
@@ -133,6 +160,7 @@ public record OrderedVersion(
 	}
 
 	// Mojang and Skyrising
+
 	/**
 	 * This method is <i>specifically</i> for checking if this is an <i>experimental</i> <c>"unobfuscated"</c> version.
 	 * To determine whether this version has no obfuscation use {@link OrderedVersion#isNotObfuscated()}.
@@ -226,7 +254,7 @@ public record OrderedVersion(
 		return Arrays.stream(new ZonedDateTime[]{this.versionInfo().time(), this.versionInfo().releaseTime()}).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElseThrow();
 	}
 
-    /**
+	/**
 	 * @return whether the client and server for this version are not obfuscated
 	 */
 	public boolean isNotObfuscated() {
